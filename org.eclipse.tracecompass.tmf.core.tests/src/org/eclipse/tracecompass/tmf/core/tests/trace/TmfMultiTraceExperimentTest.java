@@ -403,9 +403,9 @@ public class TmfMultiTraceExperimentTest {
         int nbTraces = ctx.getNbTraces();
 
         // expRank = sum(trace ranks) - nbTraces + 1 (if lastTraceRead != NO_TRACE)
-        long expRank = -nbTraces + ((ctx.getLastTrace() != TmfExperimentContext.NO_TRACE) ? 1 : 0);
+        long expRank = 0 ;
         for (int i = 0; i < nbTraces; i++) {
-            ITmfContext subContext = ctx.getContext(i);
+            ITmfContext subContext = ctx.getCurrentContext();
             assertNotNull(subContext);
             long rank = subContext.getRank();
             if (rank == -1) {

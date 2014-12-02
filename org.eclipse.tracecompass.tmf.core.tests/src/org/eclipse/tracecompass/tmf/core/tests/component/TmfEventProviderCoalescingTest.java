@@ -37,7 +37,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test suite for the TmfEventProvider class focusing on coalescing of experiments.
+ * Test suite for the TmfEventProvider class focusing on coalescing of
+ * experiments.
  */
 public class TmfEventProviderCoalescingTest {
 
@@ -49,13 +50,15 @@ public class TmfEventProviderCoalescingTest {
 
     /**
      * Test class initialization
-     * @throws Exception in case of an error
+     *
+     * @throws Exception
+     *             in case of an error
      */
     @BeforeClass
     public static void setUp() throws Exception {
-        fTmfTrace1 = (TmfTraceStub)TmfTestTrace.A_TEST_10K.getTrace();
-        fTmfTrace2 = (TmfTraceStub)TmfTestTrace.A_TEST_10K2.getTrace();
-        fTmfTrace3 = (TmfTraceStub)TmfTestTrace.E_TEST_10K.getTrace();
+        fTmfTrace1 = (TmfTraceStub) TmfTestTrace.A_TEST_10K.getTrace();
+        fTmfTrace2 = (TmfTraceStub) TmfTestTrace.A_TEST_10K2.getTrace();
+        fTmfTrace3 = (TmfTraceStub) TmfTestTrace.E_TEST_10K.getTrace();
 
         ITmfTrace[] traces2 = new ITmfTrace[1];
         traces2[0] = fTmfTrace3;
@@ -82,7 +85,9 @@ public class TmfEventProviderCoalescingTest {
 
     /**
      * Test clean-up
-     * @throws Exception if an error occurred
+     *
+     * @throws Exception
+     *             if an error occurred
      */
     @After
     public void testCleanUp() throws Exception {
@@ -92,10 +97,11 @@ public class TmfEventProviderCoalescingTest {
 
     /**
      * Verify coalescing across providers where a parent request is sent first
-     * before the children requests. All requests are coalesced at the top
-     * level parent.
+     * before the children requests. All requests are coalesced at the top level
+     * parent.
      *
-     * @throws Exception if an error occurred
+     * @throws Exception
+     *             if an error occurred
      */
     @Test
     public void testParentFirstCoalescing() throws Exception {
@@ -106,7 +112,8 @@ public class TmfEventProviderCoalescingTest {
         fTmfTrace1.sendRequest(trace1Req);
         fTmfTrace2.sendRequest(trace2Req);
 
-        // Verify that requests are coalesced properly with the experiment request
+        // Verify that requests are coalesced properly with the experiment
+        // request
         List<TmfCoalescedEventRequest> pending = fExperiment.getAllPendingRequests();
 
         assertEquals(1, pending.size());
@@ -126,7 +133,8 @@ public class TmfEventProviderCoalescingTest {
      * are sent first before the parent request. All requests are coalesced at
      * the top level parent.
      *
-     * @throws Exception if an error occurred
+     * @throws Exception
+     *             if an error occurred
      */
     @Test
     public void testChildrenFirstCoalescing() throws Exception {
@@ -137,7 +145,8 @@ public class TmfEventProviderCoalescingTest {
         fTmfTrace2.sendRequest(trace2Req);
         fExperiment.sendRequest(expReq);
 
-        // Verify that requests are coalesced properly with the experiment request
+        // Verify that requests are coalesced properly with the experiment
+        // request
         List<TmfCoalescedEventRequest> pending = fExperiment.getAllPendingRequests();
         assertEquals(1, pending.size());
 
@@ -165,10 +174,11 @@ public class TmfEventProviderCoalescingTest {
 
     /**
      * Verify coalescing across providers (2 level deep) where requests from
-     * multiple children (leafs) are sent first before the parent requests.
-     * All requests are coalesced at the top level parent.
+     * multiple children (leafs) are sent first before the parent requests. All
+     * requests are coalesced at the top level parent.
      *
-     * @throws Exception if an error occurred
+     * @throws Exception
+     *             if an error occurred
      */
     @Test
     public void testChildrenFirstCoalescing2() throws Exception {
@@ -183,7 +193,8 @@ public class TmfEventProviderCoalescingTest {
         fExperiment2.sendRequest(exp2Req);
         fExperiment.sendRequest(expReq);
 
-        // Verify that requests are coalesced properly with the experiment request
+        // Verify that requests are coalesced properly with the experiment
+        // request
         List<TmfCoalescedEventRequest> pending = fExperiment.getAllPendingRequests();
         assertEquals(1, pending.size());
 
@@ -222,10 +233,11 @@ public class TmfEventProviderCoalescingTest {
 
     /**
      * Verify coalescing across providers where requests from the parent and
-     * children are sent in mixed order. All requests are coalesced at the
-     * top level parent.
+     * children are sent in mixed order. All requests are coalesced at the top
+     * level parent.
      *
-     * @throws Exception if an error occurred
+     * @throws Exception
+     *             if an error occurred
      */
     @Test
     public void testMixedOrderCoalescing() throws Exception {
@@ -236,7 +248,8 @@ public class TmfEventProviderCoalescingTest {
         fExperiment.sendRequest(expReq);
         fTmfTrace2.sendRequest(trace2Req);
 
-        // Verify that requests are coalesced properly with the experiment request
+        // Verify that requests are coalesced properly with the experiment
+        // request
         List<TmfCoalescedEventRequest> pending = fExperiment.getAllPendingRequests();
         assertEquals(1, pending.size());
 
@@ -267,7 +280,8 @@ public class TmfEventProviderCoalescingTest {
      * parent and children are sent in mixed order. All requests are coalesced
      * at the top level parent.
      *
-     * @throws Exception if an error occurred
+     * @throws Exception
+     *             if an error occurred
      */
     @Test
     public void testMixedCoalescing2() throws Exception {
@@ -282,7 +296,8 @@ public class TmfEventProviderCoalescingTest {
         fTmfTrace2.sendRequest(trace2Req);
         fTmfTrace3.sendRequest(trace3Req);
 
-        // Verify that requests are coalesced properly with the experiment request
+        // Verify that requests are coalesced properly with the experiment
+        // request
         List<TmfCoalescedEventRequest> pending = fExperiment.getAllPendingRequests();
         assertEquals(1, pending.size());
 
@@ -322,10 +337,11 @@ public class TmfEventProviderCoalescingTest {
 
     /**
      * Verify coalescing across multi-level providers where requests from the
-     * parent and children are sent in mixed order. Each provider sends
-     * multiple requests. All requests are coalesced at the top level parent.
+     * parent and children are sent in mixed order. Each provider sends multiple
+     * requests. All requests are coalesced at the top level parent.
      *
-     * @throws Exception if an error occurred
+     * @throws Exception
+     *             if an error occurred
      */
     @Test
     public void testMultipleRequestsCoalescing() throws Exception {
@@ -341,7 +357,8 @@ public class TmfEventProviderCoalescingTest {
         fTmfTrace2.sendRequest(trace2Req);
         fExperiment.sendRequest(expReq2);
 
-        // Verify that requests are coalesced properly with the experiment request
+        // Verify that requests are coalesced properly with the experiment
+        // request
         List<TmfCoalescedEventRequest> pending = fExperiment.getAllPendingRequests();
         assertEquals(1, pending.size());
 
@@ -413,7 +430,7 @@ public class TmfEventProviderCoalescingTest {
     }
 
     private static class InnerEventRequest extends TmfEventRequest {
-        private Set<String> traces = new HashSet<>();
+        private Set<ITmfTrace> traces = new HashSet<>();
 
         public InnerEventRequest(Class<? extends ITmfEvent> dataType, long index, int nbRequested, ExecutionType priority) {
             super(dataType, index, nbRequested, priority);
@@ -422,13 +439,11 @@ public class TmfEventProviderCoalescingTest {
         @Override
         public void handleData(ITmfEvent event) {
             super.handleData(event);
-            if (!traces.contains(event.getTrace().getName())) {
-                traces.add(event.getTrace().getName());
-            }
+            traces.add(event.getTrace());
         }
 
         public boolean isTraceHandled(ITmfTrace trace) {
-            return traces.contains(trace.getName());
+            return traces.contains(trace);
         }
     }
 }

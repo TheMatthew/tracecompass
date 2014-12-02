@@ -14,13 +14,17 @@
 
 package org.eclipse.tracecompass.internal.tmf.core.trace.experiment;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.ArrayDeque;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfContext;
+import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 import org.eclipse.tracecompass.tmf.core.trace.TmfContext;
+
+import com.google.common.base.Joiner;
 
 /**
  * The experiment context in TMF.
@@ -28,8 +32,8 @@ import org.eclipse.tracecompass.tmf.core.trace.TmfContext;
  * The experiment keeps track of the next event from each of its traces so it
  * can pick the next one in chronological order.
  * <p>
- * This implies that the "next" event from each trace has already been
- * read and that we at least know its timestamp.
+ * This implies that the "next" event from each trace has already been read and
+ * that we at least know its timestamp.
  * <p>
  * The last trace refers to the trace from which the last event was "consumed"
  * at the experiment level.
@@ -49,9 +53,8 @@ public final class TmfExperimentContext extends TmfContext {
     // Attributes
     // ------------------------------------------------------------------------
 
-    private final List<ITmfContext> fContexts;
-    private final List<ITmfEvent> fEvents;
-    private int fLastTraceRead;
+    private final @NonNull Queue<TmfExperimentIterator> fIterators;
+    private TmfExperimentIterator fTopIterator;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -65,24 +68,60 @@ public final class TmfExperimentContext extends TmfContext {
      */
     public TmfExperimentContext(final int nbTraces) {
         super();
-        fLastTraceRead = NO_TRACE;
-        fContexts = new ArrayList<>(nbTraces);
-        fEvents = new ArrayList<>(nbTraces);
-
-
-        /* Initialize the arrays to the requested size */
-        for (int i = 0; i < nbTraces; i++) {
-            fContexts.add(null);
-            fEvents.add(null);
+        if (nbTraces <= 0) {
+            fIterators = new ArrayDeque<>();
+        } else {
+            fIterators = new PriorityQueue<>(nbTraces);
         }
     }
 
     @Override
     public void dispose() {
-        for (ITmfContext context : fContexts) {
-            context.dispose();
+        while (!fIterators.isEmpty()) {
+            fIterators.poll().dispose();
         }
         super.dispose();
+    }
+
+    /**
+     * Add a context to an experiment
+     *
+     * @param trace
+     *            the trace the context should read
+     * @param traceContext
+     *            the context
+     * @param traceId
+     *            the trace id
+     */
+    public void addContext(ITmfTrace trace, @NonNull ITmfContext traceContext, int traceId) {
+        ITmfEvent event;
+        if (traceContext instanceof TmfExperimentContext) {
+            TmfExperimentContext tmfExperimentContext = (TmfExperimentContext) traceContext;
+            event = tmfExperimentContext.getCurrentEvent();
+        } else {
+            event = trace.getNext(traceContext);
+        }
+        if (event != null) {
+            fIterators.add(new TmfExperimentIterator(event, trace, traceContext, traceId));
+        }
+        fTopIterator = fIterators.peek();
+    }
+
+    /**
+     * Get the next event of this trace
+     *
+     * @return the event
+     */
+    public ITmfEvent getNext() {
+        if (fIterators.isEmpty()) {
+            return null;
+        }
+        fTopIterator = fIterators.poll();
+        ITmfEvent retEvent = fTopIterator.getNext();
+        if (fTopIterator.getCurrentEvent() != null) {
+            fIterators.add(fTopIterator);
+        }
+        return retEvent;
     }
 
     // ------------------------------------------------------------------------
@@ -96,76 +135,34 @@ public final class TmfExperimentContext extends TmfContext {
      * @return The number of traces in the experiment
      */
     public int getNbTraces() {
-        return fContexts.size();
+        return fIterators.size();
     }
 
     /**
-     * Get the current context of a specific trace
+     * Get the current event for a context
      *
-     * @param traceIndex
-     *            The index of the trace in the experiment
-     * @return The matching context object for that trace
+     * @return the current event
      */
-    @Nullable
-    public ITmfContext getContext(int traceIndex) {
-        return fContexts.get(traceIndex);
+    public ITmfEvent getCurrentEvent() {
+        return fTopIterator.getCurrentEvent();
     }
 
     /**
-     * Set the context of a trace
+     * Get the current context
      *
-     * @param traceIndex
-     *            The index of the trace in the experiment
-     * @param ctx
-     *            The new context object for that trace
+     * @return the current context
      */
-    public void setContext(int traceIndex, ITmfContext ctx) {
-        fContexts.set(traceIndex, ctx);
+    public ITmfContext getCurrentContext() {
+        return fTopIterator.getContext();
     }
 
     /**
-     * Get the current event for a specific trace in the experiment.
+     * The id of the trace
      *
-     * @param traceIndex
-     *            The index of the trace in the experiment
-     * @return The event matching the trace/context
-     *
+     * @return the trace id
      */
-    @Nullable
-    public ITmfEvent getEvent(int traceIndex) {
-        return fEvents.get(traceIndex);
-    }
-
-    /**
-     * Set the context's event for a specific trace
-     *
-     * @param traceIndex
-     *            The index of the trace in the experiment
-     * @param event
-     *            The event at the context in the trace
-     */
-    public void setEvent(int traceIndex, ITmfEvent event) {
-        fEvents.set(traceIndex, event);
-    }
-
-    /**
-     * Get the index of the trace that was last read (so the trace whose
-     * current context will match this experiment's).
-     *
-     * @return The index of the trace
-     */
-    public int getLastTrace() {
-        return fLastTraceRead;
-    }
-
-    /**
-     * Set the last trace read index
-     *
-     * @param newIndex
-     *            The new value to assign
-     */
-    public void setLastTrace(final int newIndex) {
-        fLastTraceRead = newIndex;
+    public int getTraceId() {
+        return fTopIterator.getTraceId();
     }
 
     // ------------------------------------------------------------------------
@@ -175,8 +172,8 @@ public final class TmfExperimentContext extends TmfContext {
     @Override
     public int hashCode() {
         int result = 17;
-        for (int i = 0; i < fContexts.size(); i++) {
-            result = 37 * result + fContexts.get(i).hashCode();
+        for (TmfExperimentIterator iterator : fIterators) {
+            result = 37 * result + iterator.hashCode();
         }
         return result;
     }
@@ -193,13 +190,13 @@ public final class TmfExperimentContext extends TmfContext {
             return false;
         }
         final TmfExperimentContext o = (TmfExperimentContext) other;
-        boolean isEqual = true;
-        int i = 0;
-        while (isEqual && (i < fContexts.size())) {
-            isEqual &= fContexts.get(i).equals(o.fContexts.get(i));
-            i++;
+        if (!fIterators.containsAll(o.fIterators)) {
+            return false;
         }
-        return isEqual;
+        if (!o.fIterators.containsAll(fIterators)) {
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -207,16 +204,8 @@ public final class TmfExperimentContext extends TmfContext {
     public String toString() {
         StringBuilder sb = new StringBuilder("TmfExperimentContext [\n");
         sb.append("\tfLocation=" + getLocation() + ", fRank=" + getRank() + "\n");
-        sb.append("\tfContexts=[");
-        for (int i = 0; i < fContexts.size(); i++) {
-            sb.append("(" + fContexts.get(i).getLocation() + "," + fContexts.get(i).getRank() + ((i < fContexts.size() - 1) ? ")," : ")]\n"));
-        }
-        sb.append("\tfEvents=[");
-        for (int i = 0; i < fEvents.size(); i++) {
-            ITmfEvent event = fEvents.get(i);
-            sb.append(((event != null) ? fEvents.get(i).getTimestamp() : "(null)")  + ((i < fEvents.size() - 1) ? "," : "]\n"));
-        }
-        sb.append("\tfLastTraceRead=" + fLastTraceRead + "\n");
+        sb.append("\tfContextsWithEvents=[");
+        Joiner.on(',').skipNulls().appendTo(sb, fIterators);
         sb.append("]");
         return sb.toString();
     }
