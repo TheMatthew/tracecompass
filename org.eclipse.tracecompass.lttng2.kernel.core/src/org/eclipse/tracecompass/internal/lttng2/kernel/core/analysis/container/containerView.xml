@@ -10,41 +10,117 @@
 		<definedValue name="CPU_STATUS_RUNNING_VALUE" value="1" color="#95fc5f" />
 		<definedValue name="CPU_STATUS_SHARED_VALUE" value="2" color="#ff9900" />
 		<!-- Control Flow View -->
-		<entry path="*">
+		<entry path="Container Root">
 			<display type="self" />
-			<entry path="*">
+
+      <!-- The CPUs of the container -->
+			<entry path="Container CPU">
 				<display type="self" />
-				<entry path="*">
-					<display type="self" />
-					<entry path="*">
-						<display type="self" />
-						<entry path="*">
-							<display type="self" />
-							<entry path="*">
-								<display type="self" />
-								<entry path="*">
-									<display type="self" />
-									<entry path="*">
-										<display type="self" />
-										<entry path="*">
-											<display type="self" />
-											<entry path="*">
-												<display type="self" />
-												<entry path="*">
-													<display type="self" />
-													<entry path="*">
-														<display type="self" />
-													</entry>
-												</entry>
-											</entry>
-										</entry>
-									</entry>
-								</entry>
-							</entry>
-						</entry>
-					</entry>
-				</entry>
-			</entry>
+
+        <entry path="*">
+          <display type="self" />
+        </entry>
+      </entry>
+
+      <!-- level 1 -->
+      <entry path="Nested Containers">
+				<display type="self" />
+
+        <entry path="Container*">
+          <display type="self" />
+
+          <!-- The CPUs of the container -->
+          <entry path="Container CPU">
+            <display type="self" />
+
+            <entry path="*">
+              <display type="self" />
+            </entry>
+          </entry>
+
+          <!-- level 2 -->
+          <entry path="Nested Containers">
+            <display type="self" />
+
+            <entry path="Container*">
+              <display type="self" />
+
+              <!-- The CPUs of the container -->
+              <entry path="Container CPU">
+                <display type="self" />
+
+                <entry path="*">
+                  <display type="self" />
+                </entry>
+              </entry>
+
+              <!-- level 3 -->
+              <entry path="Nested Containers">
+                <display type="self" />
+
+                <entry path="Container*">
+                  <display type="self" />
+
+                  <!-- The CPUs of the container -->
+                  <entry path="Container CPU">
+                    <display type="self" />
+
+                    <entry path="*">
+                      <display type="self" />
+                    </entry>
+                  </entry>
+
+                  <!-- level 4 -->
+                  <entry path="Nested Containers">
+                    <display type="self" />
+
+                    <entry path="Container*">
+                      <display type="self" />
+
+                      <!-- The CPUs of the container -->
+                      <entry path="Container CPU">
+                        <display type="self" />
+
+                        <entry path="*">
+                          <display type="self" />
+                        </entry>
+                      </entry>
+
+                      <!-- level 5 -->
+                      <entry path="Nested Containers">
+                        <display type="self" />
+
+                        <entry path="Container*">
+                          <display type="self" />
+
+                          <!-- The CPUs of the container -->
+                          <entry path="Container CPU">
+                            <display type="self" />
+
+                            <entry path="*">
+                              <display type="self" />
+                            </entry>
+                          </entry>
+
+                          <!-- level 5 -->
+                          <entry path="Nested Containers">
+                            <display type="self" />
+
+                            <entry path="Container*">
+                              <display type="self" />
+
+                            </entry>
+                          </entry>
+                        </entry>
+                      </entry>
+                    </entry>
+                  </entry>
+                </entry>
+              </entry>
+            </entry>
+          </entry>
+        </entry>
+      </entry>
 		</entry>
 	</timeGraphView>
 </tmfxml>
