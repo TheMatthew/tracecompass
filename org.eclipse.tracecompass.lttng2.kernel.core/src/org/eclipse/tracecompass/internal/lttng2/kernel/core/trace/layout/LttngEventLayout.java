@@ -70,6 +70,15 @@ public class LttngEventLayout implements IKernelAnalysisEventLayout {
     private static final String NEXT_PRIO = "next_prio";
     private static final String NEW_PRIO = "newprio";
 
+    private static final String PARENT_NS_INUM = "parent_ns_inum";
+    private static final String CHILD_VTID = "child_vtid";
+    private static final String CHILD_NS_INUM = "child_ns_inum";
+    private static final String NS_INUM = "ns_inum";
+    private static final String VTID = "vtid";
+    private static final String PPID = "ppid";
+    private static final String NS_LEVEL = "ns_level";
+    private static final String STATUS = "status";
+
     /** All instances are the same. Only provide a static instance getter */
     protected LttngEventLayout() {
     }
@@ -236,4 +245,35 @@ public class LttngEventLayout implements IKernelAnalysisEventLayout {
         return NEXT_PRIO;
     }
 
+    public String fieldParentNSInum() {
+        return PARENT_NS_INUM;
+    }
+
+    public String fieldChildNSInum() {
+        return CHILD_NS_INUM;
+    }
+
+    public String fieldChildVTid() {
+        return CHILD_VTID;
+    }
+
+    public String fieldNSInum() {
+        return NS_INUM;
+    }
+
+    public String fieldVTid() {
+        return VTID;
+    }
+
+    public String fieldPPid() {
+        return PPID;
+    }
+
+    public String fieldNSLevel() {
+        return NS_LEVEL;
+    }
+
+    public String fieldStatus() {
+        return STATUS;
+    }
 }
