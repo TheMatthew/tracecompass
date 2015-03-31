@@ -30,4 +30,17 @@
             </tracetype>
       </module>
    </extension>
+   <extension
+         point="org.eclipse.linuxtools.tmf.core.analysis">
+      <module
+            analysis_module="org.eclipse.tracecompass.internal.lttng2.kernel.core.analysis.container.ContainerAnalysis"
+            automatic="true"
+            id="org.eclipse.tracecompass.internal.lttng2.kernel.core.analysis.container"
+            name="Container Analysis">
+         <tracetype
+               applies="true"
+               class="org.eclipse.tracecompass.lttng2.kernel.core.trace.LttngKernelTrace">
+         </tracetype>
+      </module>
+   </extension>
 </plugin>
