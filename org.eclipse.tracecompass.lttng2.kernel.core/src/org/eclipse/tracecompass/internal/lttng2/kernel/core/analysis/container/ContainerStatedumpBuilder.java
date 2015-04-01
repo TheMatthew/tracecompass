@@ -9,6 +9,15 @@ import java.util.LinkedList;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystemBuilder;
 
 /**
+ *
+ * This class/builder was designed because we cannot guarantee that we will receive the statedump in order.
+ *
+ * This builder caches statedump_process_status events on the fly and stores the information in a
+ * Task class. If the container holding the task has been added to the statesystem, we can process the task.
+ * Otherwise, this builder holds tasks that dosent have their parent container yet.
+ *
+ * When a new task is processed or a new container is created, every other tasks are re-processed.
+ *
  * @author Francis Jolivet
  *
  */
@@ -20,12 +29,23 @@ public class ContainerStatedumpBuilder {
     private HashMap<Integer, Task> hmTasks; //tid, Task
     private LinkedList<Task> unresolvedTasks;//ppid, Task
 
+    /**
+     * Constructor
+     */
     public ContainerStatedumpBuilder()
     {
         hmTasks = new HashMap<>();
         unresolvedTasks = new LinkedList<>();
     }
 
+    /**
+     * Takes the statesystembuilder and a new task to be processed
+     * @param ssb
+     *      The statesystembuilder
+     * @param t
+     *      The task to add and process. If it cannot be processed right away,
+     *      it will be cached until it's parent container is found.
+     */
     public void addTask(ITmfStateSystemBuilder ssb, Task t)
     {
         insertTask(ssb, t);

@@ -21,8 +21,10 @@ import org.eclipse.tracecompass.internal.lttng2.kernel.core.trace.layout.LttngEv
 import com.google.common.collect.ImmutableMap;
 
 /**
- * @author Sébastien Lorrain
+ * The stateprovider for the container analysis.
+ * It will get the events from the trace and create the statesystem accordingly
  *
+ * @author Sébastien Lorrain
  */
 public class ContainerStateProvider extends AbstractTmfStateProvider {
 
@@ -32,8 +34,12 @@ public class ContainerStateProvider extends AbstractTmfStateProvider {
 
     private ContainerStatedumpBuilder statedumpBuilder;
 
+
     /**
-     * @param IKernelTrace
+     * @param trace
+     *      The trace to analyse
+     * @param layout
+     *      Must be LttngEventLayout because this analysis is Lttng specific
      */
     public ContainerStateProvider(IKernelTrace trace, LttngEventLayout layout)
     {

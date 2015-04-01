@@ -24,6 +24,9 @@ public class ContainerAnalysis extends TmfStateSystemAnalysisModule{
     /** The ID of this analysis */
     public static final String ID = "org.eclipse.tracecompass.internal.lttng2.kernel.core.analysis.container"; //$NON-NLS-1$
 
+    /**
+     * Ctor
+     */
     public ContainerAnalysis(){
         super();
     }
@@ -51,18 +54,5 @@ public class ContainerAnalysis extends TmfStateSystemAnalysisModule{
         }
         return modules;
     }
-
-    /*@Override
-    protected boolean executeAnalysis(@Nullable final  IProgressMonitor monitor) {
-        // TODO Auto-generated method stub
-        return true;
-    }
-
-    @Override
-    protected void canceling() {
-        // TODO Auto-generated method stub
-
-    }*/
-
 
 }

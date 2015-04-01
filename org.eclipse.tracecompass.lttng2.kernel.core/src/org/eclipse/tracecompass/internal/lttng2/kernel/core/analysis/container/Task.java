@@ -3,6 +3,13 @@ package org.eclipse.tracecompass.internal.lttng2.kernel.core.analysis.container;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis.StateValues;
 import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
 
+/**
+ * Class design to hold informations concerning a task/process. It can then be processed later
+ * to be added to the statesystem.
+ *
+ * @author Sebastien Lorrain
+ *
+ */
 public class Task
 {
     public final long ts;
