@@ -14,20 +14,17 @@ package org.eclipse.tracecompass.ctf.core.tests.trace;
 import static org.junit.Assert.assertNotNull;
 
 import org.eclipse.tracecompass.ctf.core.CTFException;
+import org.eclipse.tracecompass.internal.ctf.core.trace.CTFPacketContext;
 import org.eclipse.tracecompass.internal.ctf.core.trace.PacketDescriptorIndex;
-import org.eclipse.tracecompass.internal.ctf.core.trace.StreamInputPacketIndexEntry;
 import org.junit.Before;
 import org.junit.Test;
 
 /**
- * The class <code>StreamInputPacketIndexTest</code> contains tests for the
- * class <code>{@link PacketDescriptorIndex}</code>.
+ * The class <code>PacketDescriptorIndex</code> contains tests for the class
+ * <code>{@link PacketDescriptorIndex}</code>.
  *
- * @author ematkho
- * @version $Revision: 1.0 $
  */
-@SuppressWarnings("javadoc")
-public class PacketInformationIndexTest {
+public class PacketDescriptorIndexTest {
 
     private PacketDescriptorIndex fixture;
 
@@ -35,11 +32,12 @@ public class PacketInformationIndexTest {
      * Perform pre-test initialization.
      *
      * @throws CTFException
+     *             an error occured
      */
     @Before
     public void setUp() throws CTFException {
         fixture = new PacketDescriptorIndex();
-        fixture.append(new StreamInputPacketIndexEntry(1L,0L));
+        fixture.append(new CTFPacketContext(1L, 0L));
     }
 
     /**

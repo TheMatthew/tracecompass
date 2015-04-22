@@ -82,8 +82,8 @@ public class PacketDescriptorIndex {
      */
     public void appendAll(Collection<ICTFPacketDescriptor> preParsedIndex)
             throws CTFException {
-        for (ICTFPacketDescriptor sipie : preParsedIndex) {
-            append(checkNotNull(sipie));
+        for (ICTFPacketDescriptor cpd : preParsedIndex) {
+            append(checkNotNull(cpd));
         }
     }
 

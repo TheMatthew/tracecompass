@@ -29,7 +29,7 @@ import org.eclipse.tracecompass.ctf.core.trace.ICTFPacketDescriptor;
  * <p>
  * Represents an entry in the index of event packets.
  */
-public class StreamInputPacketIndexEntry implements ICTFPacketDescriptor {
+public class CTFPacketContext implements ICTFPacketDescriptor {
 
     private static final int UNKNOWN = -1;
 
@@ -96,7 +96,7 @@ public class StreamInputPacketIndexEntry implements ICTFPacketDescriptor {
      *            number of bytes in a file
      */
 
-    public StreamInputPacketIndexEntry(long dataOffsetBits, long fileSizeBytes) {
+    public CTFPacketContext(long dataOffsetBits, long fileSizeBytes) {
         fContentSizeBits = (fileSizeBytes * Byte.SIZE);
         fPacketSizeBits = (fileSizeBytes * Byte.SIZE);
         fOffsetBits = dataOffsetBits;
@@ -120,7 +120,7 @@ public class StreamInputPacketIndexEntry implements ICTFPacketDescriptor {
      * @param lostSoFar
      *            number of lost events so far
      */
-    public StreamInputPacketIndexEntry(long dataOffsetBits, StructDefinition streamPacketContextDef, long fileSizeBytes, long lostSoFar) {
+    public CTFPacketContext(long dataOffsetBits, StructDefinition streamPacketContextDef, long fileSizeBytes, long lostSoFar) {
         for (String field : streamPacketContextDef.getDeclaration().getFieldsList()) {
             IDefinition id = streamPacketContextDef.lookupDefinition(field);
             if (id instanceof IntegerDefinition) {
