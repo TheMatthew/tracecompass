@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.TreeSet;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -117,69 +116,20 @@ public class PacketDescriptorIndex {
     }
 
     /**
-     * Returns the first PacketIndexEntry that could include the timestamp, that
-     * is the last packet with a begin timestamp smaller than the given
-     * timestamp.
+     * Returns the first packet that could include the timestamp, that is the
+     * last packet with a begin timestamp smaller than the given timestamp.
      *
      * @param timestamp
      *            The timestamp to look for.
-     * @return The StreamInputPacketEntry that corresponds to the packet that
-     *         includes the given timestamp.
+     * @return The index of the desired packet
      */
-    public ListIterator<ICTFPacketDescriptor> search(final long timestamp) {
-        /*
-         * Start with min and max covering all the elements.
-         */
-        int max = fEntries.size() - 1;
-        int min = 0;
 
-        int guessI;
-        ICTFPacketDescriptor guessEntry = null;
-
-        /*
-         * If the index is empty, return the iterator at the very beginning.
-         */
-        if (isEmpty()) {
-            return fEntries.listIterator();
+    public int search(final long timestamp) {
+        int index = Collections.binarySearch(fEntries, new CTFPacketContext(timestamp, 0), new FindTimestamp());
+        if (index < 0) {
+            index = -index - 1;
         }
-
-        if (timestamp < 0) {
-            throw new IllegalArgumentException("timestamp is negative"); //$NON-NLS-1$
-        }
-
-        /* Binary search */
-        for (;;) {
-            /*
-             * Guess in the middle of min and max.
-             */
-            guessI = min + ((max - min) / 2);
-            guessEntry = fEntries.get(guessI);
-
-            /*
-             * If we reached the point where we focus on a single packet, our
-             * search is done.
-             */
-            if (min == max) {
-                break;
-            }
-
-            if (timestamp <= guessEntry.getTimestampEnd()) {
-                /*
-                 * If the timestamp is lower or equal to the end of the guess
-                 * packet, then the guess packet becomes the new inclusive max.
-                 */
-                max = guessI;
-            } else {
-                /*
-                 * If the timestamp is greater than the end of the guess packet,
-                 * then the new inclusive min is the packet after the guess
-                 * packet.
-                 */
-                min = guessI + 1;
-            }
-        }
-
-        return fEntries.listIterator(guessI);
+        return index;
     }
 
     /**
@@ -263,6 +213,28 @@ public class PacketDescriptorIndex {
             }
             return 0;
         }
+    }
+
+    /**
+     * Used for search, assumes that the second argument in the comparisson is
+     * always the key
+     */
+    private static class FindTimestamp implements Comparator<ICTFPacketDescriptor>, Serializable {
+
+        /**
+         * UID
+         */
+        private static final long serialVersionUID = 7235997205945550341L;
+
+        @Override
+        public int compare(ICTFPacketDescriptor value, ICTFPacketDescriptor key) {
+            long ts = key.getOffsetBits();
+            if (value.includes(ts)) {
+                return 0;
+            }
+            return Long.compare(value.getTimestampBegin(), ts);
+        }
+
     }
 
 }
