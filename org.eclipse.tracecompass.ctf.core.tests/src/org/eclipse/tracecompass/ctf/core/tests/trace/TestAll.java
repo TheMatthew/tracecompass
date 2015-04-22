@@ -31,7 +31,7 @@ import org.junit.runners.Suite;
     MetadataTest.class,
     MetadataPrevalidationTests.class,
     CTFStreamInputPacketIndexEntryTest.class,
-    CTFStreamInputPacketIndexTest.class,
+    PacketInformationIndexTest.class,
     CTFStreamInputReaderTest.class,
     CTFStreamInputReaderTimestampComparatorTest.class,
     CTFStreamInputTest.class,

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2014 Ericsson, Ecole Polytechnique de Montreal and others
+ * Copyright (c) 2011, 2015 Ericsson, Ecole Polytechnique de Montreal and others
  *
  * All rights reserved. This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License v1.0 which
@@ -35,7 +35,7 @@ import org.eclipse.tracecompass.ctf.core.trace.ICTFPacketDescriptor;
  * This is a data structure containing entries, you may append to this and read
  * it. It is not thread safe.
  */
-public class StreamInputPacketIndex {
+public class PacketDescriptorIndex {
 
     // ------------------------------------------------------------------------
     // Attributes
