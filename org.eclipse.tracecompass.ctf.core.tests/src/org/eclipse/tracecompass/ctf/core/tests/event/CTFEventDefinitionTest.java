@@ -26,6 +26,7 @@ import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.scope.ILexicalScope;
 import org.eclipse.tracecompass.ctf.core.event.types.Definition;
 import org.eclipse.tracecompass.ctf.core.event.types.Encoding;
+import org.eclipse.tracecompass.ctf.core.event.types.ICompositeDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
@@ -116,7 +117,7 @@ public class CTFEventDefinitionTest {
     private static void test(int rank, EventDefinition ed) {
         String title = "event #" + rank;
         assertEquals(title, 100L, ed.getTimestamp());
-        StructDefinition context = ed.getContext();
+        ICompositeDefinition context = ed.getContext();
         if (rank >= 4) {
             assertNotNull(title, context);
             if (rank >= 12) {
