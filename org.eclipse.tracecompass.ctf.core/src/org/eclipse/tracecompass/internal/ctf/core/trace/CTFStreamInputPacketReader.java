@@ -388,7 +388,6 @@ public final class CTFStreamInputPacketReader implements IPacketReader {
             final ImmutableList<String> fieldNameList = ImmutableList.<String> builder().add(CTFStrings.LOST_EVENTS_FIELD).add(CTFStrings.LOST_EVENTS_DURATION).build();
             return new EventDefinition(
                     lostEventDeclaration,
-                    fStreamInputReader,
                     fLastTimestamp,
                     null,
                     null,
@@ -464,7 +463,7 @@ public final class CTFStreamInputPacketReader implements IPacketReader {
         if (eventDeclaration == null) {
             throw new CTFIOException("Incorrect event id : " + eventID); //$NON-NLS-1$
         }
-        EventDefinition eventDef = eventDeclaration.createDefinition(fStreamInputReader.getStreamEventContextDecl(), fStreamInputReader.getPacketReader().getStreamPacketContextDefinition(fBitBuffer), fBitBuffer, timestamp);
+        EventDefinition eventDef = eventDeclaration.createDefinition(fStreamInputReader.getStreamEventContextDecl(), fPacket, fBitBuffer, timestamp);
 
         /*
          * Set the event timestamp using the timestamp calculated by

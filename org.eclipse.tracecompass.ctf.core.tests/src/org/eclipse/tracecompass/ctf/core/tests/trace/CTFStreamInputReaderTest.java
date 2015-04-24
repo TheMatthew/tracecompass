@@ -21,13 +21,6 @@ import java.util.Set;
 
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
-import org.eclipse.tracecompass.ctf.core.event.types.Definition;
-import org.eclipse.tracecompass.ctf.core.event.types.Encoding;
-import org.eclipse.tracecompass.ctf.core.event.types.ICompositeDefinition;
-import org.eclipse.tracecompass.ctf.core.event.types.StringDeclaration;
-import org.eclipse.tracecompass.ctf.core.event.types.StringDefinition;
-import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
-import org.eclipse.tracecompass.ctf.core.event.types.StructDefinition;
 import org.eclipse.tracecompass.ctf.core.tests.shared.CtfTestTrace;
 import org.eclipse.tracecompass.ctf.core.trace.CTFResponse;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
@@ -37,8 +30,6 @@ import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.internal.ctf.core.event.EventDeclaration;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
 
 /**
  * The class <code>StreamInputReaderTest</code> contains tests for the class
@@ -54,10 +45,6 @@ public class CTFStreamInputReaderTest {
 
     private CTFStreamInputReader fixture;
 
-    private static ImmutableList<String> wrap(String s) {
-        return ImmutableList.<String> builder().add(s).build();
-    }
-
     /**
      * Perform pre-test initialization.
      *
@@ -68,13 +55,7 @@ public class CTFStreamInputReaderTest {
         fixture = getStreamInputReader();
         fixture.setName(1);
         fixture.setCurrentEvent(new EventDefinition(new EventDeclaration(),
-                getStreamInputReader(), 0, null, null,
-                new StructDefinition(
-                        new StructDeclaration(0),
-                        null,
-                        "packet",
-                        wrap("field"),
-                        new Definition[] { new StringDefinition(StringDeclaration.getStringDeclaration(Encoding.UTF8), null, "field", "test") }),
+                0, null, null, null,
                 null)
                 );
     }
@@ -137,15 +118,6 @@ public class CTFStreamInputReaderTest {
     @Test
     public void testGetCurrentEvent() {
         EventDefinition result = fixture.getCurrentEvent();
-        assertNotNull(result);
-    }
-
-    /**
-     * Run the StructDefinition getCurrentPacketContext() method test.
-     */
-    @Test
-    public void testGetCurrentPacketContext() {
-        ICompositeDefinition result = fixture.getCurrentEvent().getPacketContext();
         assertNotNull(result);
     }
 
@@ -218,13 +190,11 @@ public class CTFStreamInputReaderTest {
     /**
      * Run the seek test. Seek by passing an EventDefinition to which we've
      * given the timestamp we want.
-     *
-     * @throws CTFException
      */
     @Test
-    public void testSeek_eventDefinition() throws CTFException {
+    public void testSeek_eventDefinition() {
         EventDefinition eventDefinition = new EventDefinition(
-                new EventDeclaration(), getStreamInputReader(), 1L, null, null, null, null);
+                new EventDeclaration(), 1L, null, null, null, null);
         fixture.setCurrentEvent(eventDefinition);
     }
 }

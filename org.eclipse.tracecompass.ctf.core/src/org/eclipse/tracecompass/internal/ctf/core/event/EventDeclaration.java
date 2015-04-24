@@ -29,6 +29,7 @@ import org.eclipse.tracecompass.ctf.core.event.types.Declaration;
 import org.eclipse.tracecompass.ctf.core.event.types.ICompositeDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
+import org.eclipse.tracecompass.ctf.core.trace.ICTFPacketDescriptor;
 
 /**
  * Representation of one type of event. A bit like "int" or "long" but for trace
@@ -88,7 +89,7 @@ public class EventDeclaration implements IEventDeclaration {
     }
 
     @Override
-    public EventDefinition createDefinition(StructDeclaration streamEventContextDecl, ICompositeDefinition packetContext, @NonNull BitBuffer input, long timestamp) throws CTFException {
+    public EventDefinition createDefinition(StructDeclaration streamEventContextDecl, ICTFPacketDescriptor packetContext, @NonNull BitBuffer input, long timestamp) throws CTFException {
         ICompositeDefinition streamEventContext = streamEventContextDecl != null ? streamEventContextDecl.createDefinition(fTraceScope, ILexicalScope.STREAM_EVENT_CONTEXT, input) : null;
         ICompositeDefinition eventContext = fContext != null ? fContext.createDefinition(fTraceScope, ILexicalScope.CONTEXT, input) : null;
         ICompositeDefinition eventPayload = fFields != null ? fFields.createDefinition(fTraceScope, ILexicalScope.FIELDS, input) : null;
@@ -98,7 +99,6 @@ public class EventDeclaration implements IEventDeclaration {
         // but it's passed to us
         return new EventDefinition(
                 this,
-                streamInputReader,
                 timestamp,
                 streamEventContext,
                 eventContext,
