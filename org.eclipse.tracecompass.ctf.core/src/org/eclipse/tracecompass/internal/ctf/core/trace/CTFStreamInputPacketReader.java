@@ -464,7 +464,7 @@ public final class CTFStreamInputPacketReader implements IPacketReader {
         if (eventDeclaration == null) {
             throw new CTFIOException("Incorrect event id : " + eventID); //$NON-NLS-1$
         }
-        EventDefinition eventDef = eventDeclaration.createDefinition(fStreamInputReader, fBitBuffer, timestamp);
+        EventDefinition eventDef = eventDeclaration.createDefinition(fStreamInputReader.getStreamEventContextDecl(), fStreamInputReader.getPacketReader().getStreamPacketContextDefinition(fBitBuffer), fBitBuffer, timestamp);
 
         /*
          * Set the event timestamp using the timestamp calculated by

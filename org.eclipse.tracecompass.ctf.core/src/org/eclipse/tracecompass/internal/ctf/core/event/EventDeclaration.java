@@ -29,7 +29,6 @@ import org.eclipse.tracecompass.ctf.core.event.types.Declaration;
 import org.eclipse.tracecompass.ctf.core.event.types.ICompositeDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
-import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInputReader;
 
 /**
  * Representation of one type of event. A bit like "int" or "long" but for trace
@@ -89,10 +88,8 @@ public class EventDeclaration implements IEventDeclaration {
     }
 
     @Override
-    public EventDefinition createDefinition(CTFStreamInputReader streamInputReader, @NonNull BitBuffer input, long timestamp) throws CTFException {
-        StructDeclaration streamEventContextDecl = streamInputReader.getStreamEventContextDecl();
+    public EventDefinition createDefinition(StructDeclaration streamEventContextDecl, ICompositeDefinition packetContext, @NonNull BitBuffer input, long timestamp) throws CTFException {
         ICompositeDefinition streamEventContext = streamEventContextDecl != null ? streamEventContextDecl.createDefinition(fTraceScope, ILexicalScope.STREAM_EVENT_CONTEXT, input) : null;
-        ICompositeDefinition packetContext = streamInputReader.getPacketReader().getCurrentPacketEventHeader();
         ICompositeDefinition eventContext = fContext != null ? fContext.createDefinition(fTraceScope, ILexicalScope.CONTEXT, input) : null;
         ICompositeDefinition eventPayload = fFields != null ? fFields.createDefinition(fTraceScope, ILexicalScope.FIELDS, input) : null;
 
@@ -312,10 +309,10 @@ public class EventDeclaration implements IEventDeclaration {
         if (fId != (other.fId)) {
             return false;
         }
-        if(!NonNullUtils.equalsNullable(fContext, other.fContext)){
+        if (!NonNullUtils.equalsNullable(fContext, other.fContext)) {
             return false;
         }
-        if(!NonNullUtils.equalsNullable(fFields, other.fFields)){
+        if (!NonNullUtils.equalsNullable(fFields, other.fFields)) {
             return false;
         }
         if (!NonNullUtils.equalsNullable(fName, other.fName)) {
