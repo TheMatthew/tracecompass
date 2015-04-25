@@ -16,7 +16,6 @@ package org.eclipse.tracecompass.ctf.core.trace;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
@@ -39,8 +38,6 @@ import com.google.common.collect.ImmutableSet.Builder;
  */
 public class CTFTraceReader implements AutoCloseable {
 
-    private static final int LINE_LENGTH = 60;
-
     private static final int MIN_PRIO_SIZE = 16;
 
     // ------------------------------------------------------------------------
@@ -62,11 +59,6 @@ public class CTFTraceReader implements AutoCloseable {
      * Priority queue to order the trace file readers by timestamp.
      */
     private PriorityQueue<CTFStreamInputReader> fPrio;
-
-    /**
-     * Array to count the number of event per trace file.
-     */
-    private long[] fEventCountPerTraceFile;
 
     /**
      * Timestamp of the first event in the trace
@@ -210,11 +202,6 @@ public class CTFTraceReader implements AutoCloseable {
                 fStreamInputReaders.add(new CTFStreamInputReader(streamInput));
             }
         }
-
-        /*
-         * Create the array to count the number of event per trace file.
-         */
-        fEventCountPerTraceFile = new long[fStreamInputReaders.size()];
     }
 
     /**
@@ -224,7 +211,6 @@ public class CTFTraceReader implements AutoCloseable {
      *             An error occured
      */
     public void update() throws CTFException {
-        Set<CTFStreamInputReader> readers = new HashSet<>();
         for (CTFStream stream : fTrace.getStreams()) {
             Set<CTFStreamInput> streamInputs = stream.getStreamInputs();
             for (CTFStreamInput streamInput : streamInputs) {
@@ -240,17 +226,12 @@ public class CTFTraceReader implements AutoCloseable {
                 if (!fStreamInputReaders.contains(streamInputReader)) {
                     streamInputReader.readNextEvent();
                     fStreamInputReaders.add(streamInputReader);
-                    readers.add(streamInputReader);
+                    fStreamInputReaders.add(streamInputReader);
                 }
             }
         }
-        long[] temp = fEventCountPerTraceFile;
-        fEventCountPerTraceFile = new long[readers.size() + temp.length];
-        for (CTFStreamInputReader reader : readers) {
+        for (CTFStreamInputReader reader : fStreamInputReaders) {
             fPrio.add(reader);
-        }
-        for (int i = 0; i < temp.length; i++) {
-            fEventCountPerTraceFile[i] = temp[i];
         }
     }
 
@@ -289,22 +270,14 @@ public class CTFTraceReader implements AutoCloseable {
                 Math.max(fStreamInputReaders.size() * 2, MIN_PRIO_SIZE),
                 new StreamInputReaderTimestampComparator());
 
-        int pos = 0;
-
         for (CTFStreamInputReader reader : fStreamInputReaders) {
             /*
              * Add each trace file reader in the priority queue, if we are able
              * to read an event from it.
              */
-            reader.setParent(this);
             CTFResponse readNextEvent = reader.readNextEvent();
             if (readNextEvent == CTFResponse.OK || readNextEvent == CTFResponse.WAIT) {
                 fPrio.add(reader);
-
-                fEventCountPerTraceFile[pos] = 0;
-                reader.setName(pos);
-
-                pos++;
             }
         }
     }
@@ -351,8 +324,6 @@ public class CTFTraceReader implements AutoCloseable {
             fPrio.add(top);
             final long topEnd = fTrace.timestampCyclesToNanos(top.getCurrentEvent().getTimestamp());
             setEndTime(Math.max(topEnd, getEndTime()));
-            fEventCountPerTraceFile[top.getName()]++;
-
             if (top.getCurrentEvent() != null) {
                 fEndTime = Math.max(top.getCurrentEvent().getTimestamp(),
                         fEndTime);
@@ -440,51 +411,6 @@ public class CTFTraceReader implements AutoCloseable {
      */
     public final boolean hasMoreEvents() {
         return fPrio.size() > 0;
-    }
-
-    /**
-     * Prints the event count stats.
-     */
-    public void printStats() {
-        printStats(LINE_LENGTH);
-    }
-
-    /**
-     * Prints the event count stats.
-     *
-     * @param width
-     *            Width of the display.
-     */
-    public void printStats(int width) {
-        int numEvents = 0;
-        if (width == 0) {
-            return;
-        }
-
-        for (long i : fEventCountPerTraceFile) {
-            numEvents += i;
-        }
-
-        for (int j = 0; j < fEventCountPerTraceFile.length; j++) {
-            CTFStreamInputReader se = fStreamInputReaders.get(j);
-
-            long len = (width * fEventCountPerTraceFile[se.getName()])
-                    / numEvents;
-
-            StringBuilder sb = new StringBuilder(se.getFilename());
-            sb.append("\t["); //$NON-NLS-1$
-
-            for (int i = 0; i < len; i++) {
-                sb.append('+');
-            }
-
-            for (long i = len; i < width; i++) {
-                sb.append(' ');
-            }
-
-            sb.append("]\t" + fEventCountPerTraceFile[se.getName()] + " Events"); //$NON-NLS-1$//$NON-NLS-2$
-            Activator.log(sb.toString());
-        }
     }
 
     /**

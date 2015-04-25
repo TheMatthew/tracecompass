@@ -64,10 +64,6 @@ public class CTFStreamInputReader implements AutoCloseable {
      */
     private EventDefinition fCurrentEvent = null;
 
-    private int fId;
-
-    private CTFTraceReader fParent;
-
     /**
      * Live trace reading
      */
@@ -140,25 +136,6 @@ public class CTFStreamInputReader implements AutoCloseable {
      */
     public ByteOrder getByteOrder() {
         return fStreamInput.getStream().getTrace().getByteOrder();
-    }
-
-    /**
-     * Gets the name of the stream (it's an id and a number)
-     *
-     * @return gets the stream name (it's a number)
-     */
-    public int getName() {
-        return fId;
-    }
-
-    /**
-     * Sets the name of the stream
-     *
-     * @param name
-     *            the name of the stream, (it's a number)
-     */
-    public void setName(int name) {
-        fId = name;
     }
 
     /**
@@ -418,21 +395,6 @@ public class CTFStreamInputReader implements AutoCloseable {
     }
 
     /**
-     * @return the parent
-     */
-    public CTFTraceReader getParent() {
-        return fParent;
-    }
-
-    /**
-     * @param parent
-     *            the parent to set
-     */
-    public void setParent(CTFTraceReader parent) {
-        fParent = parent;
-    }
-
-    /**
      * Sets the current event in a stream input reader
      *
      * @param currentEvent
@@ -473,7 +435,6 @@ public class CTFStreamInputReader implements AutoCloseable {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + fId;
         result = (prime * result)
                 + fFile.hashCode();
         return result;
@@ -491,16 +452,13 @@ public class CTFStreamInputReader implements AutoCloseable {
             return false;
         }
         CTFStreamInputReader other = (CTFStreamInputReader) obj;
-        if (fId != other.fId) {
-            return false;
-        }
         return fFile.equals(other.fFile);
     }
 
     @Override
     public String toString() {
         // this helps debugging
-        return fId + ' ' + fCurrentEvent.toString();
+        return fFile.getPath().toString() + " " + fCurrentEvent.toString(); //$NON-NLS-1$
     }
 
 }
