@@ -76,7 +76,7 @@ public class CTFStreamInputReader implements AutoCloseable {
     /**
      * Live trace reading
      */
-    private boolean fLive = false;
+    private final boolean fLive;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -90,9 +90,24 @@ public class CTFStreamInputReader implements AutoCloseable {
      *             If the file cannot be opened
      */
     public CTFStreamInputReader(CTFStreamInput streamInput) throws CTFException {
+        this(streamInput, false);
+    }
+
+    /**
+     * Constructs a StreamInputReader that reads a StreamInput.
+     *
+     * @param streamInput
+     *            The StreamInput to read.
+     * @param live is stream read live?
+     * @throws CTFException
+     *             If the file cannot be opened
+     * @since 1.0
+     */
+    public CTFStreamInputReader(CTFStreamInput streamInput, boolean live) throws CTFException {
         if (streamInput == null) {
             throw new IllegalArgumentException("stream cannot be null"); //$NON-NLS-1$
         }
+        fLive = live;
         fStreamInput = streamInput;
         fFile = fStreamInput.getFile();
         try {
@@ -109,6 +124,7 @@ public class CTFStreamInputReader implements AutoCloseable {
          * Make first packet the current one.
          */
         goToNextPacket();
+
     }
 
     /**
@@ -196,15 +212,6 @@ public class CTFStreamInputReader implements AutoCloseable {
         return ImmutableList.copyOf(fStreamInput.getStream().getEventDeclarations());
     }
 
-    /**
-     * Set the trace to live mode
-     *
-     * @param live
-     *            whether the trace is read live or not
-     */
-    public void setLive(boolean live) {
-        fLive = live;
-    }
 
     /**
      * Get if the trace is to read live or not
@@ -287,7 +294,7 @@ public class CTFStreamInputReader implements AutoCloseable {
             return NullPacketReader.getInstance();
         }
         ICTFPacketDescriptor packet = getPacket();
-        ICTFPacketDescriptor prevPacket = (fPacketIndex==0)?null: fStreamInput.getIndex().getElement(fPacketIndex-1);
+        ICTFPacketDescriptor prevPacket = (fPacketIndex == 0) ? null : fStreamInput.getIndex().getElement(fPacketIndex - 1);
         return new CTFStreamInputPacketReader(packet, fStreamInput.getStream(), fStreamInput, this, prevPacket, getByteBufferAt(packet.getOffsetBytes(), (packet.getContentSizeBits() + 7) / BITS_PER_BYTE));
     }
 

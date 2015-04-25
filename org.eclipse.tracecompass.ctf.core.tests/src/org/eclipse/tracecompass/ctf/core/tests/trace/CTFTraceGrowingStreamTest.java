@@ -122,8 +122,7 @@ public class CTFTraceGrowingStreamTest {
      */
     @Test
     public void testGrowingLive() throws CTFException, FileNotFoundException, IOException {
-        try (CTFTraceReader reader = new CTFTraceReader(fFixture);) {
-            reader.setLive(true);
+        try (CTFTraceReader reader = new CTFTraceReader(fFixture, true);) {
             assertEquals("0x29", reader.getCurrentEventDef().getFields().getDefinition("f").toString());
             reader.advance();
             try (FileOutputStream fos = new FileOutputStream(fGrowingStream, true)) {
@@ -144,8 +143,7 @@ public class CTFTraceGrowingStreamTest {
      */
     @Test
     public void testGrowingNotLive() throws CTFException, FileNotFoundException, IOException {
-        try (CTFTraceReader reader = new CTFTraceReader(fFixture);) {
-            reader.setLive(false);
+        try (CTFTraceReader reader = new CTFTraceReader(fFixture, false);) {
             assertEquals("0x29", reader.getCurrentEventDef().getFields().getDefinition("f").toString());
             reader.advance();
             try (FileOutputStream fos = new FileOutputStream(fGrowingStream, true)) {

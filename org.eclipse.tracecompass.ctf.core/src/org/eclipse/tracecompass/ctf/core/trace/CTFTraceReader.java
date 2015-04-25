@@ -14,9 +14,8 @@
 package org.eclipse.tracecompass.ctf.core.trace;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
 import java.util.PriorityQueue;
 import java.util.Set;
 
@@ -52,8 +51,10 @@ public class CTFTraceReader implements AutoCloseable {
     /**
      * Vector of all the trace file readers.
      */
-    private final List<CTFStreamInputReader> fStreamInputReaders =
-            Collections.synchronizedList(new ArrayList<CTFStreamInputReader>());
+    private final Set<CTFStreamInputReader> fStreamInputReaders =
+            Collections.synchronizedSet(new HashSet<CTFStreamInputReader>());
+
+    private final Set<CTFStreamInput> fStreamInputs = new HashSet<>();
 
     /**
      * Priority queue to order the trace file readers by timestamp.
@@ -70,6 +71,8 @@ public class CTFTraceReader implements AutoCloseable {
      */
     private long fEndTime;
 
+    private final boolean fLive;
+
     // ------------------------------------------------------------------------
     // Constructors
     // ------------------------------------------------------------------------
@@ -83,7 +86,23 @@ public class CTFTraceReader implements AutoCloseable {
      *             if an error occurs
      */
     public CTFTraceReader(CTFTrace trace) throws CTFException {
+        this(trace, false);
+    }
+
+    /**
+     * Constructs a TraceReader to read a trace.
+     *
+     * @param trace
+     *            the trace to read
+     * @param live
+     *            is the trace live or post-mortem
+     * @throws CTFException
+     *             if an error occurs
+     * @since 1.0
+     */
+    public CTFTraceReader(CTFTrace trace, boolean live) throws CTFException {
         fTrace = trace;
+        fLive = live;
         fStreamInputReaders.clear();
 
         /**
@@ -189,18 +208,17 @@ public class CTFTraceReader implements AutoCloseable {
          * For each stream.
          */
         for (CTFStream stream : fTrace.getStreams()) {
-            Set<CTFStreamInput> streamInputs = stream.getStreamInputs();
+            fStreamInputs.addAll(stream.getStreamInputs());
+        }
+        /*
+         * For each trace file of the stream.
+         */
+        for (CTFStreamInput streamInput : fStreamInputs) {
 
             /*
-             * For each trace file of the stream.
+             * Create a reader and add it to the group.
              */
-            for (CTFStreamInput streamInput : streamInputs) {
-
-                /*
-                 * Create a reader and add it to the group.
-                 */
-                fStreamInputReaders.add(new CTFStreamInputReader(streamInput));
-            }
+            fStreamInputReaders.add(new CTFStreamInputReader(streamInput, fLive));
         }
     }
 
@@ -215,17 +233,15 @@ public class CTFTraceReader implements AutoCloseable {
             Set<CTFStreamInput> streamInputs = stream.getStreamInputs();
             for (CTFStreamInput streamInput : streamInputs) {
                 /*
-                 * Create a reader.
+                 * If it's not in the group, add it.
                  */
-                CTFStreamInputReader streamInputReader = new CTFStreamInputReader(
-                        streamInput);
-
-                /*
-                 * Add it to the group.
-                 */
-                if (!fStreamInputReaders.contains(streamInputReader)) {
+                if (!fStreamInputs.contains(streamInput)) {
+                    /*
+                     * Create a reader.
+                     */
+                    CTFStreamInputReader streamInputReader = new CTFStreamInputReader(
+                            streamInput, fLive);
                     streamInputReader.readNextEvent();
-                    fStreamInputReaders.add(streamInputReader);
                     fStreamInputReaders.add(streamInputReader);
                 }
             }
@@ -251,6 +267,9 @@ public class CTFTraceReader implements AutoCloseable {
     /**
      * Initializes the priority queue used to choose the trace file with the
      * lower next event timestamp.
+     *
+     * @param live
+     *            is the trace being read live?
      *
      * @throws CTFException
      *             if an error occurs
@@ -425,24 +444,12 @@ public class CTFTraceReader implements AutoCloseable {
     }
 
     /**
-     * Sets a trace to be live or not
-     *
-     * @param live
-     *            whether the trace is live
-     */
-    public void setLive(boolean live) {
-        for (CTFStreamInputReader s : fPrio) {
-            s.setLive(live);
-        }
-    }
-
-    /**
      * Get if the trace is to read live or not
      *
      * @return whether the trace is live or not
      */
     public boolean isLive() {
-        return getTopStream().isLive();
+        return fLive;
     }
 
     @Override
