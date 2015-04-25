@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
+import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.ICompositeDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.IDefinition;
 import org.eclipse.tracecompass.tmf.core.event.ITmfCustomAttributes;
@@ -59,7 +59,7 @@ public class CtfTmfEvent extends TmfEvent
     private final long fTypeId;
     private final String fEventName;
     private final IEventDeclaration fEventDeclaration;
-    private final @NonNull EventDefinition fEvent;
+    private final @NonNull IEventDefinition fEvent;
     private final String fReference;
 
     /** Lazy-loaded field containing the event's payload */
@@ -75,7 +75,7 @@ public class CtfTmfEvent extends TmfEvent
      * Constructor used by {@link CtfTmfEventFactory#createEvent}
      */
     CtfTmfEvent(CtfTmfTrace trace, long rank, TmfNanoTimestamp timestamp,
-            String fileName, int cpu, IEventDeclaration declaration, @NonNull EventDefinition eventDefinition) {
+            String fileName, int cpu, IEventDeclaration declaration, @NonNull IEventDefinition eventDefinition) {
         super(trace,
                 rank,
                 timestamp,
@@ -119,7 +119,7 @@ public class CtfTmfEvent extends TmfEvent
         fTypeId = -1;
         fEventName = EMPTY_CTF_EVENT_NAME;
         fEventDeclaration = null;
-        fEvent = EventDefinition.NULL_EVENT;
+        fEvent = IEventDefinition.NULL_EVENT;
         fReference = null;
     }
 
@@ -251,7 +251,7 @@ public class CtfTmfEvent extends TmfEvent
      * Extract the field information from the structDefinition haze-inducing
      * mess, and put them into something ITmfEventField can cope with.
      */
-    private static CtfTmfEventField[] parseFields(@NonNull EventDefinition eventDef) {
+    private static CtfTmfEventField[] parseFields(@NonNull IEventDefinition eventDef) {
         List<CtfTmfEventField> fields = new ArrayList<>();
 
         ICompositeDefinition structFields = eventDef.getFields();

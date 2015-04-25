@@ -18,7 +18,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import org.eclipse.tracecompass.ctf.core.CTFException;
-import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
+import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.ctf.core.tests.shared.CtfTestTrace;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTraceReader;
@@ -176,7 +176,7 @@ public class CTFTraceReaderTest {
      */
     @Test
     public void testGetCurrentEventDef_first() {
-        EventDefinition result = fixture.getCurrentEventDef();
+        IEventDefinition result = fixture.getCurrentEventDef();
         assertNotNull(result);
     }
 
@@ -190,7 +190,7 @@ public class CTFTraceReaderTest {
     @Test
     public void testGetCurrentEventDef_last() throws CTFException {
         fixture.goToLastEvent();
-        EventDefinition result = fixture.getCurrentEventDef();
+        IEventDefinition result = fixture.getCurrentEventDef();
         assertNotNull(result);
     }
 

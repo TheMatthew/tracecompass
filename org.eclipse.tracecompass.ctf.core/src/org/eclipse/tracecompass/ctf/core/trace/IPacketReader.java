@@ -2,7 +2,7 @@ package org.eclipse.tracecompass.ctf.core.trace;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.ctf.core.CTFException;
-import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
+import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.io.BitBuffer;
 import org.eclipse.tracecompass.ctf.core.event.scope.IDefinitionScope;
 import org.eclipse.tracecompass.ctf.core.event.types.ICompositeDefinition;
@@ -94,6 +94,6 @@ public interface IPacketReader extends IDefinitionScope {
      * @throws CTFException
      *             If there was a problem reading the trace
      */
-    EventDefinition readNextEvent() throws CTFException;
+    IEventDefinition readNextEvent() throws CTFException;
 
 }

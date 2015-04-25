@@ -20,12 +20,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import org.eclipse.tracecompass.ctf.core.CTFException;
-import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
+import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
 import org.eclipse.tracecompass.ctf.core.tests.shared.CtfTestTrace;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTraceReader;
 import org.eclipse.tracecompass.internal.ctf.core.event.EventDeclaration;
+import org.eclipse.tracecompass.internal.ctf.core.event.EventDefinition;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -308,7 +309,10 @@ public class EventDeclarationTest {
         EventDefinition ed = null;
         try (CTFTraceReader tr = new CTFTraceReader(trace);) {
             tr.advance();
-            ed = tr.getCurrentEventDef();
+            IEventDefinition currentEventDef = tr.getCurrentEventDef();
+            if(currentEventDef instanceof EventDefinition) {
+                ed = (EventDefinition) currentEventDef;
+            }
         }
 
         assertNotNull(ed);

@@ -14,8 +14,8 @@ package org.eclipse.tracecompass.tmf.ctf.core.event;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.ctf.core.CTFStrings;
-import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
+import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.IDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDefinition;
 import org.eclipse.tracecompass.tmf.core.timestamp.TmfNanoTimestamp;
@@ -51,7 +51,7 @@ public final class CtfTmfEventFactory {
      *            The trace from which this event originates
      * @return The newly-built CtfTmfEvent
      */
-    public static CtfTmfEvent createEvent(EventDefinition eventDef,
+    public static CtfTmfEvent createEvent(IEventDefinition eventDef,
             String fileName, CtfTmfTrace originTrace) {
 
         /* Prepare what to pass to CtfTmfEvent's constructor */

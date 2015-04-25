@@ -17,8 +17,8 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.CTFStrings;
-import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
+import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.io.BitBuffer;
 import org.eclipse.tracecompass.ctf.core.event.scope.IDefinitionScope;
 import org.eclipse.tracecompass.ctf.core.event.scope.ILexicalScope;
@@ -41,6 +41,7 @@ import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInputReader;
 import org.eclipse.tracecompass.ctf.core.trace.ICTFPacketDescriptor;
 import org.eclipse.tracecompass.ctf.core.trace.IPacketReader;
 import org.eclipse.tracecompass.internal.ctf.core.event.EventDeclaration;
+import org.eclipse.tracecompass.internal.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.composite.EventHeaderDefinition;
 
 import com.google.common.collect.ImmutableList;
@@ -115,10 +116,15 @@ public final class CTFStreamInputPacketReader implements IPacketReader {
      * @param currentPacket
      *            The index entry of the packet to switch to.
      * @param stream
+     *            the parent stream
      * @param streamInput
+     *            the stream input
      * @param streamInputReader
      *            the parent stream input reader
+     * @param prevPacket
+     *            previous packet
      * @param bb
+     *            bit buffer
      * @throws CTFException
      *             If we get an error reading the packet
      * @since 1.0
@@ -247,8 +253,6 @@ public final class CTFStreamInputPacketReader implements IPacketReader {
     /**
      * Gets the packet information
      *
-     * @return
-     *
      * @return the packet information
      * @since 1.0
      */
@@ -362,7 +366,7 @@ public final class CTFStreamInputPacketReader implements IPacketReader {
      *             If there was a problem reading the trace
      */
     @Override
-    public final EventDefinition readNextEvent() throws CTFException {
+    public final IEventDefinition readNextEvent() throws CTFException {
         /* Default values for those fields */
         // compromise since we cannot have 64 bit addressing of arrays yet.
         int eventID = (int) EventDeclaration.UNSET_EVENT_ID;
@@ -463,7 +467,7 @@ public final class CTFStreamInputPacketReader implements IPacketReader {
         if (eventDeclaration == null) {
             throw new CTFIOException("Incorrect event id : " + eventID); //$NON-NLS-1$
         }
-        EventDefinition eventDef = eventDeclaration.createDefinition(fStreamInputReader.getStreamEventContextDecl(), fPacket, fBitBuffer, timestamp);
+        IEventDefinition eventDef = eventDeclaration.createDefinition(fStreamInputReader.getStreamEventContextDecl(), fPacket, fBitBuffer, timestamp);
 
         /*
          * Set the event timestamp using the timestamp calculated by

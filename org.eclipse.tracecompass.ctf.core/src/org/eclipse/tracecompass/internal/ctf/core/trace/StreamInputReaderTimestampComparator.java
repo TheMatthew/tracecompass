@@ -15,7 +15,7 @@ package org.eclipse.tracecompass.internal.ctf.core.trace;
 import java.io.Serializable;
 import java.util.Comparator;
 
-import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
+import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInputReader;
 import org.eclipse.tracecompass.ctf.core.trace.Utils;
 
@@ -44,8 +44,8 @@ public class StreamInputReaderTimestampComparator implements
      */
     @Override
     public int compare(CTFStreamInputReader a, CTFStreamInputReader b) {
-        EventDefinition event_a = a.getCurrentEvent();
-        EventDefinition event_b = b.getCurrentEvent();
+        IEventDefinition event_a = a.getCurrentEvent();
+        IEventDefinition event_b = b.getCurrentEvent();
 
         long ta = event_a.getTimestamp();
         long tb = event_b.getTimestamp();

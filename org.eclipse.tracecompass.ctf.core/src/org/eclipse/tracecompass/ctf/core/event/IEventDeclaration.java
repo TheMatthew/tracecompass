@@ -29,6 +29,8 @@ public interface IEventDeclaration {
 
     /**
      * Creates an instance of EventDefinition corresponding to this declaration.
+     * @param streamEventContextDecl
+     * @param packetContext
      *
      * @param streamInputReader
      *            The StreamInputReader for which this definition is created.
@@ -42,7 +44,7 @@ public interface IEventDeclaration {
      *             IOExceptions.
      * @since 1.0
      */
-    EventDefinition createDefinition(StructDeclaration streamEventContextDecl, ICTFPacketDescriptor packetContext, @NonNull BitBuffer input, long timestamp) throws CTFException;
+    IEventDefinition createDefinition(StructDeclaration streamEventContextDecl, ICTFPacketDescriptor packetContext, @NonNull BitBuffer input, long timestamp) throws CTFException;
 
     /**
      * Gets the name of an event declaration

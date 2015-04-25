@@ -21,8 +21,8 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 import org.eclipse.tracecompass.ctf.core.CTFException;
-import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
+import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.internal.ctf.core.Activator;
 import org.eclipse.tracecompass.internal.ctf.core.trace.StreamInputReaderTimestampComparator;
 
@@ -288,8 +288,9 @@ public class CTFTraceReader implements AutoCloseable {
      *
      * @return An event definition, or null of the trace reader reached the end
      *         of the trace.
+     * @since 1.0
      */
-    public EventDefinition getCurrentEventDef() {
+    public IEventDefinition getCurrentEventDef() {
         CTFStreamInputReader top = getTopStream();
         return (top != null) ? top.getCurrentEvent() : null;
     }

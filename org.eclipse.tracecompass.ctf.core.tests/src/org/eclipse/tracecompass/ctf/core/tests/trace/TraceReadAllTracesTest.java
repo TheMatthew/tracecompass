@@ -21,7 +21,7 @@ import java.util.List;
 
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.CTFStrings;
-import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
+import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDefinition;
 import org.eclipse.tracecompass.ctf.core.tests.shared.CtfTestTrace;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
@@ -84,7 +84,7 @@ public class TraceReadAllTracesTest {
     public void readTraces() {
         if (fTraceEnum.getNbEvents() != -1) {
             try (CTFTraceReader reader = new CTFTraceReader(new CTFTrace(fTraceEnum.getPath()))) {
-                EventDefinition currentEventDef = reader.getCurrentEventDef();
+                IEventDefinition currentEventDef = reader.getCurrentEventDef();
                 double start = currentEventDef.getTimestamp();
                 long count = 0;
                 double end = start;
