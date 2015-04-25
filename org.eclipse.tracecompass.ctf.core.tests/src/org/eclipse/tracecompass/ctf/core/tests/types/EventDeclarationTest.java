@@ -24,7 +24,7 @@ import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
 import org.eclipse.tracecompass.ctf.core.tests.shared.CtfTestTrace;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
-import org.eclipse.tracecompass.ctf.core.trace.CTFTraceReader;
+import org.eclipse.tracecompass.ctf.core.trace.ICTFTraceReader;
 import org.eclipse.tracecompass.internal.ctf.core.event.EventDeclaration;
 import org.eclipse.tracecompass.internal.ctf.core.event.EventDefinition;
 import org.junit.Before;
@@ -307,7 +307,7 @@ public class EventDeclarationTest {
     public void testEventDefinition() throws CTFException {
         CTFTrace trace = testTrace.getTrace();
         EventDefinition ed = null;
-        try (CTFTraceReader tr = new CTFTraceReader(trace);) {
+        try (ICTFTraceReader tr = trace.createReader(false);) {
             tr.advance();
             IEventDefinition currentEventDef = tr.getCurrentEventDef();
             if(currentEventDef instanceof EventDefinition) {

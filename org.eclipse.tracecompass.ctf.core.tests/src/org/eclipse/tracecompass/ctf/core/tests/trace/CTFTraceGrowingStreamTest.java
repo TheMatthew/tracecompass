@@ -27,7 +27,8 @@ import java.util.UUID;
 
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
-import org.eclipse.tracecompass.ctf.core.trace.CTFTraceReader;
+import org.eclipse.tracecompass.ctf.core.trace.ICTFTraceReader;
+import org.eclipse.tracecompass.internal.ctf.core.trace.CTFTraceReader;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -122,7 +123,7 @@ public class CTFTraceGrowingStreamTest {
      */
     @Test
     public void testGrowingLive() throws CTFException, FileNotFoundException, IOException {
-        try (CTFTraceReader reader = new CTFTraceReader(fFixture, true);) {
+        try (ICTFTraceReader reader = fFixture.createReader(true);) {
             assertEquals("0x29", reader.getCurrentEventDef().getFields().getDefinition("f").toString());
             reader.advance();
             try (FileOutputStream fos = new FileOutputStream(fGrowingStream, true)) {
@@ -143,7 +144,7 @@ public class CTFTraceGrowingStreamTest {
      */
     @Test
     public void testGrowingNotLive() throws CTFException, FileNotFoundException, IOException {
-        try (CTFTraceReader reader = new CTFTraceReader(fFixture, false);) {
+        try (ICTFTraceReader reader = new CTFTraceReader(fFixture, false);) {
             assertEquals("0x29", reader.getCurrentEventDef().getFields().getDefinition("f").toString());
             reader.advance();
             try (FileOutputStream fos = new FileOutputStream(fGrowingStream, true)) {

@@ -25,7 +25,8 @@ import java.util.List;
 
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
-import org.eclipse.tracecompass.ctf.core.trace.CTFTraceReader;
+import org.eclipse.tracecompass.ctf.core.trace.ICTFTraceReader;
+import org.eclipse.tracecompass.internal.ctf.core.trace.CTFTraceReader;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -183,7 +184,7 @@ public class CtfTestSuiteTests {
             /* Instantiate the trace (which implies parsing the metadata) */
             CTFTrace trace = new CTFTrace(fTracePath);
             /* Read the trace until the end */
-            try (CTFTraceReader reader = new CTFTraceReader(trace);) {
+            try (ICTFTraceReader reader = new CTFTraceReader(trace);) {
 
                 reader.getCurrentEventDef();
                 while (reader.advance()) {

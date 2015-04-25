@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.TreeSet;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.trace.ICTFPacketDescriptor;
 
@@ -151,8 +152,8 @@ public class PacketDescriptorIndex {
      *             if the index is out of range (
      *             {@code index < 0 || index >= size()})
      */
-    public ICTFPacketDescriptor getElement(int index) {
-        return fEntries.get(index);
+    public @NonNull ICTFPacketDescriptor getElement(int index) {
+        return NonNullUtils.checkNotNull(fEntries.get(index));
     }
 
     /**

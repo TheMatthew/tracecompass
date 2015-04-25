@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.CTFCallsite;
 import org.eclipse.tracecompass.ctf.core.event.CTFClock;
@@ -49,6 +50,7 @@ import org.eclipse.tracecompass.internal.ctf.core.SafeMappedByteBuffer;
 import org.eclipse.tracecompass.internal.ctf.core.event.CTFCallsiteComparator;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.ArrayDefinition;
+import org.eclipse.tracecompass.internal.ctf.core.trace.CTFTraceReader;
 
 /**
  * A CTF trace on the file system.
@@ -210,6 +212,21 @@ public class CTFTrace implements IDefinitionScope {
                 addStream(s);
             }
         }
+    }
+
+    /**
+     * Create a trace reader
+     *
+     * @param live
+     *            is the trace live or post-mortem
+     * @return a trace reader
+     * @throws CTFException
+     *             an error occurred, see message for details
+     * @since 1.0
+     */
+    @NonNull
+    public ICTFTraceReader createReader(boolean live) throws CTFException {
+        return new CTFTraceReader(this, live);
     }
 
     // ------------------------------------------------------------------------

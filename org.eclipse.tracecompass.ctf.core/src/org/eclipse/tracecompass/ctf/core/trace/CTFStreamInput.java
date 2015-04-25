@@ -139,6 +139,51 @@ public class CTFStreamInput implements IDefinitionScope {
     }
 
     /**
+     * Gets the number of read packet descriptors.
+     *
+     * @return the number of packet descriptors
+     * @since 1.0
+     */
+    public int getNbPacketDescriptors() {
+        return fIndex.size();
+    }
+
+    /**
+     * lookup the packet descriptor containing the following timestamp, or after
+     * it
+     *
+     * @param timestamp
+     *            the timestamp
+     * @return the index of the descriptor
+     * @since 1.0
+     */
+    public int lookupPacketDescriptor(long timestamp) {
+        return fIndex.search(timestamp);
+    }
+
+    /**
+     * Gets the packet descriptor at a given index
+     *
+     * @param index
+     *            the index
+     * @return the descriptor
+     * @since 1.0
+     */
+    public ICTFPacketDescriptor getPacketDescriptor(int index) {
+        return fIndex.getElement(index);
+    }
+
+    /**
+     * Does the stream have at least one packet descriptor?
+     *
+     * @return true if yes
+     * @since 1.0
+     */
+    public boolean hasPacketDescriptors() {
+        return !fIndex.isEmpty();
+    }
+
+    /**
      * Gets the filename of the streamInput file.
      *
      * @return the filename of the streaminput file.
@@ -402,4 +447,5 @@ public class CTFStreamInput implements IDefinitionScope {
         }
         return true;
     }
+
 }

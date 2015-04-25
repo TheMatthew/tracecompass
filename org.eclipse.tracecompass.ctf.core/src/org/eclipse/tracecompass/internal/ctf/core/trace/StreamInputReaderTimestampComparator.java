@@ -16,7 +16,6 @@ import java.io.Serializable;
 import java.util.Comparator;
 
 import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
-import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInputReader;
 import org.eclipse.tracecompass.ctf.core.trace.Utils;
 
 /**

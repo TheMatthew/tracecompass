@@ -11,7 +11,7 @@
  *     Alexandre Montplaisir - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.tracecompass.ctf.core.trace;
+package org.eclipse.tracecompass.internal.ctf.core.trace;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -22,8 +22,12 @@ import java.util.Set;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
+import org.eclipse.tracecompass.ctf.core.trace.CTFResponse;
+import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
+import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInput;
+import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
+import org.eclipse.tracecompass.ctf.core.trace.ICTFTraceReader;
 import org.eclipse.tracecompass.internal.ctf.core.Activator;
-import org.eclipse.tracecompass.internal.ctf.core.trace.StreamInputReaderTimestampComparator;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
@@ -35,7 +39,7 @@ import com.google.common.collect.ImmutableSet.Builder;
  * @author Matthew Khouzam
  * @author Alexandre Montplaisir
  */
-public class CTFTraceReader implements AutoCloseable {
+public class CTFTraceReader implements ICTFTraceReader {
 
     private static final int MIN_PRIO_SIZE = 16;
 
@@ -126,14 +130,11 @@ public class CTFTraceReader implements AutoCloseable {
         }
     }
 
-    /**
-     * Copy constructor
-     *
-     * @return The new CTFTraceReader
-     * @throws CTFException
-     *             if an error occurs
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#copyFrom()
      */
-    public CTFTraceReader copyFrom() throws CTFException {
+    @Override
+    public ICTFTraceReader copyFrom() throws CTFException {
         CTFTraceReader newReader = null;
 
         newReader = new CTFTraceReader(fTrace);
@@ -142,8 +143,8 @@ public class CTFTraceReader implements AutoCloseable {
         return newReader;
     }
 
-    /**
-     * Dispose the CTFTraceReader
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#close()
      */
     @Override
     public void close() {
@@ -165,11 +166,10 @@ public class CTFTraceReader implements AutoCloseable {
     // Getters/Setters/Predicates
     // ------------------------------------------------------------------------
 
-    /**
-     * Return the start time of this trace (== timestamp of the first event)
-     *
-     * @return the trace start time
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#getStartTime()
      */
+    @Override
     public long getStartTime() {
         return fStartTime;
     }
@@ -222,12 +222,10 @@ public class CTFTraceReader implements AutoCloseable {
         }
     }
 
-    /**
-     * Update the priority queue to make it match the parent trace
-     *
-     * @throws CTFException
-     *             An error occured
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#update()
      */
+    @Override
     public void update() throws CTFException {
         for (CTFStream stream : fTrace.getStreams()) {
             Set<CTFStreamInput> streamInputs = stream.getStreamInputs();
@@ -251,11 +249,10 @@ public class CTFTraceReader implements AutoCloseable {
         }
     }
 
-    /**
-     * Gets an iterable of the stream input readers, useful for foreaches
-     *
-     * @return the iterable of the stream input readers
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#getEventDeclarations()
      */
+    @Override
     public Iterable<IEventDeclaration> getEventDeclarations() {
         ImmutableSet.Builder<IEventDeclaration> builder = new Builder<>();
         for (CTFStreamInputReader sir : fStreamInputReaders) {
@@ -301,26 +298,19 @@ public class CTFTraceReader implements AutoCloseable {
         }
     }
 
-    /**
-     * Get the current event, which is the current event of the trace file
-     * reader with the lowest timestamp.
-     *
-     * @return An event definition, or null of the trace reader reached the end
-     *         of the trace.
-     * @since 1.0
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#getCurrentEventDef()
      */
+    @Override
     public IEventDefinition getCurrentEventDef() {
         CTFStreamInputReader top = getTopStream();
         return (top != null) ? top.getCurrentEvent() : null;
     }
 
-    /**
-     * Go to the next event.
-     *
-     * @return True if an event was read.
-     * @throws CTFException
-     *             if an error occurs
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#advance()
      */
+    @Override
     public boolean advance() throws CTFException {
         /*
          * Remove the reader from the top of the priority queue.
@@ -367,12 +357,10 @@ public class CTFTraceReader implements AutoCloseable {
         return hasMoreEvents();
     }
 
-    /**
-     * Go to the last event in the trace.
-     *
-     * @throws CTFException
-     *             if an error occurs
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#goToLastEvent()
      */
+    @Override
     public void goToLastEvent() throws CTFException {
         seek(getEndTime());
         while (fPrio.size() > 1) {
@@ -380,20 +368,10 @@ public class CTFTraceReader implements AutoCloseable {
         }
     }
 
-    /**
-     * Seeks to a given timestamp. It will seek to the nearest event greater or
-     * equal to timestamp. If a trace is [10 20 30 40] and you are looking for
-     * 19, it will give you 20. If you want 20, you will get 20, if you want 21,
-     * you will get 30. The value -inf will seek to the first element and the
-     * value +inf will seek to the end of the file (past the last event).
-     *
-     * @param timestamp
-     *            the timestamp to seek to
-     * @return true if there are events above or equal the seek timestamp, false
-     *         if seek at the end of the trace (no valid event).
-     * @throws CTFException
-     *             if an error occurs
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#seek(long)
      */
+    @Override
     public boolean seek(long timestamp) throws CTFException {
         /*
          * Remove all the trace readers from the priority queue
@@ -424,30 +402,26 @@ public class CTFTraceReader implements AutoCloseable {
         return fPrio.peek();
     }
 
-    /**
-     * Does the trace have more events?
-     *
-     * @return true if yes.
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#hasMoreEvents()
      */
+    @Override
     public final boolean hasMoreEvents() {
         return fPrio.size() > 0;
     }
 
-    /**
-     * Gets the last event timestamp that was read. This is NOT necessarily the
-     * last event in a trace, just the last one read so far.
-     *
-     * @return the last event
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#getEndTime()
      */
+    @Override
     public long getEndTime() {
         return fEndTime;
     }
 
-    /**
-     * Get if the trace is to read live or not
-     *
-     * @return whether the trace is live or not
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#isLive()
      */
+    @Override
     public boolean isLive() {
         return fLive;
     }
@@ -493,11 +467,10 @@ public class CTFTraceReader implements AutoCloseable {
         return "CTFTraceReader [trace=" + fTrace + ']'; //$NON-NLS-1$
     }
 
-    /**
-     * Gets the parent trace
-     *
-     * @return the parent trace
+    /* (non-Javadoc)
+     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#getTrace()
      */
+    @Override
     public CTFTrace getTrace() {
         return fTrace;
     }
@@ -518,5 +491,10 @@ public class CTFTraceReader implements AutoCloseable {
         }
         seek(0);
 
+    }
+
+    @Override
+    public String getCurrrentFileName() {
+        return fPrio.peek().getFilename();
     }
 }

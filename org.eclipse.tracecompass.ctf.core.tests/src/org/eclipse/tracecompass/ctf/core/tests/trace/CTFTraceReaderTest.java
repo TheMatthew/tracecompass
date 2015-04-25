@@ -21,7 +21,8 @@ import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.ctf.core.tests.shared.CtfTestTrace;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
-import org.eclipse.tracecompass.ctf.core.trace.CTFTraceReader;
+import org.eclipse.tracecompass.ctf.core.trace.ICTFTraceReader;
+import org.eclipse.tracecompass.internal.ctf.core.trace.CTFTraceReader;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,7 +38,7 @@ public class CTFTraceReaderTest {
 
     private static final CtfTestTrace testTrace = CtfTestTrace.KERNEL;
 
-    private CTFTraceReader fixture;
+    private ICTFTraceReader fixture;
 
     /**
      * Perform pre-test initialization.
@@ -59,7 +60,7 @@ public class CTFTraceReaderTest {
     @Test
     public void testOpen_existing() throws CTFException {
         CTFTrace trace = testTrace.getTrace();
-        try (CTFTraceReader result = new CTFTraceReader(trace);) {
+        try (ICTFTraceReader result = new CTFTraceReader(trace);) {
             assertNotNull(result);
         }
     }
@@ -73,7 +74,7 @@ public class CTFTraceReaderTest {
     @Test(expected = org.eclipse.tracecompass.ctf.core.CTFException.class)
     public void testOpen_nonexisting() throws CTFException {
         CTFTrace trace = new CTFTrace("badfile.bad");
-        try (CTFTraceReader result = new CTFTraceReader(trace);) {
+        try (ICTFTraceReader result = new CTFTraceReader(trace);) {
             assertNotNull(result);
         }
     }
@@ -87,7 +88,7 @@ public class CTFTraceReaderTest {
     @Test(expected = org.eclipse.tracecompass.ctf.core.CTFException.class)
     public void testOpen_invalid() throws CTFException {
         CTFTrace trace = new CTFTrace("");
-        try (CTFTraceReader result = new CTFTraceReader(trace);) {
+        try (ICTFTraceReader result = new CTFTraceReader(trace);) {
             assertNotNull(result);
         }
     }
@@ -140,7 +141,7 @@ public class CTFTraceReaderTest {
      */
     @Test
     public void testCopyFrom() throws CTFException {
-        try (CTFTraceReader result = fixture.copyFrom();) {
+        try (ICTFTraceReader result = fixture.copyFrom();) {
             assertNotNull(result);
         }
     }
@@ -165,7 +166,7 @@ public class CTFTraceReaderTest {
      */
     @Test
     public void testEquals() throws CTFException {
-        try (CTFTraceReader fixture2 = new CTFTraceReader(testTrace.getTrace());) {
+        try (ICTFTraceReader fixture2 = new CTFTraceReader(testTrace.getTrace());) {
             assertEquals(fixture, fixture2);
         }
     }
