@@ -402,28 +402,47 @@ public class CTFTraceReader implements ICTFTraceReader {
         return fPrio.peek();
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#hasMoreEvents()
-     */
     @Override
     public final boolean hasMoreEvents() {
         return fPrio.size() > 0;
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#getEndTime()
-     */
     @Override
     public long getEndTime() {
         return fEndTime;
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#isLive()
-     */
     @Override
     public boolean isLive() {
         return fLive;
+    }
+
+    @Override
+    public CTFTrace getTrace() {
+        return fTrace;
+    }
+
+    /**
+     * This will read the entire trace and populate all the indexes. The reader
+     * will then be reset to the first event in the trace.
+     *
+     * Do not call in the fast path.
+     *
+     * @throws CTFException
+     *             A trace reading error occurred
+     * @since 1.0
+     */
+    public void populateIndex() throws CTFException {
+        for (CTFStreamInputReader sir : fPrio) {
+            sir.goToLastEvent();
+        }
+        seek(0);
+
+    }
+
+    @Override
+    public String getCurrrentFileName() {
+        return fPrio.peek().getFilename();
     }
 
     @Override
@@ -467,34 +486,4 @@ public class CTFTraceReader implements ICTFTraceReader {
         return "CTFTraceReader [trace=" + fTrace + ']'; //$NON-NLS-1$
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.tracecompass.internal.ctf.core.trace.ICTFTraceReader#getTrace()
-     */
-    @Override
-    public CTFTrace getTrace() {
-        return fTrace;
-    }
-
-    /**
-     * This will read the entire trace and populate all the indexes. The reader
-     * will then be reset to the first event in the trace.
-     *
-     * Do not call in the fast path.
-     *
-     * @throws CTFException
-     *             A trace reading error occurred
-     * @since 1.0
-     */
-    public void populateIndex() throws CTFException {
-        for (CTFStreamInputReader sir : fPrio) {
-            sir.goToLastEvent();
-        }
-        seek(0);
-
-    }
-
-    @Override
-    public String getCurrrentFileName() {
-        return fPrio.peek().getFilename();
-    }
 }

@@ -18,11 +18,9 @@ import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,16 +34,13 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.CTFCallsite;
 import org.eclipse.tracecompass.ctf.core.event.CTFClock;
-import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
-import org.eclipse.tracecompass.ctf.core.trace.CTFTraceReader;
+import org.eclipse.tracecompass.ctf.core.trace.ICTFTraceReader;
 import org.eclipse.tracecompass.ctf.core.trace.Metadata;
 import org.eclipse.tracecompass.internal.tmf.ctf.core.Activator;
 import org.eclipse.tracecompass.internal.tmf.ctf.core.trace.iterator.CtfIterator;
 import org.eclipse.tracecompass.internal.tmf.ctf.core.trace.iterator.CtfIteratorManager;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
-import org.eclipse.tracecompass.tmf.core.event.ITmfEventField;
-import org.eclipse.tracecompass.tmf.core.event.TmfEventField;
 import org.eclipse.tracecompass.tmf.core.event.aspect.ITmfEventAspect;
 import org.eclipse.tracecompass.tmf.core.exceptions.TmfTraceException;
 import org.eclipse.tracecompass.tmf.core.timestamp.ITmfTimestamp;
@@ -172,24 +167,7 @@ public class CtfTmfTrace extends TmfTrace
              * register a trace to that type in the TmfEventTypeManager
              */
             try (CtfIterator iter = fIteratorManager.getIterator(ctx)) {
-                for (IEventDeclaration ied : iter.getEventDeclarations()) {
-                    CtfTmfEventType ctfTmfEventType = fContainedEventTypes.get(ied.getName());
-                    if (ctfTmfEventType == null) {
-                        List<ITmfEventField> content = new ArrayList<>();
-                        /* Should only return null the first time */
-                        for (String fieldName : ied.getFields().getFieldsList()) {
-                            content.add(new TmfEventField(fieldName, null, null));
-                        }
-                        ITmfEventField contentTree = new TmfEventField(
-                                ITmfEventField.ROOT_FIELD_ID,
-                                null,
-                                content.toArray(new ITmfEventField[content.size()])
-                                );
-
-                        ctfTmfEventType = new CtfTmfEventType(ied.getName(), contentTree);
-                        fContainedEventTypes.put(ctfTmfEventType.getName(), ctfTmfEventType);
-                    }
-                }
+                fContainedEventTypes.putAll(iter.getEventTypes());
             }
         } catch (final CTFException e) {
             /*
@@ -253,7 +231,7 @@ public class CtfTmfTrace extends TmfTrace
                 }
 
                 // Validate using reader initialization
-                try (CTFTraceReader ctfTraceReader = new CTFTraceReader(trace)) {}
+                try (ICTFTraceReader ctfTraceReader = trace.createReader(false)) {}
 
                 // Trace is validated, return with confidence
                 return new CtfTraceValidationStatus(CONFIDENCE, Activator.PLUGIN_ID, trace.getEnvironment());

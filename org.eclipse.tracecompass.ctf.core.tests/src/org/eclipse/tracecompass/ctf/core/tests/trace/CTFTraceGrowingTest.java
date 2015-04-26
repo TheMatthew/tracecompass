@@ -163,13 +163,20 @@ public class CTFTraceGrowingTest {
             assertTrue(reader.advance());
             fixture.addStreamFile(stream);
             reader.update();
+            IEventDefinition currentEventDef = reader.getCurrentEventDef();
+            assertEquals(currentEventDef, reader.getCurrentEventDef());
             reader.update();
+            assertEquals(currentEventDef, reader.getCurrentEventDef());
             reader.update();
             reader.update();
             assertTrue(reader.advance());
-            IEventDefinition currentEventDef = reader.getCurrentEventDef();
+            currentEventDef = reader.getCurrentEventDef();
+            reader.update();
+            assertEquals(currentEventDef, reader.getCurrentEventDef());
+            reader.update();
+            assertEquals( currentEventDef, reader.getCurrentEventDef());
             assertNotNull(currentEventDef);
-            assertEquals(223007L, currentEventDef.getTimestamp());
+            assertEquals(231266L, currentEventDef.getTimestamp());
         }
     }
 

@@ -54,7 +54,6 @@ public class CTFStreamInputReaderTest {
     @Before
     public void setUp() throws CTFException {
         fixture = getStreamInputReader();
-        fixture.setName(1);
         fixture.setCurrentEvent(new EventDefinition(new EventDeclaration(),
                 0, null, null, null,
                 null)
@@ -120,15 +119,6 @@ public class CTFStreamInputReaderTest {
     public void testGetCurrentEvent() {
         IEventDefinition result = fixture.getCurrentEvent();
         assertNotNull(result);
-    }
-
-    /**
-     * Run the int getName() method test.
-     */
-    @Test
-    public void testGetName() {
-        int result = fixture.getName();
-        assertEquals(1, result);
     }
 
     /**

@@ -15,18 +15,30 @@ package org.eclipse.tracecompass.internal.tmf.ctf.core.trace.iterator;
 
 import static org.eclipse.tracecompass.common.core.NonNullUtils.equalsNullable;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.ctf.core.CTFException;
-import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInputReader;
+import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
+import org.eclipse.tracecompass.ctf.core.event.IEventDefinition;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
-import org.eclipse.tracecompass.ctf.core.trace.CTFTraceReader;
+import org.eclipse.tracecompass.ctf.core.trace.ICTFTraceReader;
 import org.eclipse.tracecompass.internal.tmf.ctf.core.Activator;
+import org.eclipse.tracecompass.tmf.core.event.ITmfEventField;
+import org.eclipse.tracecompass.tmf.core.event.TmfEventField;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfContext;
 import org.eclipse.tracecompass.tmf.core.trace.location.ITmfLocation;
 import org.eclipse.tracecompass.tmf.ctf.core.context.CtfLocation;
 import org.eclipse.tracecompass.tmf.ctf.core.context.CtfLocationInfo;
 import org.eclipse.tracecompass.tmf.ctf.core.event.CtfTmfEvent;
 import org.eclipse.tracecompass.tmf.ctf.core.event.CtfTmfEventFactory;
+import org.eclipse.tracecompass.tmf.ctf.core.event.CtfTmfEventType;
 import org.eclipse.tracecompass.tmf.ctf.core.trace.CtfTmfTrace;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * The CTF trace reader iterator.
@@ -36,19 +48,17 @@ import org.eclipse.tracecompass.tmf.ctf.core.trace.CtfTmfTrace;
  *
  * @author Matthew Khouzam
  */
-public class CtfIterator extends CTFTraceReader
-        implements ITmfContext, Comparable<CtfIterator> {
+public class CtfIterator
+        implements ITmfContext, Comparable<CtfIterator>, AutoCloseable {
 
     /** An invalid location */
     public static final CtfLocation NULL_LOCATION = new CtfLocation(CtfLocation.INVALID_LOCATION);
 
     private final CtfTmfTrace fTrace;
+    private final ICTFTraceReader fReader;
 
     private CtfLocation fCurLocation;
     private long fCurRank;
-
-    private CtfLocation fPreviousLocation;
-    private CtfTmfEvent fPreviousEvent;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -69,9 +79,10 @@ public class CtfIterator extends CTFTraceReader
      *             a read error.
      */
     public CtfIterator(CTFTrace ctfTrace, CtfTmfTrace ctfTmfTrace) throws CTFException {
-        super(ctfTrace);
+
         fTrace = ctfTmfTrace;
-        if (hasMoreEvents()) {
+        fReader = ctfTrace.createReader(false);
+        if (fReader.hasMoreEvents()) {
             fCurLocation = new CtfLocation(ctfTmfTrace.getStartTime());
             fCurRank = 0;
         } else {
@@ -98,11 +109,11 @@ public class CtfIterator extends CTFTraceReader
      */
     public CtfIterator(CTFTrace ctfTrace, CtfTmfTrace ctfTmfTrace, CtfLocationInfo ctfLocationData, long rank)
             throws CTFException {
-        super(ctfTrace);
 
-        this.fTrace = ctfTmfTrace;
-        if (this.hasMoreEvents()) {
-            this.fCurLocation = new CtfLocation(ctfLocationData);
+        fTrace = ctfTmfTrace;
+        fReader = ctfTrace.createReader(false);
+        if (fReader.hasMoreEvents()) {
+            fCurLocation = new CtfLocation(ctfLocationData);
             if (this.getCurrentEvent().getTimestamp().getValue() != ctfLocationData.getTimestamp()) {
                 this.seek(ctfLocationData);
                 this.fCurRank = rank;
@@ -115,6 +126,11 @@ public class CtfIterator extends CTFTraceReader
     @Override
     public void dispose() {
         close();
+    }
+
+    @Override
+    public void close() {
+        fReader.close();
     }
 
     private void setUnknownLocation() {
@@ -141,16 +157,7 @@ public class CtfIterator extends CTFTraceReader
      * @return CtfTmfEvent The current event
      */
     public synchronized CtfTmfEvent getCurrentEvent() {
-        final CTFStreamInputReader top = super.getPrio().peek();
-        if (top != null) {
-            if (!fCurLocation.equals(fPreviousLocation)) {
-                fPreviousLocation = fCurLocation;
-                fPreviousEvent = CtfTmfEventFactory.createEvent(top.getCurrentEvent(),
-                        top.getFilename(), fTrace);
-            }
-            return fPreviousEvent;
-        }
-        return null;
+        return CtfTmfEventFactory.createEvent(fReader.getCurrentEventDef(), fReader.getCurrrentFileName(), fTrace);
     }
 
     /**
@@ -160,9 +167,9 @@ public class CtfIterator extends CTFTraceReader
      * @return long The current timestamp location
      */
     public synchronized long getCurrentTimestamp() {
-        final CTFStreamInputReader top = super.getPrio().peek();
-        if (top != null) {
-            long ts = top.getCurrentEvent().getTimestamp();
+        IEventDefinition currentEventDef = fReader.getCurrentEventDef();
+        if (currentEventDef != null) {
+            long ts = currentEventDef.getTimestamp();
             return fTrace.timestampCyclesToNanos(ts);
         }
         return 0;
@@ -181,7 +188,7 @@ public class CtfIterator extends CTFTraceReader
 
         /* Avoid the cost of seeking at the current location. */
         if (fCurLocation.getLocationInfo().equals(ctfLocationData)) {
-            return super.hasMoreEvents();
+            return fReader.hasMoreEvents();
         }
 
         /* Adjust the timestamp depending on the trace's offset */
@@ -189,9 +196,9 @@ public class CtfIterator extends CTFTraceReader
         final long offsetTimestamp = this.getCtfTmfTrace().timestampNanoToCycles(currTimestamp);
         try {
             if (offsetTimestamp < 0) {
-                ret = super.seek(0L);
+                ret = fReader.seek(0L);
             } else {
-                ret = super.seek(offsetTimestamp);
+                ret = fReader.seek(offsetTimestamp);
             }
         } catch (CTFException e) {
             Activator.getDefault().logError(e.getMessage(), e);
@@ -231,16 +238,26 @@ public class CtfIterator extends CTFTraceReader
     // CTFTraceReader
     // ------------------------------------------------------------------------
 
-    @Override
+    /**
+     * Seek to a given timestamp
+     *
+     * @param timestamp
+     *            the timestamp
+     * @return whether the seek was successful or not
+     */
     public boolean seek(long timestamp) {
         return seek(new CtfLocationInfo(timestamp, 0));
     }
 
-    @Override
+    /**
+     * Advance the iterator to the next event
+     *
+     * @return if the operation is successful
+     */
     public synchronized boolean advance() {
         boolean ret = false;
         try {
-            ret = super.advance();
+            ret = fReader.advance();
         } catch (CTFException e) {
             Activator.getDefault().logError(e.getMessage(), e);
         }
@@ -297,6 +314,51 @@ public class CtfIterator extends CTFTraceReader
     @Override
     public CtfLocation getLocation() {
         return fCurLocation;
+    }
+
+    /**
+     * Get the start time of the of trace
+     *
+     * @return get the start time of the trace
+     */
+    public long getStartTime() {
+        return fReader.getStartTime();
+    }
+
+    /**
+     * Get the end time of the trace
+     *
+     * @return the end time of the trace
+     */
+    public long getEndTime() {
+        return fReader.getEndTime();
+    }
+
+    /**
+     * Get the event types, slow, don't use in the fast path
+     *
+     * @return a Map of the event types
+     */
+    @NonNull
+    public Map<String, CtfTmfEventType> getEventTypes() {
+        ImmutableMap.Builder<String, CtfTmfEventType> returnBuilder = new ImmutableMap.Builder<>();
+        List<ITmfEventField> content = new ArrayList<>();
+        for (IEventDeclaration ied : fReader.getEventDeclarations()) {
+            String eventName = ied.getName();
+            /* Should only return null the first time */
+            for (String fieldName : ied.getFields().getFieldsList()) {
+                content.add(new TmfEventField(fieldName, null, null));
+            }
+            ITmfEventField contentTree = new TmfEventField(
+                    ITmfEventField.ROOT_FIELD_ID,
+                    null,
+                    content.toArray(new ITmfEventField[content.size()])
+                    );
+
+            CtfTmfEventType ctfTmfEventType = new CtfTmfEventType(eventName, contentTree);
+            returnBuilder.put(eventName, ctfTmfEventType);
+        }
+        return NonNullUtils.checkNotNull(returnBuilder.build());
     }
 
     // ------------------------------------------------------------------------

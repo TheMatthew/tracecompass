@@ -48,7 +48,7 @@ public class CTFTraceReaderTest {
     @Before
     public void setUp() throws CTFException {
         assumeTrue(testTrace.exists());
-        fixture = new CTFTraceReader(testTrace.getTrace());
+        fixture = testTrace.getTrace().createReader(false);
     }
 
     /**
@@ -166,7 +166,7 @@ public class CTFTraceReaderTest {
      */
     @Test
     public void testEquals() throws CTFException {
-        try (ICTFTraceReader fixture2 = new CTFTraceReader(testTrace.getTrace());) {
+        try (ICTFTraceReader fixture2 = testTrace.getTrace().createReader(false);) {
             assertEquals(fixture, fixture2);
         }
     }
