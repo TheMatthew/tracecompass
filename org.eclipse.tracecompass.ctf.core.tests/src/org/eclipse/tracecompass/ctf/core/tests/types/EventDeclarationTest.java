@@ -13,6 +13,7 @@ package org.eclipse.tracecompass.ctf.core.tests.types;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -100,10 +101,8 @@ public class EventDeclarationTest {
         obj.setFields(new StructDeclaration(1L));
         obj.setTraceScope(testTrace.getTrace());
         obj.setName("bob");
-
-        assertTrue(fixture.equals(fixture));
-        boolean result = fixture.equals(obj);
-        assertFalse(result);
+        assertEquals(fixture,fixture);
+        assertNotEquals(fixture, obj);
     }
 
     /**
