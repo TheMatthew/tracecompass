@@ -17,18 +17,18 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.CTFStrings;
 import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.io.BitBuffer;
+import org.eclipse.tracecompass.ctf.core.event.scope.IDefinitionScope;
 import org.eclipse.tracecompass.ctf.core.event.scope.ILexicalScope;
 import org.eclipse.tracecompass.ctf.core.event.types.Declaration;
 import org.eclipse.tracecompass.ctf.core.event.types.ICompositeDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
-import org.eclipse.tracecompass.ctf.core.event.types.StructDefinition;
-import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInputReader;
 
 /**
@@ -63,9 +63,9 @@ public class EventDeclaration implements IEventDeclaration {
     private StructDeclaration fFields = null;
 
     /**
-     * Stream to which belongs this event.
+     * parent trace
      */
-    private CTFStream fStream = null;
+    private IDefinitionScope fTraceScope;
 
     /**
      * Loglevel of an event
@@ -91,10 +91,10 @@ public class EventDeclaration implements IEventDeclaration {
     @Override
     public EventDefinition createDefinition(CTFStreamInputReader streamInputReader, @NonNull BitBuffer input, long timestamp) throws CTFException {
         StructDeclaration streamEventContextDecl = streamInputReader.getStreamEventContextDecl();
-        StructDefinition streamEventContext = streamEventContextDecl != null ? streamEventContextDecl.createDefinition(fStream.getTrace(), ILexicalScope.STREAM_EVENT_CONTEXT, input) : null;
+        ICompositeDefinition streamEventContext = streamEventContextDecl != null ? streamEventContextDecl.createDefinition(fTraceScope, ILexicalScope.STREAM_EVENT_CONTEXT, input) : null;
         ICompositeDefinition packetContext = streamInputReader.getPacketReader().getCurrentPacketEventHeader();
-        StructDefinition eventContext = fContext != null ? fContext.createDefinition(fStream.getTrace(), ILexicalScope.CONTEXT, input) : null;
-        StructDefinition eventPayload = fFields != null ? fFields.createDefinition(fStream.getTrace(), ILexicalScope.FIELDS, input) : null;
+        ICompositeDefinition eventContext = fContext != null ? fContext.createDefinition(fTraceScope, ILexicalScope.CONTEXT, input) : null;
+        ICompositeDefinition eventPayload = fFields != null ? fFields.createDefinition(fTraceScope, ILexicalScope.FIELDS, input) : null;
 
         // a bit lttng specific
         // CTF doesn't require a timestamp,
@@ -204,16 +204,11 @@ public class EventDeclaration implements IEventDeclaration {
     /**
      * Sets the stream of an event declaration
      *
-     * @param stream
-     *            the stream
+     * @param traceScope
+     *            The trace scope, typically a CTFTrace
      */
-    public void setStream(CTFStream stream) {
-        fStream = stream;
-    }
-
-    @Override
-    public CTFStream getStream() {
-        return fStream;
+    public void setTraceScope(IDefinitionScope traceScope) {
+        fTraceScope = traceScope;
     }
 
     /**
@@ -249,7 +244,7 @@ public class EventDeclaration implements IEventDeclaration {
      * @return is the id set?
      */
     public boolean idIsSet() {
-        return (fId  != UNSET_EVENT_ID);
+        return (fId != UNSET_EVENT_ID);
     }
 
     /**
@@ -258,7 +253,7 @@ public class EventDeclaration implements IEventDeclaration {
      * @return is the stream set?
      */
     public boolean streamIsSet() {
-        return fStream != null;
+        return fTraceScope != null;
     }
 
     @Override
@@ -314,35 +309,19 @@ public class EventDeclaration implements IEventDeclaration {
             return false;
         }
         EventDeclaration other = (EventDeclaration) obj;
-        if (fContext == null) {
-            if (other.fContext != null) {
-                return false;
-            }
-        } else if (!fContext.equals(other.fContext)) {
-            return false;
-        }
-        if (fFields == null) {
-            if (other.fFields != null) {
-                return false;
-            }
-        } else if (!fFields.equals(other.fFields)) {
-            return false;
-        }
         if (fId != (other.fId)) {
             return false;
         }
-        if (fName == null) {
-            if (other.fName != null) {
-                return false;
-            }
-        } else if (!fName.equals(other.fName)) {
+        if(!NonNullUtils.equalsNullable(fContext, other.fContext)){
             return false;
         }
-        if (fStream == null) {
-            if (other.fStream != null) {
-                return false;
-            }
-        } else if (!fStream.equals(other.fStream)) {
+        if(!NonNullUtils.equalsNullable(fFields, other.fFields)){
+            return false;
+        }
+        if (!NonNullUtils.equalsNullable(fName, other.fName)) {
+            return false;
+        }
+        if (!NonNullUtils.equalsNullable(fTraceScope, other.fTraceScope)) {
             return false;
         }
         if (!fCustomAttributes.equals(other.fCustomAttributes)) {
@@ -360,7 +339,7 @@ public class EventDeclaration implements IEventDeclaration {
         result = (prime * result) + ((fFields == null) ? 0 : fFields.hashCode());
         result = (prime * result) + fId;
         result = (prime * result) + ((fName == null) ? 0 : fName.hashCode());
-        result = (prime * result) + ((fStream == null) ? 0 : fStream.hashCode());
+        result = (prime * result) + ((fTraceScope == null) ? 0 : fTraceScope.hashCode());
         result = (prime * result) + fCustomAttributes.hashCode();
         return result;
     }

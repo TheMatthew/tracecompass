@@ -22,7 +22,6 @@ import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
 import org.eclipse.tracecompass.ctf.core.tests.shared.CtfTestTrace;
-import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTraceReader;
 import org.eclipse.tracecompass.internal.ctf.core.event.EventDeclaration;
@@ -55,7 +54,7 @@ public class EventDeclarationTest {
         fixture.setContext(new StructDeclaration(1L));
         fixture.setId(1L);
         fixture.setFields(new StructDeclaration(1L));
-        fixture.setStream(new CTFStream(testTrace.getTrace()));
+        fixture.setTraceScope(testTrace.getTrace());
         fixture.setName("");
     }
 
@@ -99,8 +98,8 @@ public class EventDeclarationTest {
         obj.setContext(new StructDeclaration(1L));
         obj.setId(1L);
         obj.setFields(new StructDeclaration(1L));
-        obj.setStream(new CTFStream(testTrace.getTrace()));
-        obj.setName("");
+        obj.setTraceScope(testTrace.getTrace());
+        obj.setName("bob");
 
         assertTrue(fixture.equals(fixture));
         boolean result = fixture.equals(obj);
@@ -230,15 +229,6 @@ public class EventDeclarationTest {
     }
 
     /**
-     * Run the Stream getStream() method test.
-     */
-    @Test
-    public void testGetStream() {
-        CTFStream result = fixture.getStream();
-        assertNotNull(result);
-    }
-
-    /**
      * Run the int hashCode() method test.
      */
     @Test
@@ -252,7 +242,7 @@ public class EventDeclarationTest {
      */
     @Test
     public void testHashCode_null() {
-        fixture.setStream((CTFStream) null);
+        fixture.setTraceScope(null);
         fixture.setName((String) null);
 
         int result = fixture.hashCode();
@@ -302,7 +292,7 @@ public class EventDeclarationTest {
      */
     @Test
     public void testStreamIsSet_null() {
-        fixture.setStream((CTFStream) null);
+        fixture.setTraceScope(null);
 
         boolean result = fixture.streamIsSet();
         assertEquals(false, result);

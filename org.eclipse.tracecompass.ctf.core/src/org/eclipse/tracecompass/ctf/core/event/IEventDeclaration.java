@@ -17,7 +17,6 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.io.BitBuffer;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
-import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInputReader;
 
 /**
@@ -71,13 +70,6 @@ public interface IEventDeclaration {
      * @return The EventDeclaration ID
      */
     Long getId();
-
-    /**
-     * Gets the {@link CTFStream} of an event declaration
-     *
-     * @return the stream
-     */
-    CTFStream getStream();
 
     /**
      * What is the log level of this event?

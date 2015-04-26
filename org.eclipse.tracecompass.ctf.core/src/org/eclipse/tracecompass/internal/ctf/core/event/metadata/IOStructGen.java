@@ -712,18 +712,11 @@ public class IOStructGen {
              */
             CTFStream stream = fTrace.getStream(null);
 
-            if (stream != null) {
-                event.setStream(stream);
-            } else {
+            if (stream == null) {
                 throw new ParseException("Event without stream_id, but there is no stream without id"); //$NON-NLS-1$
             }
+            stream.addEvent(event);
         }
-
-        /*
-         * Add the event to the stream.
-         */
-        event.getStream().addEvent(event);
-
         popScope();
     }
 
@@ -776,8 +769,8 @@ public class IOStructGen {
             if (stream == null) {
                 throw new ParseException("Stream " + streamId + " not found"); //$NON-NLS-1$ //$NON-NLS-2$
             }
-
-            event.setStream(stream);
+            stream.addEvent(event);
+            event.setTraceScope(fTrace);
         } else if (left.equals(MetadataStrings.CONTEXT)) {
             if (event.contextIsSet()) {
                 throw new ParseException("context already defined"); //$NON-NLS-1$
