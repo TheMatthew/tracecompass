@@ -1,3 +1,15 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials are
+ * made available under the terms of the Eclipse Public License v1.0 which
+ * accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *   Marc-Andre Laperle - Initial API and implementation.
+ *******************************************************************************/
+
 package org.eclipse.tracecompass.internal.tmf.ui.project.wizards.importtrace;
 
 import java.io.IOException;
@@ -9,12 +21,15 @@ import org.eclipse.tracecompass.internal.tmf.ui.Activator;
 import org.eclipse.ui.internal.wizards.datatransfer.DataTransferMessages;
 import org.eclipse.ui.internal.wizards.datatransfer.ILeveledImportStructureProvider;
 
+/**
+ * Leveled Structure provider for gzip file
+ */
 @SuppressWarnings("restriction")
 public class GzipLeveledStructureProvider implements ILeveledImportStructureProvider {
 
-    private GzipFile file;
-    private GzipEntry root = new GzipEntry("/");//$NON-NLS-1$
-    private GzipEntry fEntry;
+    private final GzipFile fFile;
+    private final GzipEntry root = new GzipEntry();
+    private final GzipEntry fEntry;
 
     /**
      * Creates a <code>GzipFileStructureProvider</code>, which will operate on
@@ -25,14 +40,11 @@ public class GzipLeveledStructureProvider implements ILeveledImportStructureProv
      */
     public GzipLeveledStructureProvider(GzipFile sourceFile) {
         super();
-        file = sourceFile;
-        root.setFileType(GzipEntry.DIRECTORY);
-        fEntry = (GzipEntry) sourceFile.entries().nextElement();
+
+        fFile = sourceFile;
+        fEntry = sourceFile.entries().nextElement();
     }
 
-    /*
-     * (non-Javadoc) Method declared on IImportStructureProvider
-     */
     @Override
     public List getChildren(Object element) {
         ArrayList<Object> children = new ArrayList<>();
@@ -42,30 +54,16 @@ public class GzipLeveledStructureProvider implements ILeveledImportStructureProv
         return children;
     }
 
-    /*
-     * (non-Javadoc) Method declared on IImportStructureProvider
-     */
     @Override
     public InputStream getContents(Object element) {
-        try {
-            return file.getInputStream((GzipEntry) element);
-        } catch (IOException e) {
-            Activator.getDefault().logError(e.getLocalizedMessage(), e);
-            return null;
-        }
+        return fFile.getInputStream((GzipEntry) element);
     }
 
-    /*
-     * (non-Javadoc) Method declared on IImportStructureProvider
-     */
     @Override
     public String getFullPath(Object element) {
         return ((GzipEntry) element).getName();
     }
 
-    /*
-     * (non-Javadoc) Method declared on IImportStructureProvider
-     */
     @Override
     public String getLabel(Object element) {
         if (element != root && element != fEntry) {
@@ -80,31 +78,22 @@ public class GzipLeveledStructureProvider implements ILeveledImportStructureProv
      * @return GzipEntry entry
      */
     @Override
-    public Object getRoot() {
+    public GzipEntry getRoot() {
         return root;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.eclipse.ui.internal.wizards.datatransfer.
-     * ILeveledImportStructureProvider#closeArchive()
-     */
     @Override
     public boolean closeArchive() {
         try {
-            file.close();
+            fFile.close();
         } catch (IOException e) {
             Activator.getDefault().logError(DataTransferMessages.ZipImport_couldNotClose
-                    + file.getName(), e);
+                    + fFile.getName(), e);
             return false;
         }
         return true;
     }
 
-    /*
-     * (non-Javadoc) Method declared on IImportStructureProvider
-     */
     @Override
     public boolean isFolder(Object element) {
         return ((GzipEntry) element).getFileType() == GzipEntry.DIRECTORY;
@@ -112,6 +101,7 @@ public class GzipLeveledStructureProvider implements ILeveledImportStructureProv
 
     @Override
     public void setStrip(int level) {
+        // Do nothing
     }
 
     @Override

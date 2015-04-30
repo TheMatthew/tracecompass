@@ -56,7 +56,6 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.URIUtil;
 import org.eclipse.jface.dialogs.IDialogSettings;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.PixelConverter;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.operation.ModalContext;
@@ -64,7 +63,6 @@ import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.swt.events.FocusAdapter;
@@ -85,7 +83,6 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.tracecompass.internal.tmf.ui.Activator;
 import org.eclipse.tracecompass.tmf.core.TmfCommonConstants;
 import org.eclipse.tracecompass.tmf.core.TmfProjectNature;
@@ -106,7 +103,6 @@ import org.eclipse.ui.ide.dialogs.ResourceTreeAndListGroup;
 import org.eclipse.ui.internal.ide.DialogUtil;
 import org.eclipse.ui.internal.ide.dialogs.IElementFilter;
 import org.eclipse.ui.internal.wizards.datatransfer.ArchiveFileManipulations;
-import org.eclipse.ui.internal.wizards.datatransfer.DataTransferMessages;
 import org.eclipse.ui.internal.wizards.datatransfer.ILeveledImportStructureProvider;
 import org.eclipse.ui.internal.wizards.datatransfer.TarEntry;
 import org.eclipse.ui.internal.wizards.datatransfer.TarException;
@@ -796,6 +792,7 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
         return selectFiles(rootObjectAndProvider.getFirst(), rootObjectAndProvider.getSecond());
     }
 
+    @SuppressWarnings("resource")
     private Pair<IFileSystemObject, FileSystemObjectImportStructureProvider> getRootObjectAndProvider(File sourceFile) {
         if (sourceFile == null) {
             return null;
@@ -822,13 +819,16 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
             } else if (ensureZipSourceIsValid(archivePath)) {
                 // We close the file when we dispose the import provider, see
                 // disposeSelectionGroupRoot
-                @SuppressWarnings("resource")
                 ZipFile zipFile = getSpecifiedZipSourceFile(archivePath);
                 leveledImportStructureProvider = new FileSystemObjectLeveledImportStructureProvider(new ZipLeveledStructureProvider(zipFile), archivePath);
             } else if (ensureGzipSourceIsValid(archivePath)) {
                 // We close the file when we dispose the import provider, see
                 // disposeSelectionGroupRoot
-                GzipFile zipFile = getSpecifiedGzipSourceFile(archivePath);
+                GzipFile zipFile = null;
+                try {
+                    zipFile = new GzipFile(archivePath);
+                } catch (IOException e) {
+                }
                 leveledImportStructureProvider = new FileSystemObjectLeveledImportStructureProvider(new GzipLeveledStructureProvider(zipFile), archivePath);
             }
             if (leveledImportStructureProvider == null) {
@@ -847,7 +847,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
 
     /**
      * An import provider that makes use of the IFileSystemObject abstraction
-     * instead of using plain file system objects (File, TarEntry, ZipEntry, etc)
+     * instead of using plain file system objects (File, TarEntry, ZipEntry,
+     * etc)
      */
     private static class FileSystemObjectImportStructureProvider implements IImportStructureProvider {
 
@@ -1006,7 +1007,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
             return null;
         }
 
-        // FIXME: Work around Bug 463633. Remove this block once we move to Eclipse 4.5.
+        // FIXME: Work around Bug 463633. Remove this block once we move to
+        // Eclipse 4.5.
         if (new File(fileName).length() < 512) {
             return null;
         }
@@ -1020,23 +1022,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
         return null;
     }
 
-    private boolean ensureGzipSourceIsValid(String archivePath) {
-        GzipFile specifiedFile = getSpecifiedGzipSourceFile(archivePath);
-        if (specifiedFile == null) {
-            return false;
-        }
-        return closeGzipFile(specifiedFile, getShell());
-    }
-
-    private boolean closeGzipFile(GzipFile file, Shell shell) {
-        try {
-            file.close();
-        } catch (IOException e) {
-            MessageDialog.open(MessageDialog.ERROR, shell, getErrorDialogTitle(), NLS.bind(DataTransferMessages.ZipImport_couldNotClose, file.getName()), SWT.SHEET);
-            return false;
-        }
-
-        return true;
+    private static boolean ensureGzipSourceIsValid(String archivePath) {
+        return isGzipFile(archivePath);
     }
 
     private TraceFileSystemElement selectFiles(final IFileSystemObject rootFileSystemObject,
@@ -1221,29 +1208,13 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
     }
 
     private static boolean isGzipFile(String fileName) {
-        GzipFile specifiedTarSourceFile = getSpecifiedGzipSourceFile(fileName);
-        if (specifiedTarSourceFile != null) {
-            try {
-                specifiedTarSourceFile.close();
+        if (!fileName.isEmpty()) {
+            try (GzipFile specifiedTarSourceFile = new GzipFile(fileName);) {
                 return true;
             } catch (IOException e) {
             }
         }
         return false;
-    }
-
-    private static GzipFile getSpecifiedGzipSourceFile(String fileName) {
-        if (fileName.length() == 0) {
-            return null;
-        }
-
-        try {
-            return new GzipFile(fileName);
-        } catch (IOException e) {
-            // ignore
-        }
-
-        return null;
     }
 
     @Override
@@ -1512,7 +1483,6 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
                 SubProgressMonitor monitor = new SubProgressMonitor(subMonitor, 1, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
                 destTempFolder.create(IResource.HIDDEN, true, monitor);
 
-
                 subMonitor = SubMonitor.convert(progressMonitor, 2);
                 String baseSourceLocation;
                 if (fImportFromArchive) {
@@ -1522,26 +1492,37 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
 
                     SubMonitor archiveMonitor = SubMonitor.convert(subMonitor.newChild(1), 2);
 
-                    // Extract selected files from source archive to temporary folder
+                    // Extract selected files from source archive to temporary
+                    // folder
                     extractArchiveContent(selectedFileSystemElements.iterator(), destTempFolder, archiveMonitor.newChild(1));
 
-                    // Even if the files were extracted to temporary folder, they have to look like they originate from the source archive
+                    // Even if the files were extracted to temporary folder,
+                    // they have to look like they originate from the source
+                    // archive
                     baseSourceLocation = getRootElement(selectedFileSystemElements.get(0)).getSourceLocation();
-                    // Extract additional archives contained in the extracted files (archives in archives)
+                    // Extract additional archives contained in the extracted
+                    // files (archives in archives)
                     List<TraceFileSystemElement> tempFolderFileSystemElements = createElementsForFolder(destTempFolder);
                     extractAllArchiveFiles(tempFolderFileSystemElements, destTempFolder, destTempFolder.getLocation(), archiveMonitor.newChild(1));
                 } else {
                     SubMonitor directoryMonitor = SubMonitor.convert(subMonitor.newChild(1), 2);
-                    // Import selected files, excluding archives (done in a later step)
+                    // Import selected files, excluding archives (done in a
+                    // later step)
                     importFileSystemElements(directoryMonitor.newChild(1), selectedFileSystemElements);
 
-                    // Extract archives in selected files (if any) to temporary folder
+                    // Extract archives in selected files (if any) to temporary
+                    // folder
                     extractAllArchiveFiles(selectedFileSystemElements, destTempFolder, fBaseSourceContainerPath, directoryMonitor.newChild(1));
-                    // Even if the files were extracted to temporary folder, they have to look like they originate from the source folder
+                    // Even if the files were extracted to temporary folder,
+                    // they have to look like they originate from the source
+                    // folder
                     baseSourceLocation = URIUtil.toUnencodedString(fBaseSourceContainerPath.toFile().getCanonicalFile().toURI());
                 }
 
-                /* Import extracted files that are now in the temporary folder, if any */
+                /*
+                 * Import extracted files that are now in the temporary folder,
+                 * if any
+                 */
 
                 // We need to update the source container path because the
                 // "preserve folder structure" option would create the
@@ -1608,7 +1589,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
                         } else {
                             boolean validateFile = true;
                             TraceFileSystemElement grandParentElement = (TraceFileSystemElement) parentElement.getParent();
-                            // Special case for LTTng trace that may contain index directory and files
+                            // Special case for LTTng trace that may contain
+                            // index directory and files
                             if (grandParentElement != null) {
                                 String grandParentPath = grandParentElement.getFileSystemObject().getAbsolutePath(fBaseSourceContainerPath.toOSString());
                                 grandParentElement.setDestinationContainerPath(computeDestinationContainerPath(new Path(parentPath)));
@@ -1634,7 +1616,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
          * Generate a new list of file system elements for the specified folder.
          */
         private List<TraceFileSystemElement> createElementsForFolder(IFolder folder) {
-            // Create the new import provider and root element based on the specified folder
+            // Create the new import provider and root element based on the
+            // specified folder
             FileSystemObjectImportStructureProvider importStructureProvider = new FileSystemObjectImportStructureProvider(FileSystemStructureProvider.INSTANCE, null);
             IFileSystemObject rootElement = importStructureProvider.getIFileSystemObject(new File(folder.getLocation().toOSString()));
             TraceFileSystemElement createRootElement = createRootTraceFileElement(rootElement, importStructureProvider);
@@ -1644,7 +1627,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
         }
 
         /**
-         * Extract all file system elements (File) to destination folder (typically workspace/TraceProject/.traceImport)
+         * Extract all file system elements (File) to destination folder
+         * (typically workspace/TraceProject/.traceImport)
          */
         private void extractAllArchiveFiles(List<TraceFileSystemElement> fileSystemElements, IFolder destFolder, IPath baseSourceContainerPath, IProgressMonitor progressMonitor) throws InterruptedException, CoreException, InvocationTargetException {
             SubMonitor subMonitor = SubMonitor.convert(progressMonitor, fileSystemElements.size());
@@ -1662,11 +1646,13 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
                     IFolder folder = safeCreateExtractedFolder(destFolder, relativeToSourceContainer, elementProgress.newChild(1));
                     extractArchiveToFolder(archiveFile, folder, elementProgress.newChild(1));
 
-                    // Delete original archive, we don't want to import this, just the extracted content
+                    // Delete original archive, we don't want to import this,
+                    // just the extracted content
                     IFile fileRes = destFolder.getFile(relativeToSourceContainer);
                     fileRes.delete(true, elementProgress.newChild(1));
                     IPath newPath = destFolder.getFullPath().append(relativeToSourceContainer);
-                    // Rename extracted folder (.extract) to original archive name
+                    // Rename extracted folder (.extract) to original archive
+                    // name
                     folder.move(newPath, true, elementProgress.newChild(1));
                     folder = ResourcesPlugin.getWorkspace().getRoot().getFolder(newPath);
 
@@ -1695,7 +1681,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
         }
 
         /**
-         * Safely create a folder meant to receive extracted content by making sure there is no name clash.
+         * Safely create a folder meant to receive extracted content by making
+         * sure there is no name clash.
          */
         private IFolder safeCreateExtractedFolder(IFolder destinationFolder, IPath relativeContainerRelativePath, IProgressMonitor monitor) throws CoreException {
             SubMonitor subMonitor = SubMonitor.convert(monitor, 2);
@@ -1732,7 +1719,9 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
         }
 
         /**
-         * Extract all file system elements (Tar, Zip elements) to destination folder (typically workspace/TraceProject/.traceImport or a subfolder of it)
+         * Extract all file system elements (Tar, Zip elements) to destination
+         * folder (typically workspace/TraceProject/.traceImport or a subfolder
+         * of it)
          */
         private void extractArchiveContent(Iterator<TraceFileSystemElement> fileSystemElementsIter, IFolder tempFolder, IProgressMonitor progressMonitor) throws InterruptedException,
                 InvocationTargetException {
@@ -2177,7 +2166,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
                 try {
                     sourceLocation = URIUtil.toUnencodedString(fFileSystemObject.getCanonicalFile().toURI());
                 } catch (IOException e) {
-                    // Something went wrong canonicalizing the file. We can still use the URI but there might be extra ../ in it.
+                    // Something went wrong canonicalizing the file. We can
+                    // still use the URI but there might be extra ../ in it.
                     sourceLocation = URIUtil.toUnencodedString(fFileSystemObject.toURI());
                 }
             }
@@ -2191,7 +2181,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
     }
 
     /**
-     * The "Tar" implementation of an IFileSystemObject, entries can also be Gzipped and are uncompressed transparently.
+     * The "Tar" implementation of an IFileSystemObject, entries can also be
+     * Gzipped and are uncompressed transparently.
      */
     private static class TarFileSystemObject implements IFileSystemObject {
 
@@ -2245,7 +2236,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
     }
 
     /**
-     * The "GZIP" implementation of an IFileSystemObject. For a GZIP file that is not in a tar.
+     * The "GZIP" implementation of an IFileSystemObject. For a GZIP file that
+     * is not in a tar.
      */
     private static class GzipFileSystemObject implements IFileSystemObject {
 

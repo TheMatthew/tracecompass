@@ -12,14 +12,19 @@
 
 package org.eclipse.tracecompass.internal.tmf.ui.project.wizards.importtrace;
 
+/**
+ * GZip entry
+ */
 public class GzipEntry {
-    private String name;
-    private long mode, time, size;
-    private int type;
-    int filepos;
+    private static final String ROOT_DIR = "/"; //$NON-NLS-1$
+    private final String fName;
+    private final long fMode;
+    private final long fTime;
+    private final int fType;
 
     /**
-     * Entry type for normal files. This is the only valid type for Gzip entries.
+     * Entry type for normal files. This is the only valid type for Gzip
+     * entries.
      */
     public static final int FILE = '0';
 
@@ -30,24 +35,36 @@ public class GzipEntry {
     public static final int DIRECTORY = '5';
 
     /**
-     * Create a new GzipEntry for a file of the given name at the
-     * given position in the file.
-     *
-     * @param name filename
-     * @param pos position in the file in bytes
+     * Default constructor for root type
      */
-    GzipEntry(String name, int pos) {
-        this.name = name;
-        mode = 0644;
-        type = FILE;
-        filepos = pos;
-        time = System.currentTimeMillis() / 1000;
+    public GzipEntry() {
+        fName = ROOT_DIR;
+        fMode = 0644;
+        fType = DIRECTORY;
+        fTime = System.currentTimeMillis() / 1000;
+    }
+
+    /**
+     * Create a new GzipEntry for a file of the given name at the given position
+     * in the file.
+     *
+     * @param name
+     *            filename
+     * @param pos
+     *            position in the file in bytes
+     */
+    public GzipEntry(String name, int pos) {
+        fName = name;
+        fMode = 0644;
+        fType = FILE;
+        fTime = System.currentTimeMillis() / 1000;
     }
 
     /**
      * Create a new TarEntry for a file of the given name.
      *
-     * @param name filename
+     * @param name
+     *            filename
      */
     public GzipEntry(String name) {
         this(name, -1);
@@ -60,7 +77,7 @@ public class GzipEntry {
      * @return file type
      */
     public int getFileType() {
-        return type;
+        return fType;
     }
 
     /**
@@ -69,7 +86,7 @@ public class GzipEntry {
      * @return file mode
      */
     public long getMode() {
-        return mode;
+        return fMode;
     }
 
     /**
@@ -78,66 +95,16 @@ public class GzipEntry {
      * @return filename
      */
     public String getName() {
-        return name;
+        return fName;
     }
 
     /**
-     * Returns the size of the file in bytes.
-     *
-     * @return filesize
-     */
-    public long getSize() {
-        return size;
-    }
-
-    /**
-     * Returns the modification time of the file in seconds since January
-     * 1st 1970.
+     * Returns the modification time of the file in seconds since January 1st
+     * 1970.
      *
      * @return time
      */
     public long getTime() {
-        return time;
-    }
-
-    /**
-     * Sets the type of the file, can only be FILE for a real Gzip entry.
-     * DIRECTORY can be specified to represent a "dummy root" in the archive.
-     *
-     * @param type
-     */
-    public void setFileType(int type) {
-        if (type != FILE && type != DIRECTORY) {
-            throw new IllegalArgumentException();
-        }
-        this.type = type;
-    }
-
-    /**
-     * Sets the mode of the file in UNIX permissions format.
-     *
-     * @param mode
-     */
-    public void setMode(long mode) {
-        this.mode = mode;
-    }
-
-    /**
-     * Sets the size of the file in bytes.
-     *
-     * @param size
-     */
-    public void setSize(long size) {
-        this.size = size;
-    }
-
-    /**
-     * Sets the modification time of the file in seconds since January
-     * 1st 1970.
-     *
-     * @param time
-     */
-    public void setTime(long time) {
-        this.time = time;
+        return fTime;
     }
 }

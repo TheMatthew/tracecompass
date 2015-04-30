@@ -1,3 +1,15 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials are
+ * made available under the terms of the Eclipse Public License v1.0 which
+ * accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *   Marc-Andre Laperle - Initial API and implementation.
+ *******************************************************************************/
+
 package org.eclipse.tracecompass.internal.tmf.ui.project.wizards.importtrace;
 
 import java.io.File;
@@ -7,39 +19,51 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.zip.GZIPInputStream;
 
-public class GzipFile {
+/**
+ * Wrapper for a Gzipped file
+ */
+public class GzipFile implements AutoCloseable {
 
-    private File file;
-    private GzipEntry fEntry;
-    private GzipEntry curEntry;
+    private static final String GZIP_EXTENSION = ".gz"; //$NON-NLS-1$
 
-    private InputStream internalEntryStream;
+    private final File fFile;
+    private final GzipEntry fEntry;
+    private GzipEntry fCurEntry;
+    private boolean fIsClosed = false;
+
+    private final InputStream fInternalEntryStream;
 
     /**
      * Create a new TarFile for the given file.
      *
-     * @param file
+     * @param source
+     *            the source file
      * @throws IOException
+     *             File not found and such
      */
-    public GzipFile(File file) throws IOException {
-        this.file = file;
+    public GzipFile(File source) throws IOException {
+        fFile = source;
 
-        InputStream in = new FileInputStream(file);
+        InputStream in = new FileInputStream(source);
         // Check if it's a GZIPInputStream.
-        internalEntryStream = new GZIPInputStream(in);
-        String name = file.getName();
-        fEntry = new GzipEntry(name.substring(0, name.lastIndexOf(".gz")));
-        curEntry = fEntry;
+        fInternalEntryStream = new GZIPInputStream(in);
+        String name = source.getName();
+        fEntry = new GzipEntry(name.substring(0, name.lastIndexOf(GZIP_EXTENSION)));
+        fCurEntry = fEntry;
     }
 
     /**
      * Close the tar file input stream.
      *
-     * @throws IOException if the file cannot be successfully closed
+     * @throws IOException
+     *             if the file cannot be successfully closed
      */
+    @Override
     public void close() throws IOException {
-        if (internalEntryStream != null) {
-            internalEntryStream.close();
+        if (fInternalEntryStream != null && !fIsClosed) {
+            fInternalEntryStream.close();
+            fIsClosed = true;
+
         }
     }
 
@@ -47,7 +71,9 @@ public class GzipFile {
      * Create a new GzipFile for the given path name.
      *
      * @param filename
+     *            the filename of the gzip file
      * @throws IOException
+     *             if the file cannot be opened
      */
     public GzipFile(String filename) throws IOException {
         this(new File(filename));
@@ -58,17 +84,17 @@ public class GzipFile {
      *
      * @return enumeration of all files in the archive
      */
-    public Enumeration entries() {
-        return new Enumeration() {
+    public Enumeration<GzipEntry> entries() {
+        return new Enumeration<GzipEntry>() {
             @Override
             public boolean hasMoreElements() {
-                return (curEntry != null);
+                return (fCurEntry != null);
             }
 
             @Override
-            public Object nextElement() {
-                GzipEntry oldEntry = curEntry;
-                curEntry = null;
+            public GzipEntry nextElement() {
+                GzipEntry oldEntry = fCurEntry;
+                fCurEntry = null;
                 return oldEntry;
             }
         };
@@ -78,14 +104,14 @@ public class GzipFile {
      * Returns a new InputStream for the given file in the tar archive.
      *
      * @param entry
+     *            the GzipEntry
      * @return an input stream for the given file
-     * @throws IOException
      */
-    public InputStream getInputStream(GzipEntry entry) throws IOException {
+    public InputStream getInputStream(GzipEntry entry) {
         if (entry != fEntry) {
             throw new IllegalArgumentException();
         }
-        return internalEntryStream;
+        return fInternalEntryStream;
     }
 
     /**
@@ -94,13 +120,9 @@ public class GzipFile {
      * @return path
      */
     public String getName() {
-        return file.getPath();
+        return fFile.getPath();
     }
 
-    /* (non-Javadoc)
-     * @see java.util.zip.ZipFile#finalize()
-     *
-     */
     @Override
     protected void finalize() throws Throwable {
         close();
