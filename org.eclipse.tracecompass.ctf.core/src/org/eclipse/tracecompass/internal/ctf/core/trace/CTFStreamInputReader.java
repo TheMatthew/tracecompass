@@ -292,12 +292,18 @@ public class CTFStreamInputReader implements AutoCloseable {
 
     @NonNull
     private IPacketReader createPacketReader() throws CTFException {
-        if(fPacketIndex >= fStreamInput.getNbPacketDescriptors()){
+        if (fPacketIndex >= fStreamInput.getNbPacketDescriptors()) {
             return NullPacketReader.getInstance();
         }
         ICTFPacketDescriptor packet = getPacket();
         ICTFPacketDescriptor prevPacket = (fPacketIndex == 0) ? null : fStreamInput.getPacketDescriptor(fPacketIndex - 1);
-        return new CTFStreamInputPacketReader(packet, fStreamInput.getStream(), fStreamInput, this, prevPacket, getByteBufferAt(packet.getOffsetBytes(), (packet.getContentSizeBits() + 7) / BITS_PER_BYTE));
+        try {
+            ByteBuffer byteBufferAt = getByteBufferAt(packet.getOffsetBytes(), (packet.getContentSizeBits() + 7) / BITS_PER_BYTE);
+            return new CTFStreamInputPacketReader(packet, fStreamInput.getStream(), fStreamInput, this, prevPacket, byteBufferAt);
+        } catch (CTFException e) {
+            // try a backup
+        }
+        return new CTFLargePacketReader(packet, fStreamInput.getStream(), fStreamInput, this, prevPacket, getFc());
     }
 
     /**
