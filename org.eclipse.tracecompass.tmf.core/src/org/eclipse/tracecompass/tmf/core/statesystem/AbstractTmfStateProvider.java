@@ -61,7 +61,7 @@ public abstract class AbstractTmfStateProvider implements ITmfStateProvider {
      */
     public AbstractTmfStateProvider(ITmfTrace trace, String id) {
         fTrace = trace;
-        fEventsQueue = new BufferedBlockingQueue<>(DEFAULT_EVENTS_QUEUE_SIZE, DEFAULT_EVENTS_CHUNK_SIZE);
+        fEventsQueue = BufferedBlockingQueue.create(DEFAULT_EVENTS_QUEUE_SIZE, DEFAULT_EVENTS_CHUNK_SIZE,Thread.currentThread());
         fStateSystemAssigned = false;
 
         fEventHandlerThread = new Thread(new EventProcessor(), id + " Event Handler"); //$NON-NLS-1$

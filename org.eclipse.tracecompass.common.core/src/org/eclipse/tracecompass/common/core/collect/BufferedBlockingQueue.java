@@ -16,7 +16,9 @@ package org.eclipse.tracecompass.common.core.collect;
 import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -61,6 +63,14 @@ public class BufferedBlockingQueue<T> implements Iterable<T> {
      * insertions ourselves. It does not matter if the actual size is not exact.
      */
     private int fInputBufferSize;
+
+    public static final Map<String, BufferedBlockingQueue<?>> QUEUES= new HashMap<>();
+
+    public static <T> BufferedBlockingQueue<T> create(int queueSize, int chunkSize, Thread parent){
+        BufferedBlockingQueue<T> bufferedBlockingQueue = new BufferedBlockingQueue<>(queueSize, chunkSize);
+        QUEUES.put(parent.getName(), bufferedBlockingQueue);
+        return bufferedBlockingQueue;
+    }
 
     /**
      * Constructor
@@ -204,6 +214,15 @@ public class BufferedBlockingQueue<T> implements Iterable<T> {
         Iterator<T> outputIterator = fOutputBuffer.iterator();
 
         return checkNotNull(Iterators.concat(inputIterator, queueIterator, outputIterator));
+    }
+
+    /**
+     * The number of elements in this data structure
+     *
+     * @return the number of elements in this data structure
+     */
+    public int size() {
+        return Iterables.size(Iterables.concat(fInnerQueue)) + fInputBuffer.size() + fOutputBuffer.size();
     }
 
 }

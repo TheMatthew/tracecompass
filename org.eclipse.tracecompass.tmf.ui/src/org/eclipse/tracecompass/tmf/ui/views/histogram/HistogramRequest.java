@@ -51,7 +51,7 @@ public class HistogramRequest extends TmfEventRequest {
 
     private final boolean fFullRange;
 
-    private final BufferedBlockingQueue<ITmfEvent> fEventsQueue = new BufferedBlockingQueue<>(127, 127);
+    private final BufferedBlockingQueue<ITmfEvent> fEventsQueue;
 
     private Thread fHistogramPopulator;
 
@@ -83,6 +83,7 @@ public class HistogramRequest extends TmfEventRequest {
         super(ITmfEvent.class, range, rank, nbEvents, execType);
         fHistogram = histogram;
         fFullRange = fullRange;
+        fEventsQueue = BufferedBlockingQueue.create(127, 127, Thread.currentThread());
         fHistogramPopulator = new Thread() {
             @Override
             public void run() {

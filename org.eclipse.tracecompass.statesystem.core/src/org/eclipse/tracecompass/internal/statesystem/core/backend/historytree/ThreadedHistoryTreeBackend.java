@@ -77,8 +77,8 @@ public final class ThreadedHistoryTreeBackend extends HistoryTreeBackend
                     throws IOException {
         super(ssid, newStateFile, providerVersion, startTime, blockSize, maxChildren);
 
-        intervalQueue = new BufferedBlockingQueue<>(queueSize / CHUNK_SIZE, CHUNK_SIZE);
         shtThread = new Thread(this, "History Tree Thread"); //$NON-NLS-1$
+        intervalQueue = BufferedBlockingQueue.create(queueSize / CHUNK_SIZE, CHUNK_SIZE, shtThread);
         shtThread.start();
     }
 
@@ -111,8 +111,8 @@ public final class ThreadedHistoryTreeBackend extends HistoryTreeBackend
                     throws IOException {
         super(ssid, newStateFile, providerVersion, startTime);
 
-        intervalQueue = new BufferedBlockingQueue<>(queueSize / CHUNK_SIZE, CHUNK_SIZE);
         shtThread = new Thread(this, "History Tree Thread"); //$NON-NLS-1$
+        intervalQueue = BufferedBlockingQueue.create(queueSize / CHUNK_SIZE, CHUNK_SIZE, shtThread);
         shtThread.start();
     }
 

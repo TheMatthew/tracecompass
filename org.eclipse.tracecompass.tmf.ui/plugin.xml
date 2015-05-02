@@ -97,6 +97,14 @@
             name="%synchronization.view.name"
             restorable="true">
       </view>
+      <view
+            allowMultiple="false"
+            category="org.eclipse.linuxtools.tmf.ui.views.category"
+            class="org.eclipse.tracecompass.internal.tmf.ui.views.QueueStatus"
+            id="org.eclipse.tracecompass.tmf.ui.views.queuestatus"
+            name="Queue Statuses"
+            restorable="true">
+      </view>
    </extension>
    <extension
          point="org.eclipse.ui.editors">
