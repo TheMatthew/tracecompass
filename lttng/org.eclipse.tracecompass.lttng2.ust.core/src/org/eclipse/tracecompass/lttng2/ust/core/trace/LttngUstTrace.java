@@ -14,6 +14,7 @@
 
 package org.eclipse.tracecompass.lttng2.ust.core.trace;
 
+import java.util.Collection;
 import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
@@ -22,15 +23,21 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.internal.lttng2.ust.core.Activator;
 import org.eclipse.tracecompass.internal.lttng2.ust.core.trace.layout.LttngUst20EventLayout;
 import org.eclipse.tracecompass.internal.lttng2.ust.core.trace.layout.LttngUst27EventLayout;
+import org.eclipse.tracecompass.internal.lttng2.ust.core.trace.layout.LttngUst28EventLayout;
+import org.eclipse.tracecompass.lttng2.ust.core.analysis.debuginfo.UstDebugInfoAspect;
 import org.eclipse.tracecompass.lttng2.ust.core.trace.layout.ILttngUstEventLayout;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
+import org.eclipse.tracecompass.tmf.core.event.aspect.ITmfEventAspect;
 import org.eclipse.tracecompass.tmf.core.exceptions.TmfTraceException;
 import org.eclipse.tracecompass.tmf.core.trace.TraceValidationStatus;
 import org.eclipse.tracecompass.tmf.ctf.core.trace.CtfTmfTrace;
 import org.eclipse.tracecompass.tmf.ctf.core.trace.CtfTraceValidationStatus;
+
+import com.google.common.collect.ImmutableSet;
 
 /**
  * Class to contain LTTng-UST traces
@@ -40,6 +47,15 @@ import org.eclipse.tracecompass.tmf.ctf.core.trace.CtfTraceValidationStatus;
 public class LttngUstTrace extends CtfTmfTrace {
 
     private static final int CONFIDENCE = 100;
+
+    private static final @NonNull Collection<ITmfEventAspect> LTTNG_UST_ASPECTS;
+
+    static {
+        ImmutableSet.Builder<ITmfEventAspect> builder = ImmutableSet.builder();
+        builder.addAll(CtfTmfTrace.CTF_ASPECTS);
+        builder.add(UstDebugInfoAspect.INSTANCE);
+        LTTNG_UST_ASPECTS = NonNullUtils.checkNotNull(builder.build());
+    }
 
     private @Nullable ILttngUstEventLayout fLayout = null;
 
@@ -81,7 +97,9 @@ public class LttngUstTrace extends CtfTmfTrace {
 
         if ("lttng-ust".equals(tracerName)) { //$NON-NLS-1$
             if (tracerMajor >= 2) {
-                if (tracerMinor >= 7) {
+                if (tracerMinor >= 8) {
+                    return LttngUst28EventLayout.getInstance();
+                } else if (tracerMinor >= 7) {
                     return LttngUst27EventLayout.getInstance();
                 }
                 return LttngUst20EventLayout.getInstance();
@@ -90,6 +108,11 @@ public class LttngUstTrace extends CtfTmfTrace {
 
         /* Fallback to the UST 2.0 layout and hope for the best */
         return LttngUst20EventLayout.getInstance();
+    }
+
+    @Override
+    public Iterable<ITmfEventAspect> getEventAspects() {
+        return LTTNG_UST_ASPECTS;
     }
 
     /**
