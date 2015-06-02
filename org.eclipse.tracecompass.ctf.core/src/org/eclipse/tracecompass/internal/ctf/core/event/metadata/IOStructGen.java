@@ -1084,7 +1084,7 @@ public class IOStructGen {
      */
     private IDeclaration parseTypeDeclarator(CommonTree typeDeclarator,
             CommonTree typeSpecifierList, StringBuilder identifierSB)
-            throws ParseException {
+                    throws ParseException {
 
         IDeclaration declaration = null;
         List<CommonTree> children = null;
@@ -1159,6 +1159,16 @@ public class IOStructGen {
                     /* Create the sequence declaration. */
                     declaration = new SequenceDeclaration(lengthName,
                             declaration);
+                } else if (isPostFixed(first)) {
+                    String lengthName = concatenateUnaryStrings(lengthChildren);
+                    /* check that lengthName was declared */
+                    if (isSignedIntegerField(lengthName)) {
+                        throw new ParseException("Sequence declared with length that is not an unsigned integer"); //$NON-NLS-1$
+                    }
+                    /* Create the sequence declaration. */
+                    declaration = new SequenceDeclaration(lengthName,
+                            declaration);
+
                 } else {
                     childTypeError(first);
                 }
@@ -1170,6 +1180,13 @@ public class IOStructGen {
         }
 
         return declaration;
+    }
+
+    private static boolean isPostFixed(CommonTree first) {
+        if (first.getType() == CTFParser.STREAM || first.getType() == CTFParser.EVENT) {
+            return true;
+        }
+        return false;
     }
 
     private boolean isSignedIntegerField(String lengthName) throws ParseException {
@@ -1345,7 +1362,9 @@ public class IOStructGen {
         String typeStringRepresentation = createTypeDeclarationString(
                 typeSpecifierList, pointerList);
 
-        /* Use the string representation to search the type in the current scope */
+        /*
+         * Use the string representation to search the type in the current scope
+         */
         IDeclaration decl = getCurrentScope().lookupTypeRecursive(
                 typeStringRepresentation);
 
@@ -1598,7 +1617,7 @@ public class IOStructGen {
             if (hasName) {
                 getCurrentScope().registerStruct(structName, structDeclaration);
             }
-        } else /* !hasBody */{
+        } else /* !hasBody */ {
             if (hasName) {
                 /* Name and !body */
 
@@ -1884,7 +1903,7 @@ public class IOStructGen {
      */
     private static long parseEnumEnumerator(CommonTree enumerator,
             EnumDeclaration enumDeclaration, long lastHigh)
-            throws ParseException {
+                    throws ParseException {
 
         List<CommonTree> children = enumerator.getChildren();
 
@@ -2030,7 +2049,7 @@ public class IOStructGen {
                 getCurrentScope().registerVariant(variantName,
                         variantDeclaration);
             }
-        } else /* !hasBody */{
+        } else /* !hasBody */ {
             if (hasName) {
                 /* Name and !body */
 
@@ -2151,7 +2170,7 @@ public class IOStructGen {
      */
     private static String createTypeDeclarationString(
             CommonTree typeSpecifierList, List<CommonTree> pointers)
-            throws ParseException {
+                    throws ParseException {
         StringBuilder sb = new StringBuilder();
 
         createTypeSpecifierListString(typeSpecifierList, sb);
@@ -2171,7 +2190,7 @@ public class IOStructGen {
      */
     private static void createTypeSpecifierListString(
             CommonTree typeSpecifierList, StringBuilder sb)
-            throws ParseException {
+                    throws ParseException {
 
         List<CommonTree> children = typeSpecifierList.getChildren();
 
