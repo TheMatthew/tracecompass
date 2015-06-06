@@ -347,8 +347,8 @@ class DeclarationScope {
     }
 
     /**
-     * Lookup query for an identifier through this scope and its ancestors.
-     * An ancestor scope is a scope in which this scope is nested.
+     * Lookup query for an identifier through this scope and its ancestors. An
+     * ancestor scope is a scope in which this scope is nested.
      *
      * @param identifier
      *            the name of the identifier to search for. In the case of int
@@ -390,6 +390,19 @@ class DeclarationScope {
         } else {
             throw new ParseException("Trace does not contain type:" + name); //$NON-NLS-1$
         }
+    }
+
+    /**
+     * Get root declaration scope
+     * @return root
+     */
+    public static DeclarationScope createRoot() {
+        return new DeclarationScope() {
+            @Override
+            public DeclarationScope getParentScope() {
+                throw new UnsupportedOperationException("Trying to pop root!"); //$NON-NLS-1$
+            }
+        };
     }
 
 }
