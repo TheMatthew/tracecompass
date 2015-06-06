@@ -2735,7 +2735,11 @@ public class IOStructGen {
      * Adds a new declaration scope on the top of the scope stack.
      */
     private void pushScope() {
-        fScope = new DeclarationScope(fScope);
+        if( fScope == null){
+            fScope = new DeclarationScope();
+        }else{
+            fScope = new DeclarationScope(fScope);
+        }
     }
 
     /**

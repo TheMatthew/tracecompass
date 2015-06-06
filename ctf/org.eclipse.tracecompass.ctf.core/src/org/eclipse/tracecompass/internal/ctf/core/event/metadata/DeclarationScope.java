@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
@@ -41,7 +42,7 @@ class DeclarationScope {
     // Attributes
     // ------------------------------------------------------------------------
 
-    private DeclarationScope fParentScope = null;
+    private final @NonNull DeclarationScope fParentScope;
 
     private final Map<String, StructDeclaration> fStructs = new HashMap<>();
     private final Map<String, EnumDeclaration> fEnums = new HashMap<>();
@@ -57,6 +58,7 @@ class DeclarationScope {
      * Creates a declaration scope with no parent.
      */
     public DeclarationScope() {
+        fParentScope = this;
     }
 
     /**
@@ -65,7 +67,7 @@ class DeclarationScope {
      * @param parentScope
      *            The parent of the newly created scope.
      */
-    public DeclarationScope(DeclarationScope parentScope) {
+    public DeclarationScope(@NonNull DeclarationScope parentScope) {
         fParentScope = parentScope;
     }
 
@@ -78,7 +80,7 @@ class DeclarationScope {
      *
      * @return The parent scope.
      */
-    public DeclarationScope getParentScope() {
+    public @NonNull DeclarationScope getParentScope() {
         return fParentScope;
     }
 
@@ -231,7 +233,7 @@ class DeclarationScope {
         IDeclaration declaration = lookupType(name);
         if (declaration != null) {
             return declaration;
-        } else if (fParentScope != null) {
+        } else if (hasParent()) {
             return fParentScope.lookupTypeRecursive(name);
         } else {
             return null;
@@ -263,7 +265,7 @@ class DeclarationScope {
         StructDeclaration declaration = lookupStruct(name);
         if (declaration != null) {
             return declaration;
-        } else if (fParentScope != null) {
+        } else if (hasParent()) {
             return fParentScope.lookupStructRecursive(name);
         } else {
             return null;
@@ -295,7 +297,7 @@ class DeclarationScope {
         EnumDeclaration declaration = lookupEnum(name);
         if (declaration != null) {
             return declaration;
-        } else if (fParentScope != null) {
+        } else if (hasParent()) {
             return fParentScope.lookupEnumRecursive(name);
         } else {
             return null;
@@ -327,7 +329,7 @@ class DeclarationScope {
         VariantDeclaration declaration = lookupVariant(name);
         if (declaration != null) {
             return declaration;
-        } else if (fParentScope != null) {
+        } else if (hasParent()) {
             return fParentScope.lookupVariantRecursive(name);
         } else {
             return null;
@@ -359,10 +361,14 @@ class DeclarationScope {
         IDeclaration declaration = lookupIdentifier(identifier);
         if (declaration != null) {
             return declaration;
-        } else if (fParentScope != null) {
+        } else if (hasParent()) {
             return fParentScope.lookupIdentifierRecursive(identifier);
         }
         return null;
+    }
+
+    private boolean hasParent() {
+        return fParentScope != this;
     }
 
     /**
