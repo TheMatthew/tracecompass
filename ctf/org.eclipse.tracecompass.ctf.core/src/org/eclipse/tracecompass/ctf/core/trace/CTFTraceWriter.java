@@ -91,7 +91,7 @@ public class CTFTraceWriter {
             }
 
             // copy metadata
-            Metadata metadata = new Metadata(fInTrace);
+            Metadata metadata = new Metadata(trace);
             try {
                 metadata.copyTo(out);
             } catch (IOException e) {

@@ -402,7 +402,7 @@ class DeclarationScope {
      * Get root declaration scope
      * @return root
      */
-    public static DeclarationScope createRoot() {
+    public static @NonNull DeclarationScope createRoot() {
         return new DeclarationScope() {
             @Override
             public DeclarationScope getParentScope() {

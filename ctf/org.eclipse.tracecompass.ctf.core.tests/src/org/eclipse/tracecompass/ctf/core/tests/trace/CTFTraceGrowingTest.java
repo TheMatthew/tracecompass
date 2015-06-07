@@ -55,6 +55,7 @@ public class CTFTraceGrowingTest {
      */
     @Before
     public void init() throws FileNotFoundException, IOException, CTFException {
+        assertNotNull(fixture);
         Metadata md = new Metadata(fixture);
         File metadata = new File(fPathName + "/" + "metadata");
 

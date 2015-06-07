@@ -37,6 +37,8 @@ import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.tree.CommonTree;
 import org.antlr.runtime.tree.RewriteCardinalityException;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.parser.CTFLexer;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
@@ -86,7 +88,7 @@ public class Metadata {
     /**
      * The trace file to which belongs this metadata file.
      */
-    private final CTFTrace trace;
+    private final @NonNull CTFTrace fTrace;
 
     private IOStructGen fTreeParser;
 
@@ -100,15 +102,15 @@ public class Metadata {
      * @param trace
      *            The trace to which belongs this metadata file.
      */
-    public Metadata(CTFTrace trace) {
-        this.trace = trace;
+    public Metadata(@NonNull CTFTrace trace) {
+        fTrace = trace;
     }
 
     /**
      * For network streaming
      */
     public Metadata() {
-        trace = new CTFTrace();
+        fTrace = new CTFTrace();
     }
 
     // ------------------------------------------------------------------------
@@ -130,7 +132,7 @@ public class Metadata {
      * @return the parent trace
      */
     public CTFTrace getTrace() {
-        return trace;
+        return fTrace;
     }
 
     // ------------------------------------------------------------------------
@@ -257,7 +259,7 @@ public class Metadata {
         CommonTree tree = createAST(metadataTextInput);
 
         /* Generate IO structures (declarations) */
-        fTreeParser = new IOStructGen(tree, trace);
+        fTreeParser = new IOStructGen(tree, fTrace);
         fTreeParser.generate();
     }
 
@@ -283,12 +285,12 @@ public class Metadata {
     }
 
     private void readMetaDataTextFragment(Reader metadataTextInput) throws IOException, RecognitionException, ParseException {
-        CommonTree tree = createAST(metadataTextInput);
+        CommonTree tree = NonNullUtils.checkNotNull(createAST(metadataTextInput));
         fTreeParser.setTree(tree);
         fTreeParser.generateFragment();
     }
 
-    private static CommonTree createAST(Reader metadataTextInput) throws IOException,
+    private static @NonNull CommonTree createAST(Reader metadataTextInput) throws IOException,
             RecognitionException {
         /* Create an ANTLR reader */
         ANTLRReaderStream antlrStream;
@@ -300,7 +302,7 @@ public class Metadata {
         CTFParser ctfParser = new CTFParser(tokens, false);
 
         parse_return pr = ctfParser.parse();
-        return pr.getTree();
+        return NonNullUtils.checkNotNull(pr.getTree());
     }
 
     /**
@@ -351,10 +353,10 @@ public class Metadata {
 
     private String getMetadataPath() {
         /* Path of metadata file = trace directory path + metadata filename */
-        if (trace.getTraceDirectory() == null) {
+        if (fTrace.getTraceDirectory() == null) {
             return new String();
         }
-        return trace.getTraceDirectory().getPath()
+        return fTrace.getTraceDirectory().getPath()
                 + Utils.SEPARATOR + METADATA_FILENAME;
     }
 
@@ -407,9 +409,9 @@ public class Metadata {
         }
 
         /* Check UUID */
-        if (!trace.uuidIsSet()) {
-            trace.setUUID(header.getUuid());
-        } else if (!trace.getUUID().equals(header.getUuid())) {
+        if (!fTrace.uuidIsSet()) {
+            fTrace.setUUID(header.getUuid());
+        } else if (!fTrace.getUUID().equals(header.getUuid())) {
             throw new CTFException("UUID mismatch"); //$NON-NLS-1$
         }
 
@@ -517,7 +519,7 @@ public class Metadata {
      * @since 1.0
      */
     public Path copyTo(final File path) throws IOException {
-        Path source = FileSystems.getDefault().getPath(trace.getTraceDirectory().getAbsolutePath(), METADATA_FILENAME);
+        Path source = FileSystems.getDefault().getPath(fTrace.getTraceDirectory().getAbsolutePath(), METADATA_FILENAME);
         Path destPath = FileSystems.getDefault().getPath(path.getAbsolutePath());
         return Files.copy(source, destPath.resolve(source.getFileName()));
     }

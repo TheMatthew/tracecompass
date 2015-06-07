@@ -172,7 +172,9 @@ public class MetadataTest {
     @Before
     public void setUp() throws CTFException {
         assumeTrue(testTrace.exists());
-        fixture = new Metadata(testTrace.getTrace());
+        CTFTrace trace = testTrace.getTrace();
+        assertNotNull(trace);
+        fixture = new Metadata(trace);
     }
 
     /**
