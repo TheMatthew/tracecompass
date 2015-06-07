@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2014 Ericsson, Ecole Polytechnique de Montreal and others
+ * Copyright (c) 2011, 2015 Ericsson, Ecole Polytechnique de Montreal and others
  *
  * All rights reserved. This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License v1.0 which
@@ -91,10 +91,11 @@ public class IOStructGen {
     private final CTFTrace fTrace;
     private CommonTree fTree;
 
+    private final DeclarationScope fRoot = DeclarationScope.createRoot();
     /**
      * The current declaration scope.
      */
-    private DeclarationScope fScope = DeclarationScope.createRoot();
+    private DeclarationScope fScope = fRoot;
 
     /**
      * Data helpers needed for streaming
@@ -170,10 +171,7 @@ public class IOStructGen {
         CommonTree traceNode = null;
         boolean hasStreams = false;
         List<CommonTree> events = new ArrayList<>();
-
-        /* Create a new declaration scope with no parent. */
-        pushScope();
-
+        resetScope();
         for (CommonTree child : children) {
             final int type = child.getType();
             switch (type) {
@@ -234,9 +232,7 @@ public class IOStructGen {
         }
         List<CommonTree> children = getChildren(root);
         List<CommonTree> events = new ArrayList<>();
-        /* Create a new declaration scope with no parent. */
-        pushScope();
-
+        resetScope();
         for (CommonTree child : children) {
             final int type = child.getType();
             switch (type) {
@@ -266,6 +262,10 @@ public class IOStructGen {
         }
         parseEvents(events, !Iterables.isEmpty(fTrace.getStreams()));
         popScope();
+    }
+
+    private void resetScope() {
+        fScope = fRoot;
     }
 
     private void parseCallsite(CommonTree callsite) {
@@ -358,7 +358,7 @@ public class IOStructGen {
             throw new ParseException("Trace block is empty"); //$NON-NLS-1$
         }
 
-        pushScope();
+        pushScope(MetadataStrings.TRACE);
 
         for (CommonTree child : children) {
             switch (child.getType()) {
@@ -554,7 +554,7 @@ public class IOStructGen {
             throw new ParseException("Empty stream block"); //$NON-NLS-1$
         }
 
-        pushScope();
+        pushScope(MetadataStrings.STREAM);
 
         for (CommonTree child : children) {
             switch (child.getType()) {
@@ -681,7 +681,7 @@ public class IOStructGen {
 
         EventDeclaration event = new EventDeclaration();
 
-        pushScope();
+        pushScope(MetadataStrings.EVENT);
 
         for (CommonTree child : children) {
             switch (child.getType()) {
@@ -1543,23 +1543,17 @@ public class IOStructGen {
             switch (child.getType()) {
             case CTFParser.STRUCT_NAME: {
                 hasName = true;
-
                 CommonTree structNameIdentifier = getFirstChild(child);
-
                 structName = structNameIdentifier.getText();
-
                 break;
             }
             case CTFParser.STRUCT_BODY: {
                 structBody = child;
-
                 break;
             }
             case CTFParser.ALIGN: {
                 CommonTree structAlignExpression = getFirstChild(child);
-
                 structAlign = getAlignment(structAlignExpression);
-
                 break;
             }
             default:
@@ -1598,7 +1592,7 @@ public class IOStructGen {
             structDeclaration = new StructDeclaration(structAlign);
 
             /* Parse the body */
-            parseStructBody(structBody, structDeclaration);
+            parseStructBody(structBody, structDeclaration, structName);
 
             /* If struct has name, add it to the current scope. */
             if (hasName) {
@@ -1640,7 +1634,7 @@ public class IOStructGen {
      * @throws ParseException
      */
     private void parseStructBody(CommonTree structBody,
-            StructDeclaration structDeclaration) throws ParseException {
+            StructDeclaration structDeclaration, @Nullable String structName) throws ParseException {
 
         List<CommonTree> structDeclarations = getChildren(structBody);
 
@@ -1648,7 +1642,7 @@ public class IOStructGen {
          * If structDeclaration is null, structBody has no children and the
          * struct body is empty.
          */
-        pushScope();
+        pushNamedScope(structName, MetadataStrings.STRUCT);
 
         for (CommonTree declarationNode : structDeclarations) {
             switch (declarationNode.getType()) {
@@ -1773,6 +1767,7 @@ public class IOStructGen {
              * it could be because the enum was already declared.
              */
             if (enumName != null) {
+                getCurrentScope().setName(enumName);
                 enumDecl = getCurrentScope().lookupEnumRecursive(enumName);
                 if (enumDecl != null) {
                     return (EnumDeclaration) enumDecl;
@@ -1809,7 +1804,7 @@ public class IOStructGen {
             enumDeclaration = new EnumDeclaration(containerTypeDeclaration);
 
             /* Parse the body */
-            parseEnumBody(enumBody, enumDeclaration);
+            parseEnumBody(enumBody, enumDeclaration, enumName);
 
             /* If the enum has name, add it to the current scope. */
             if (enumName != null) {
@@ -1851,12 +1846,12 @@ public class IOStructGen {
      * @throws ParseException
      */
     private void parseEnumBody(CommonTree enumBody,
-            EnumDeclaration enumDeclaration) throws ParseException {
+            EnumDeclaration enumDeclaration, @Nullable String enumName) throws ParseException {
 
         List<CommonTree> enumerators = getChildren(enumBody);
         /* enum body can't be empty (unlike struct). */
 
-        pushScope();
+        pushNamedScope(enumName, MetadataStrings.ENUM);
 
         /*
          * Start at -1, so that if the first enumrator has no explicit value, it
@@ -2026,7 +2021,7 @@ public class IOStructGen {
             variantDeclaration = new VariantDeclaration();
 
             /* Parse the body */
-            parseVariantBody(variantBody, variantDeclaration);
+            parseVariantBody(variantBody, variantDeclaration, variantName);
 
             /* If variant has name, add it to the current scope. */
             if (hasName) {
@@ -2079,11 +2074,11 @@ public class IOStructGen {
     }
 
     private void parseVariantBody(CommonTree variantBody,
-            VariantDeclaration variantDeclaration) throws ParseException {
+            VariantDeclaration variantDeclaration, @Nullable String variantName) throws ParseException {
 
         List<CommonTree> variantDeclarations = getChildren(variantBody);
 
-        pushScope();
+        pushNamedScope(variantName, MetadataStrings.VARIANT);
 
         for (CommonTree declarationNode : variantDeclarations) {
             switch (declarationNode.getType()) {
@@ -2764,8 +2759,8 @@ public class IOStructGen {
     /**
      * Adds a new declaration scope on the top of the scope stack.
      */
-    private void pushScope() {
-        fScope = new DeclarationScope(fScope);
+    private void pushScope(String name) {
+        fScope = new DeclarationScope(fScope, name);
     }
 
     /**
@@ -2773,6 +2768,10 @@ public class IOStructGen {
      */
     private void popScope() {
         fScope = fScope.getParentScope();
+    }
+
+    private void pushNamedScope(@Nullable String name, String defaultName) {
+        pushScope(name == null ? defaultName : name);
     }
 
     /**

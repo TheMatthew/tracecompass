@@ -42,13 +42,15 @@ class DeclarationScope {
     // Attributes
     // ------------------------------------------------------------------------
 
-    private final @NonNull DeclarationScope fParentScope;
+    private @NonNull DeclarationScope fParentScope;
+    private @NonNull HashMap<String, DeclarationScope> fChildren = new HashMap<>();
 
     private final Map<String, StructDeclaration> fStructs = new HashMap<>();
     private final Map<String, EnumDeclaration> fEnums = new HashMap<>();
     private final Map<String, VariantDeclaration> fVariants = new HashMap<>();
     private final Map<String, IDeclaration> fTypes = new HashMap<>();
     private final Map<String, IDeclaration> fIdentifiers = new HashMap<>();
+    private String fName;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -66,9 +68,16 @@ class DeclarationScope {
      *
      * @param parentScope
      *            The parent of the newly created scope.
+     * @param name scope name
      */
-    public DeclarationScope(@NonNull DeclarationScope parentScope) {
+    public DeclarationScope(@NonNull DeclarationScope parentScope, String name) {
         fParentScope = parentScope;
+        fName = name;
+        parentScope.registerChild(name, this);
+    }
+
+    private void registerChild(String name, DeclarationScope declarationScope) {
+        fChildren.put(name, declarationScope);
     }
 
     // ------------------------------------------------------------------------
@@ -82,6 +91,26 @@ class DeclarationScope {
      */
     public @NonNull DeclarationScope getParentScope() {
         return fParentScope;
+    }
+
+    /**
+     * Sets the name of the scope
+     * @param name the name
+     */
+    public void setName(String name) {
+        if (fParentScope != this) {
+            fParentScope.fChildren.remove(fName);
+            fParentScope.fChildren.put(name, this);
+            fName = name;
+        }
+    }
+
+    public void adopt(DeclarationScope newParent){
+        if (fParentScope != this) {
+            fParentScope.fChildren.remove(fName);
+            newParent.fChildren.put(fName, this);
+            fParentScope = newParent;
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -400,13 +429,14 @@ class DeclarationScope {
 
     /**
      * Get root declaration scope
+     *
      * @return root
      */
     public static @NonNull DeclarationScope createRoot() {
         return new DeclarationScope() {
             @Override
             public DeclarationScope getParentScope() {
-                throw new UnsupportedOperationException("Trying to pop root!"); //$NON-NLS-1$
+                return this;
             }
         };
     }
