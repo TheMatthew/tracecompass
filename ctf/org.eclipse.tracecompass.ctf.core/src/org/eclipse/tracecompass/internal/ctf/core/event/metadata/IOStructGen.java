@@ -1545,6 +1545,10 @@ public class IOStructGen {
                 hasName = true;
                 CommonTree structNameIdentifier = getFirstChild(child);
                 structName = structNameIdentifier.getText();
+                DeclarationScope structScope = getCurrentScope().lookupChild(structName);
+                if(structScope!= null){
+                    structScope.setName(structName);
+                }
                 break;
             }
             case CTFParser.STRUCT_BODY: {
@@ -1620,6 +1624,7 @@ public class IOStructGen {
                 throw new ParseException("struct with no name and no body"); //$NON-NLS-1$
             }
         }
+
         return StructDeclarationFlattener.tryFlattenStruct(structDeclaration);
     }
 
@@ -2758,8 +2763,9 @@ public class IOStructGen {
 
     /**
      * Adds a new declaration scope on the top of the scope stack.
+     * @throws ParseException
      */
-    private void pushScope(String name) {
+    private void pushScope(String name) throws ParseException {
         fScope = new DeclarationScope(fScope, name);
     }
 
@@ -2770,7 +2776,7 @@ public class IOStructGen {
         fScope = fScope.getParentScope();
     }
 
-    private void pushNamedScope(@Nullable String name, String defaultName) {
+    private void pushNamedScope(@Nullable String name, String defaultName) throws ParseException {
         pushScope(name == null ? defaultName : name);
     }
 

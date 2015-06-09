@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
@@ -68,7 +69,8 @@ class DeclarationScope {
      *
      * @param parentScope
      *            The parent of the newly created scope.
-     * @param name scope name
+     * @param name
+     *            scope name
      */
     public DeclarationScope(@NonNull DeclarationScope parentScope, String name) {
         fParentScope = parentScope;
@@ -95,7 +97,9 @@ class DeclarationScope {
 
     /**
      * Sets the name of the scope
-     * @param name the name
+     *
+     * @param name
+     *            the name
      */
     public void setName(String name) {
         if (fParentScope != this) {
@@ -105,7 +109,7 @@ class DeclarationScope {
         }
     }
 
-    public void adopt(DeclarationScope newParent){
+    public void adopt(DeclarationScope newParent) {
         if (fParentScope != this) {
             fParentScope.fChildren.remove(fName);
             newParent.fChildren.put(fName, this);
@@ -125,15 +129,13 @@ class DeclarationScope {
      * @param declaration
      *            The type declaration.
      * @throws ParseException
-     *             if a type with the same name has already been defined.
+     *             If the type is already defined
      */
-    public void registerType(String name, IDeclaration declaration)
-            throws ParseException {
+    public void registerType(String name, IDeclaration declaration) throws ParseException {
         /* Check if the type has been defined in the current scope */
         if (fTypes.containsKey(name)) {
             throw new ParseException("Type has already been defined:" + name); //$NON-NLS-1$
         }
-
         /* Add it to the register. */
         fTypes.put(name, declaration);
     }
@@ -236,6 +238,10 @@ class DeclarationScope {
     // ------------------------------------------------------------------------
     // Lookup operations
     // ------------------------------------------------------------------------
+
+    public @Nullable DeclarationScope lookupChild(String name) {
+        return fChildren.get(name);
+    }
 
     /**
      * Looks up a type declaration in the current scope.
