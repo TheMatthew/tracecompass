@@ -1,4 +1,4 @@
-// $ANTLR 3.5.2 org/eclipse/tracecompass/ctf/parser/CTFLexer.g 2015-06-11 17:11:14
+// $ANTLR 3.5.2 org/eclipse/tracecompass/ctf/parser/CTFLexer.g 2015-06-11 18:46:25
 
 /*******************************************************************************
  * Copyright (c) 2010, 2013 Ericsson, Ecole Polytechnique de Montréal and others
