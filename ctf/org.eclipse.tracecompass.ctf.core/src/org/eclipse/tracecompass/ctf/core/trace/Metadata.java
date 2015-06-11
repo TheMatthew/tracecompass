@@ -167,7 +167,9 @@ public class Metadata {
             throw new CTFException("Cannot find metadata file!", e); //$NON-NLS-1$
         } catch (IOException | ParseException e) {
             throw new CTFException(e);
-        } catch (RecognitionException | RewriteCardinalityException e) {
+        } catch (RecognitionException e) {
+            throw new CtfAntlrException(e);
+        } catch (RewriteCardinalityException e) {
             throw new CtfAntlrException(e);
         }
     }
@@ -249,7 +251,9 @@ public class Metadata {
             readMetaDataText(metadataTextInput);
         } catch (IOException | ParseException e) {
             throw new CTFException(e);
-        } catch (RecognitionException | RewriteCardinalityException e) {
+        } catch (RewriteCardinalityException e) {
+            throw new CtfAntlrException(e);
+        } catch (RecognitionException e) {
             throw new CtfAntlrException(e);
         }
 
@@ -279,7 +283,9 @@ public class Metadata {
             readMetaDataTextFragment(metadataTextInput);
         } catch (IOException | ParseException e) {
             throw new CTFException(e);
-        } catch (RecognitionException | RewriteCardinalityException e) {
+        } catch (RecognitionException e) {
+            throw new CtfAntlrException(e);
+        } catch (RewriteCardinalityException e) {
             throw new CtfAntlrException(e);
         }
     }
