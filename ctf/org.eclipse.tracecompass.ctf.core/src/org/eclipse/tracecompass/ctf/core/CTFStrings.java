@@ -98,4 +98,22 @@ public interface CTFStrings {
      * @since 1.0
      */
     String MAGIC = "magic";
+    /**
+     * Header
+     *
+     * @since 1.0
+     */
+    String HEADER = "header";
+    /**
+     * Context
+     *
+     * @since 1.0
+     */
+    String CONTEXT = "context";
+    /**
+     * Packet
+     *
+     * @since 1.0
+     */
+    String PACKET = "packet";
 }

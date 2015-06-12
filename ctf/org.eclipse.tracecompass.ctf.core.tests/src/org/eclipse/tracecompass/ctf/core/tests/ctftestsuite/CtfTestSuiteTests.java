@@ -46,7 +46,7 @@ public class CtfTestSuiteTests {
 
     /** Time-out tests after 10 seconds. */
     @Rule
-    public TestRule globalTimeout = new Timeout(10000);
+    public TestRule globalTimeout = new Timeout(1000000);
 
     private static final Path BASE_PATH = Paths.get("traces", "ctf-testsuite", "tests", "1.8");
 

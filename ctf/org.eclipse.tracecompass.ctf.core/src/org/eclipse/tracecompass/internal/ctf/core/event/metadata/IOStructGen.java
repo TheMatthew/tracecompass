@@ -32,6 +32,8 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.tracecompass.common.core.NonNullUtils;
+import org.eclipse.tracecompass.ctf.core.CTFStrings;
 import org.eclipse.tracecompass.ctf.core.event.CTFClock;
 import org.eclipse.tracecompass.ctf.core.event.types.Encoding;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
@@ -620,7 +622,15 @@ public class IOStructGen {
 
             IDeclaration eventHeaderDecl = parseTypeSpecifierList(
                     typeSpecifier, null);
-
+            DeclarationScope scope = getCurrentScope();
+            DeclarationScope eventHeaderScope = scope.lookupChild(MetadataStrings.STRUCT);
+            if (eventHeaderScope == null) {
+                throw new ParseException("event.header scope not found"); //$NON-NLS-1$
+            }
+            pushScope(MetadataStrings.EVENT);
+            eventHeaderScope.adopt(getCurrentScope());
+            eventHeaderScope.setName(CTFStrings.HEADER);
+            popScope();
             if (eventHeaderDecl instanceof StructDeclaration) {
                 stream.setEventHeader((StructDeclaration) eventHeaderDecl);
             } else if (eventHeaderDecl instanceof IEventHeaderDeclaration) {
@@ -1172,6 +1182,40 @@ public class IOStructGen {
                     /* Create the sequence declaration. */
                     declaration = new SequenceDeclaration(lengthName,
                             declaration);
+                } else if (isTrace(first)) {
+                    /* Sequence */
+                    String lengthName = parseTraceScope(lengthChildren);
+
+                    /* check that lengthName was declared */
+                    if (isSignedIntegerField(lengthName)) {
+                        throw new ParseException("Sequence declared with length that is not an unsigned integer"); //$NON-NLS-1$
+                    }
+                    /* Create the sequence declaration. */
+                    declaration = new SequenceDeclaration(lengthName,
+                            declaration);
+
+                } else if (isStream(first)) {
+                    /* Sequence */
+                    String lengthName = parseStreamScope(lengthChildren);
+
+                    /* check that lengthName was declared */
+                    if (isSignedIntegerField(lengthName)) {
+                        throw new ParseException("Sequence declared with length that is not an unsigned integer"); //$NON-NLS-1$
+                    }
+                    /* Create the sequence declaration. */
+                    declaration = new SequenceDeclaration(lengthName,
+                            declaration);
+                } else if (isEvent(first)) {
+                    /* Sequence */
+                    String lengthName = parseEventScope(lengthChildren);
+
+                    /* check that lengthName was declared */
+                    if (isSignedIntegerField(lengthName)) {
+                        throw new ParseException("Sequence declared with length that is not an unsigned integer"); //$NON-NLS-1$
+                    }
+                    /* Create the sequence declaration. */
+                    declaration = new SequenceDeclaration(lengthName,
+                            declaration);
                 } else {
                     throw childTypeError(first);
                 }
@@ -1183,6 +1227,77 @@ public class IOStructGen {
         }
 
         return declaration;
+    }
+
+    private static String parseStreamScope(List<CommonTree> lengthChildren) throws ParseException {
+        List<CommonTree> sublist = lengthChildren.subList(1, lengthChildren.size());
+
+        CommonTree nextElem = getFirstChild(NonNullUtils.checkNotNull(sublist.get(0)));
+        String lengthName = null;
+        if (isUnaryString(nextElem)) {
+            lengthName = parseUnaryString(nextElem);
+        }
+
+        int type = nextElem.getType();
+        if (("EVENT").equals(lengthName)) {
+            type = CTFParser.EVENT;
+        }
+        switch (type) {
+        case CTFParser.IDENTIFIER:
+            lengthName =  concatenateUnaryStrings(sublist);
+            break;
+        case CTFParser.EVENT:
+            lengthName = parseEventScope(sublist);
+            break;
+        default:
+            if (lengthName == null) {
+                throw new ParseException("Unsupported scope stream." + nextElem); //$NON-NLS-1$
+            }
+        }
+        return MetadataStrings.STREAM + '.' + lengthName;
+    }
+
+    private static String parseEventScope(List<CommonTree> lengthChildren) throws ParseException {
+        List<CommonTree> sublist = lengthChildren.subList(1, lengthChildren.size());
+        CommonTree nextElem = getFirstChild(NonNullUtils.checkNotNull(sublist.get(0)));
+        String lengthName;
+        switch (nextElem.getType()) {
+        case CTFParser.UNARY_EXPRESSION_STRING:
+        case CTFParser.IDENTIFIER:
+            lengthName = MetadataStrings.EVENT + '.' + concatenateUnaryStrings(sublist);
+            break;
+        default:
+            throw new ParseException("Unsupported scope event." + nextElem); //$NON-NLS-1$
+        }
+        return lengthName;
+    }
+
+    private static String parseTraceScope(List<CommonTree> lengthChildren) throws ParseException {
+        List<CommonTree> sublist = lengthChildren.subList(1, lengthChildren.size());
+        CommonTree nextElem = getFirstChild(NonNullUtils.checkNotNull(sublist.get(0)));
+        String lengthName;
+        switch (nextElem.getType()) {
+        case CTFParser.IDENTIFIER:
+            lengthName = concatenateUnaryStrings(sublist);
+            break;
+        case CTFParser.STREAM:
+            return parseStreamScope(sublist);
+        default:
+            throw new ParseException("Unsupported scope trace." + nextElem); //$NON-NLS-1$
+        }
+        return lengthName;
+    }
+
+    private static boolean isEvent(CommonTree first) {
+        return first.getType() == CTFParser.EVENT;
+    }
+
+    private static boolean isStream(CommonTree first) {
+        return first.getType() == CTFParser.STREAM;
+    }
+
+    private static boolean isTrace(CommonTree first) {
+        return first.getType() == CTFParser.TRACE;
     }
 
     private boolean isSignedIntegerField(String lengthName) throws ParseException {
@@ -1546,7 +1661,7 @@ public class IOStructGen {
                 CommonTree structNameIdentifier = getFirstChild(child);
                 structName = structNameIdentifier.getText();
                 DeclarationScope structScope = getCurrentScope().lookupChild(structName);
-                if(structScope!= null){
+                if (structScope != null) {
                     structScope.setName(structName);
                 }
                 break;
@@ -2715,6 +2830,9 @@ public class IOStructGen {
         StringBuilder sb = new StringBuilder();
 
         CommonTree first = getFirstList(strings);
+        if( first.getText().equals(".")) {
+            first = getFirstChild(first);
+        }
         sb.append(parseUnaryString(first));
 
         boolean isFirst = true;
@@ -2763,9 +2881,8 @@ public class IOStructGen {
 
     /**
      * Adds a new declaration scope on the top of the scope stack.
-     * @throws ParseException
      */
-    private void pushScope(String name) throws ParseException {
+    private void pushScope(String name) {
         fScope = new DeclarationScope(fScope, name);
     }
 

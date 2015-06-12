@@ -305,7 +305,7 @@ public class Metadata {
         /* Parse the metadata text and get the AST */
         CTFLexer ctfLexer = new CTFLexer(antlrStream);
         CommonTokenStream tokens = new CommonTokenStream(ctfLexer);
-        CTFParser ctfParser = new CTFParser(tokens, false);
+        CTFParser ctfParser = new CTFParser(tokens, true);
 
         parse_return pr = ctfParser.parse();
         return NonNullUtils.checkNotNull(pr.getTree());
