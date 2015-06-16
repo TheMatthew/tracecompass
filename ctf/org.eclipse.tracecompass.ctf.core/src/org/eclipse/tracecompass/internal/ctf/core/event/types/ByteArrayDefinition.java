@@ -55,7 +55,7 @@ public final class ByteArrayDefinition extends AbstractArrayDefinition {
      *            the string content
      */
     public ByteArrayDefinition(CompoundDeclaration declaration,
-            @Nullable IDefinitionScope definitionScope,
+            IDefinitionScope definitionScope,
             String fieldName,
             byte[] content) {
         super(declaration, definitionScope, fieldName);

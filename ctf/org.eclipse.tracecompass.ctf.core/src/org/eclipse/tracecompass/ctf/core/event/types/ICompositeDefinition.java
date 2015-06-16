@@ -14,6 +14,9 @@ package org.eclipse.tracecompass.ctf.core.event.types;
 
 import java.util.List;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.tracecompass.ctf.core.event.scope.IDefinitionScope;
+
 /**
  * Interface for data definitions containing heterogenous definitions
  * (subfields)
@@ -37,5 +40,14 @@ public interface ICompositeDefinition extends IDefinition {
      * @return the field names array
      */
     List<String> getFieldNames();
+
+    /**
+     * Reassigns the definitionScope
+     *
+     * @param definitionScope
+     *            the DefinitionScope to assign
+     * @since 1.0
+     */
+    void setDefintionScope(@NonNull IDefinitionScope definitionScope);
 
 }

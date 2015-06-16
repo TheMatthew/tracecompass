@@ -176,7 +176,7 @@ public final class EventHeaderLargeDeclaration extends Declaration implements IE
     }
 
     @Override
-    public EventHeaderDefinition createDefinition(@Nullable IDefinitionScope definitionScope, String fieldName, BitBuffer input) throws CTFException {
+    public EventHeaderDefinition createDefinition(IDefinitionScope definitionScope, String fieldName, BitBuffer input) throws CTFException {
         alignRead(input);
         ByteOrder bo = input.getByteOrder();
         input.setByteOrder(fByteOrder);
@@ -184,14 +184,14 @@ public final class EventHeaderLargeDeclaration extends Declaration implements IE
         long second = input.get(COMPACT_TS, false);
         if (first != EXTENDED_VALUE) {
             input.setByteOrder(bo);
-            return new EventHeaderDefinition(this, first, second, COMPACT_TS);
+            return new EventHeaderDefinition(this, definitionScope, first, second, COMPACT_TS);
         }
         long timestampLong = input.get(FULL_TS, false);
         input.setByteOrder(bo);
         if (second > Integer.MAX_VALUE) {
             throw new CTFException("ID " + second + " larger than " + Integer.MAX_VALUE + " is currently unsupported by the parser"); //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$
         }
-        return new EventHeaderDefinition(this, (int) second, timestampLong, FULL_TS);
+        return new EventHeaderDefinition(this, definitionScope, (int) second, timestampLong, FULL_TS);
     }
 
     @Override

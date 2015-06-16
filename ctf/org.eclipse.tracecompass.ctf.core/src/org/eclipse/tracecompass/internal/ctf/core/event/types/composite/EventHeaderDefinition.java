@@ -14,11 +14,15 @@ package org.eclipse.tracecompass.internal.ctf.core.event.types.composite;
 
 import java.util.List;
 
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.tracecompass.common.core.NonNullUtils;
+import org.eclipse.tracecompass.ctf.core.event.scope.IDefinitionScope;
 import org.eclipse.tracecompass.ctf.core.event.scope.ILexicalScope;
 import org.eclipse.tracecompass.ctf.core.event.types.Declaration;
 import org.eclipse.tracecompass.ctf.core.event.types.Definition;
 import org.eclipse.tracecompass.ctf.core.event.types.ICompositeDefinition;
+import org.eclipse.tracecompass.ctf.core.event.types.IDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.IEventHeaderDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDefinition;
@@ -31,12 +35,26 @@ import com.google.common.collect.ImmutableList;
  *
  * @author Matthew Khouzam
  */
+@NonNullByDefault
 public final class EventHeaderDefinition extends Definition implements ICompositeDefinition {
 
-    private static final List<String> FIELD_NAMES = ImmutableList.of(
+    private static final List<String> FIELD_NAMES = NonNullUtils.checkNotNull(ImmutableList.of(
             IEventHeaderDeclaration.ID,
-            IEventHeaderDeclaration.TIMESTAMP
-            );
+            IEventHeaderDeclaration.TIMESTAMP));
+
+    private static final IDefinitionScope DEFAULT_SCOPE = new IDefinitionScope() {
+
+        @Override
+        public @Nullable ILexicalScope getScopePath() {
+            return null;
+        }
+
+        @Override
+        public @Nullable IDefinition lookupDefinition(@Nullable String lookupPath) {
+            return null;
+        }
+
+    };
 
     private final int fId;
     private final long fTimestamp;
@@ -54,8 +72,27 @@ public final class EventHeaderDefinition extends Definition implements IComposit
      * @param timestampLength
      *            the number of bits valid in the timestamp
      */
-    public EventHeaderDefinition(@NonNull Declaration eventHeaderDecl, int id, long timestamp, int timestampLength) {
-        super(eventHeaderDecl, null, ILexicalScope.EVENT_HEADER.getPath(), ILexicalScope.EVENT_HEADER);
+    @Deprecated
+    public EventHeaderDefinition(Declaration eventHeaderDecl, int id, long timestamp, int timestampLength) {
+        this(eventHeaderDecl, DEFAULT_SCOPE, id, timestamp, timestampLength);
+    }
+
+    /**
+     * Event header defintion
+     *
+     * @param id
+     *            the event id
+     * @param timestamp
+     *            the timestamp
+     * @param eventHeaderDecl
+     *            The declaration of this defintion
+     * @param scope
+     *            the parent scope
+     * @param timestampLength
+     *            the number of bits valid in the timestamp
+     */
+    public EventHeaderDefinition(Declaration eventHeaderDecl, IDefinitionScope scope, int id, long timestamp, int timestampLength) {
+        super(eventHeaderDecl, scope, ILexicalScope.EVENT_HEADER.getPath(), ILexicalScope.EVENT_HEADER);
         fId = id;
         fTimestamp = timestamp;
         fTimestampLength = timestampLength;
@@ -89,10 +126,14 @@ public final class EventHeaderDefinition extends Definition implements IComposit
     }
 
     @Override
-    public Definition getDefinition(String fieldName) {
+    public @Nullable Definition getDefinition(@Nullable String fieldName) {
+        if (fieldName == null) {
+            return null;
+        }
         if (fieldName.equals(IEventHeaderDeclaration.ID)) {
             return new IntegerDefinition(IntegerDeclaration.INT_32B_DECL, null, IEventHeaderDeclaration.ID, getId());
-        } else if (fieldName.equals(IEventHeaderDeclaration.TIMESTAMP)) {
+        }
+        if (fieldName.equals(IEventHeaderDeclaration.TIMESTAMP)) {
             return new IntegerDefinition(IntegerDeclaration.INT_64B_DECL, null, IEventHeaderDeclaration.TIMESTAMP, getTimestamp());
         }
         return null;
@@ -101,5 +142,10 @@ public final class EventHeaderDefinition extends Definition implements IComposit
     @Override
     public List<String> getFieldNames() {
         return FIELD_NAMES;
+    }
+
+    @Override
+    public void setDefintionScope(IDefinitionScope definitionScope) {
+        super.setDefinitionScope(definitionScope);
     }
 }

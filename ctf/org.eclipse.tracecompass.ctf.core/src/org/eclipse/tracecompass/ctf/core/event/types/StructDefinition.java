@@ -156,7 +156,7 @@ public final class StructDefinition extends ScopedDefinition implements IComposi
         if (val != -1) {
             return fDefinitions[val];
         }
-        return null;
+        return (Definition) getDefinitionScope().lookupDefinition(lookupPath);
     }
 
     @Override
@@ -180,4 +180,11 @@ public final class StructDefinition extends ScopedDefinition implements IComposi
         return builder.toString();
     }
 
+    /**
+     * @since 1.0
+     */
+    @Override
+    public void setDefintionScope(@NonNull IDefinitionScope definitionScope) {
+        super.setDefinitionScope(definitionScope);
+    }
 }

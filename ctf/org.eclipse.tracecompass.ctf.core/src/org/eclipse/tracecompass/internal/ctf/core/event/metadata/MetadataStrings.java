@@ -122,5 +122,6 @@ public interface MetadataStrings {
     String VARIANT = "variant";
     /** enum */
     String ENUM = "enum";
+    String HEADER = "header";
 
 }

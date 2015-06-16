@@ -190,7 +190,7 @@ public class StructDeclaration extends Declaration {
         fMaxAlign = Math.max(fMaxAlign, declaration.getAlignment());
     }
 
-    private void fillStruct(@NonNull BitBuffer input, final Definition[] myFields, StructDefinition structDefinition) throws CTFException {
+    private void fillStruct(@NonNull BitBuffer input, final Definition[] myFields, @NonNull StructDefinition structDefinition) throws CTFException {
         Iterator<Map.Entry<String, IDeclaration>> iter = fFieldMap.entrySet().iterator();
         for (int i = 0; i < fFieldMap.size(); i++) {
             Map.Entry<String, IDeclaration> entry = iter.next();

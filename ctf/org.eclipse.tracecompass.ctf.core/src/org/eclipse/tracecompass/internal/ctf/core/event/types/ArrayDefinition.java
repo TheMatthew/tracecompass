@@ -17,7 +17,6 @@ import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.ctf.core.event.scope.IDefinitionScope;
 import org.eclipse.tracecompass.ctf.core.event.types.AbstractArrayDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.CompoundDeclaration;
@@ -62,7 +61,7 @@ public final class ArrayDefinition extends AbstractArrayDefinition {
      *            the content of the array
      */
     public ArrayDefinition(CompoundDeclaration declaration,
-            @Nullable IDefinitionScope definitionScope,
+            IDefinitionScope definitionScope,
             String fieldName,
             List<Definition> definitions) {
         super(declaration, definitionScope, fieldName);

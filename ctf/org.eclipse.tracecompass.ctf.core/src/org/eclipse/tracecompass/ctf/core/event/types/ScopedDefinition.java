@@ -38,7 +38,7 @@ public abstract class ScopedDefinition extends Definition implements IDefinition
      *            the name of the definition. (it is a field in the parent
      *            scope)
      */
-    public ScopedDefinition(IDeclaration declaration, @Nullable IDefinitionScope definitionScope, String fieldName) {
+    public ScopedDefinition(IDeclaration declaration, IDefinitionScope definitionScope, String fieldName) {
         super(declaration, definitionScope, fieldName);
     }
 
@@ -56,7 +56,7 @@ public abstract class ScopedDefinition extends Definition implements IDefinition
      *            the lexical scope
      * @since 1.0
      */
-    public ScopedDefinition(StructDeclaration declaration, @Nullable IDefinitionScope definitionScope, String fieldName, ILexicalScope scope) {
+    public ScopedDefinition(StructDeclaration declaration, IDefinitionScope definitionScope, String fieldName, ILexicalScope scope) {
         super(declaration, definitionScope, fieldName, scope);
     }
 

@@ -14,7 +14,6 @@ package org.eclipse.tracecompass.ctf.core.event.types;
 import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.ctf.core.event.scope.IDefinitionScope;
 
 /**
@@ -37,7 +36,7 @@ public abstract class AbstractArrayDefinition extends Definition {
      *            the name of the definition. (it is a field in the parent
      *            scope)
      */
-    public AbstractArrayDefinition(IDeclaration declaration, @Nullable IDefinitionScope definitionScope, String fieldName) {
+    public AbstractArrayDefinition(IDeclaration declaration, IDefinitionScope definitionScope, String fieldName) {
         super(declaration, definitionScope, fieldName);
     }
 

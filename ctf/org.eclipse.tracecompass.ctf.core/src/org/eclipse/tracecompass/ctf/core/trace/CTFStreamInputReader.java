@@ -22,6 +22,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
+import org.eclipse.tracecompass.ctf.core.event.scope.IDefinitionScope;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
 import org.eclipse.tracecompass.internal.ctf.core.Activator;
 
@@ -502,6 +503,14 @@ public class CTFStreamInputReader implements AutoCloseable {
     public String toString() {
         // this helps debugging
         return fId + ' ' + fCurrentEvent.toString();
+    }
+
+    /**
+     * @return a defintionScope
+     * @since 1.0
+     */
+    public IDefinitionScope getDeclarationScope() {
+        return fStreamInput;
     }
 
 }

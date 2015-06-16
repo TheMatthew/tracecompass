@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.io.BitBuffer;
+import org.eclipse.tracecompass.ctf.core.event.types.Definition;
 import org.eclipse.tracecompass.ctf.core.event.types.Encoding;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.FloatDeclaration;
@@ -385,8 +386,12 @@ public class EventHeaderDeclarationTest {
         assertNotNull(def);
         assertEquals(ID, def.getId());
         assertEquals(TIMESTAMP, def.getTimestamp());
-        assertEquals(ID, ((IntegerDefinition) def.getDefinition("id")).getValue());
-        assertEquals(TIMESTAMP, ((IntegerDefinition) def.getDefinition("timestamp")).getValue());
+        final Definition idDef = def.getDefinition("id");
+        final Definition tsDef = def.getDefinition("timestamp");
+        assertNotNull(idDef);
+        assertNotNull(tsDef);
+        assertEquals(ID, ((IntegerDefinition) idDef).getValue());
+        assertEquals(TIMESTAMP, ((IntegerDefinition) tsDef).getValue());
     }
 
     /**
@@ -410,8 +415,12 @@ public class EventHeaderDeclarationTest {
         assertNotNull(def);
         assertEquals(ID, def.getId());
         assertEquals(TIMESTAMP, def.getTimestamp());
-        assertEquals(ID, ((IntegerDefinition) def.getDefinition("id")).getValue());
-        assertEquals(TIMESTAMP, ((IntegerDefinition) def.getDefinition("timestamp")).getValue());
+        final Definition idDef = def.getDefinition("id");
+        final Definition tsDef = def.getDefinition("timestamp");
+        assertNotNull(idDef);
+        assertNotNull(tsDef);
+        assertEquals(ID, ((IntegerDefinition) idDef).getValue());
+        assertEquals(TIMESTAMP, ((IntegerDefinition) tsDef).getValue());
     }
 
     /**

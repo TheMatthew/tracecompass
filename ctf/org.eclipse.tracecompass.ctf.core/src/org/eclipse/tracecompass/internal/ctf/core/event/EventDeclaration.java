@@ -21,10 +21,8 @@ import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.io.BitBuffer;
-import org.eclipse.tracecompass.ctf.core.event.scope.ILexicalScope;
 import org.eclipse.tracecompass.ctf.core.event.types.ICompositeDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
-import org.eclipse.tracecompass.ctf.core.event.types.StructDefinition;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInputReader;
 
@@ -80,13 +78,10 @@ public class EventDeclaration implements IEventDeclaration {
     }
 
     @Override
-    public EventDefinition createDefinition(CTFStreamInputReader streamInputReader, @NonNull BitBuffer input, long timestamp) throws CTFException {
+    public EventDefinition createDefinition(CTFStreamInputReader streamInputReader, ICompositeDefinition eventHeader, @NonNull BitBuffer input, long timestamp) throws CTFException {
         StructDeclaration streamEventContextDecl = streamInputReader.getStreamEventContextDecl();
-        StructDefinition streamEventContext = streamEventContextDecl != null ? streamEventContextDecl.createDefinition(fStream.getTrace(), ILexicalScope.STREAM_EVENT_CONTEXT, input) : null;
         ICompositeDefinition packetContext = streamInputReader.getPacketReader().getCurrentPacketEventHeader();
-        StructDefinition eventContext = fContext != null ? fContext.createDefinition(fStream.getTrace(), ILexicalScope.CONTEXT, input) : null;
-        StructDefinition eventPayload = fFields != null ? fFields.createDefinition(fStream.getTrace(), ILexicalScope.FIELDS, input) : null;
-        if( !hasAField() && !hasAContext() ){
+        if (!hasAField() && !hasAContext()) {
             throw new CTFException("Empty events are not permitted"); //$NON-NLS-1$
         }
         // a bit lttng specific
@@ -96,15 +91,16 @@ public class EventDeclaration implements IEventDeclaration {
                 this,
                 streamInputReader,
                 timestamp,
-                streamEventContext,
-                eventContext,
                 packetContext,
-                eventPayload);
+                eventHeader,
+                streamEventContextDecl,
+                fContext,
+                fFields, input);
     }
 
     private boolean hasAContext() {
         final StructDeclaration context = getContext();
-        return context!= null && !context.getFields().isEmpty();
+        return context != null && !context.getFields().isEmpty();
     }
 
     private boolean hasAField() {
@@ -349,6 +345,13 @@ public class EventDeclaration implements IEventDeclaration {
         result = (prime * result) + ((fStream == null) ? 0 : fStream.hashCode());
         result = (prime * result) + fCustomAttributes.hashCode();
         return result;
+    }
+
+    @Deprecated
+    @Override
+    public EventDefinition createDefinition(CTFStreamInputReader streamInputReader, BitBuffer input, long timestamp) throws CTFException {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

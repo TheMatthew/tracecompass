@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.tracecompass.ctf.core.CTFException;
+import org.eclipse.tracecompass.ctf.core.event.io.BitBuffer;
 import org.eclipse.tracecompass.ctf.core.event.scope.IDefinitionScope;
 import org.eclipse.tracecompass.ctf.core.event.scope.ILexicalScope;
 import org.eclipse.tracecompass.ctf.core.event.scope.LexicalScope;
@@ -26,6 +28,7 @@ import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDefinition;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInputReader;
 import org.eclipse.tracecompass.internal.ctf.core.event.EventDeclaration;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.MetadataStrings;
 
 /**
  * Representation of a particular instance of an event.
@@ -65,6 +68,11 @@ public final class EventDefinition implements IDefinitionScope {
      * The event fields structure definition.
      */
     private final ICompositeDefinition fFields;
+
+    /**
+     * Event header
+     */
+    private final ICompositeDefinition fEventHeader;
 
     /**
      * The StreamInputReader that reads this event definition.
@@ -108,6 +116,42 @@ public final class EventDefinition implements IDefinitionScope {
         fEventContext = eventContext;
         fPacketContext = packetContext;
         fStreamContext = streamContext;
+        fEventHeader = null;
+    }
+
+    /**
+     * constructor with dynamic scopes
+     *
+     * @param declaration
+     * @param streamInputReader
+     * @param timestamp
+     * @param packetContext
+     * @param eventHeader
+     * @param streamEventContextDecl
+     * @param context
+     * @param fields
+     * @param input
+     * @throws CTFException
+     *
+     * @since 1.0
+     */
+    public EventDefinition(EventDeclaration declaration,
+            CTFStreamInputReader streamInputReader,
+            long timestamp,
+            ICompositeDefinition packetContext,
+            ICompositeDefinition eventHeader,
+            StructDeclaration streamEventContextDecl,
+            StructDeclaration context,
+            StructDeclaration fields,
+            @NonNull BitBuffer input) throws CTFException {
+        fEventHeader = eventHeader;
+        fDeclaration = declaration;
+        fStreamInputReader = streamInputReader;
+        fTimestamp = timestamp;
+        fStreamContext = streamEventContextDecl != null ? streamEventContextDecl.createDefinition(this, ILexicalScope.STREAM_EVENT_CONTEXT, input) : null;
+        fEventContext = context != null ? context.createDefinition(this, ILexicalScope.CONTEXT, input) : null;
+        fFields = fields != null ? fields.createDefinition(this, ILexicalScope.FIELDS, input) : null;
+        fPacketContext = packetContext;
     }
 
     // ------------------------------------------------------------------------
@@ -257,9 +301,51 @@ public final class EventDefinition implements IDefinitionScope {
             return fEventContext;
         } else if (lookupPath.equals("fields")) { //$NON-NLS-1$
             return fFields;
+
         } else {
+            return lookupRecursive(lookupPath);
+        }
+    }
+
+    private IDefinition lookupRecursive(String lookupPath) {
+        String[] tokens = lookupPath.split("\\.");
+        if (tokens.length < 1) {
             return null;
         }
+        if (tokens[0].equals(MetadataStrings.STREAM)) {
+            return lookupStreamRecursive(tokens, 1);
+
+        }
+        if (tokens[0].equals(MetadataStrings.EVENT)) {
+            return lookupEventRecursive(tokens, 1);
+        }
+        return null;
+
+    }
+
+    private IDefinition lookupEventRecursive(String[] tokens, int pos) {
+        if (tokens.length < pos + 1) {
+            return null;
+        }
+        final String head = tokens[pos];
+        if (head.equals(MetadataStrings.FIELDS_STRING)) {
+            return fFields.getDefinition(tokens[pos + 1]);
+        }
+        if (head.equals(MetadataStrings.HEADER)) {
+            return fEventHeader.getDefinition(tokens[pos + 1]);
+        }
+        return null;
+    }
+
+    private IDefinition lookupStreamRecursive(String[] tokens, int pos) {
+        if (tokens.length < pos + 1) {
+            return null;
+        }
+        final String head = tokens[pos];
+        if (head.equals(MetadataStrings.EVENT)) {
+            return lookupEventRecursive(tokens, pos+1);
+        }
+        return null;
     }
 
     @Override

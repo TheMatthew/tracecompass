@@ -1223,10 +1223,23 @@ public class IOStructGen {
         }
 
         if (identifier != null) {
-            identifierSB.append(identifier.getText());
+            final String text = NonNullUtils.nullToEmptyString(identifier.getText());
+            identifierSB.append(text);
+            registerType(declaration, text);
         }
 
         return declaration;
+    }
+
+    private void registerType(IDeclaration declaration, String identifier) throws ParseException {
+        final DeclarationScope currentScope = getCurrentScope();
+        if (declaration instanceof StructDeclaration) {
+            currentScope.registerStruct(identifier, (StructDeclaration) declaration);
+        } else if (declaration instanceof EnumDeclaration) {
+            currentScope.registerEnum(identifier, (EnumDeclaration) declaration);
+        } else if (declaration instanceof VariantDeclaration) {
+            currentScope.registerVariant(identifier, (VariantDeclaration) declaration);
+        }
     }
 
     private static String parseStreamScope(List<CommonTree> lengthChildren) throws ParseException {

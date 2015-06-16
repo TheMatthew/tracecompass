@@ -149,7 +149,7 @@ public final class EventHeaderCompactDeclaration extends Declaration implements 
     }
 
     @Override
-    public EventHeaderDefinition createDefinition(@Nullable IDefinitionScope definitionScope, String fieldName, BitBuffer input) throws CTFException {
+    public EventHeaderDefinition createDefinition(IDefinitionScope definitionScope, String fieldName, BitBuffer input) throws CTFException {
         alignRead(input);
         ByteOrder bo = input.getByteOrder();
         input.setByteOrder(fByteOrder);
@@ -157,7 +157,7 @@ public final class EventHeaderCompactDeclaration extends Declaration implements 
         if (enumId != EXTENDED_VALUE) {
             long timestamp2 = input.get(COMPACT_TS, false);
             input.setByteOrder(bo);
-            return new EventHeaderDefinition(this, enumId, timestamp2, COMPACT_TS);
+            return new EventHeaderDefinition(this, definitionScope, enumId, timestamp2, COMPACT_TS);
         }
         // needed since we read 5 bits
         input.position(input.position() + 3);
@@ -167,7 +167,7 @@ public final class EventHeaderCompactDeclaration extends Declaration implements 
         }
         long timestampLong = input.get(FULL_TS, false);
         input.setByteOrder(bo);
-        return new EventHeaderDefinition(this, (int) id, timestampLong, FULL_TS);
+        return new EventHeaderDefinition(this, definitionScope, (int) id, timestampLong, FULL_TS);
 
     }
 

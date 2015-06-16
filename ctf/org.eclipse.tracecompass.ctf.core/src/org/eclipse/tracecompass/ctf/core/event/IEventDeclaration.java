@@ -16,6 +16,7 @@ import java.util.Set;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.io.BitBuffer;
+import org.eclipse.tracecompass.ctf.core.event.types.ICompositeDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInputReader;
@@ -50,6 +51,23 @@ public interface IEventDeclaration {
      *             IOExceptions.
      */
     EventDefinition createDefinition(CTFStreamInputReader streamInputReader, @NonNull BitBuffer input, long timestamp) throws CTFException;
+    /**
+     * Creates an instance of EventDefinition corresponding to this declaration.
+     *
+     * @param streamInputReader
+     *            The StreamInputReader for which this definition is created.
+     * @param eventHeader
+     * @param input
+     *            the bitbuffer input source
+     * @param timestamp
+     *            The timestamp when the event was taken
+     * @return A new EventDefinition.
+     * @throws CTFException
+     *             As a bitbuffer is used to read, it could have wrapped
+     *             IOExceptions.
+     * @since 1.0
+     */
+    EventDefinition createDefinition(CTFStreamInputReader streamInputReader,ICompositeDefinition eventHeader, @NonNull BitBuffer input, long timestamp) throws CTFException;
 
     /**
      * Gets the name of an event declaration

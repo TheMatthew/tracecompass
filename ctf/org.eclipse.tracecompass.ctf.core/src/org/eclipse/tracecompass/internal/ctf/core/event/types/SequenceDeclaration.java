@@ -91,12 +91,10 @@ public class SequenceDeclaration extends CompoundDeclaration {
 
     @Override
     public AbstractArrayDefinition createDefinition(
-            @Nullable IDefinitionScope definitionScope, String fieldName, BitBuffer input) throws CTFException {
+            IDefinitionScope definitionScope, String fieldName, BitBuffer input) throws CTFException {
         IDefinition lenDef = null;
 
-        if (definitionScope != null) {
-            lenDef = definitionScope.lookupDefinition(getLengthName());
-        }
+        lenDef = definitionScope.lookupDefinition(getLengthName());
 
         if (lenDef == null) {
             throw new CTFException("Sequence length field not found"); //$NON-NLS-1$

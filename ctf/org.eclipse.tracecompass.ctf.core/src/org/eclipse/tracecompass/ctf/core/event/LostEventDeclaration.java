@@ -17,6 +17,7 @@ import java.util.Set;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.CTFStrings;
 import org.eclipse.tracecompass.ctf.core.event.io.BitBuffer;
+import org.eclipse.tracecompass.ctf.core.event.types.ICompositeDefinition;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
@@ -92,6 +93,11 @@ public class LostEventDeclaration implements IEventDeclaration {
 
     @Override
     public String getCustomAttribute(String key) {
+        return null;
+    }
+
+    @Override
+    public EventDefinition createDefinition(CTFStreamInputReader streamInputReader, ICompositeDefinition eventHeader, BitBuffer input, long timestamp) throws CTFException {
         return null;
     }
 

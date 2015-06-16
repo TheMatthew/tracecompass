@@ -42,7 +42,7 @@ public abstract class Definition implements IDefinition {
     /** The complete path of this field */
     private final @NonNull ILexicalScope fPath;
 
-    private final IDefinitionScope fDefinitionScope;
+    private @NonNull IDefinitionScope fDefinitionScope;
 
     @NonNull
     private final IDeclaration fDeclaration;
@@ -62,7 +62,7 @@ public abstract class Definition implements IDefinition {
      *            the name of the definition. (it is a field in the parent
      *            scope)
      */
-    public Definition(@NonNull IDeclaration declaration, IDefinitionScope definitionScope, @NonNull String fieldName) {
+    public Definition(@NonNull IDeclaration declaration, @NonNull IDefinitionScope definitionScope, @NonNull String fieldName) {
         this(declaration, definitionScope, fieldName, declaration.getPath(definitionScope, fieldName));
     }
 
@@ -84,7 +84,7 @@ public abstract class Definition implements IDefinition {
      *            the scope
      * @since 1.0
      */
-    public Definition(@NonNull IDeclaration declaration, IDefinitionScope definitionScope, @NonNull String fieldName, @NonNull ILexicalScope scope) {
+    public Definition(@NonNull IDeclaration declaration, @NonNull IDefinitionScope definitionScope, @NonNull String fieldName, @NonNull ILexicalScope scope) {
         fDeclaration = declaration;
         fDefinitionScope = definitionScope;
         fFieldName = fieldName;
@@ -110,6 +110,14 @@ public abstract class Definition implements IDefinition {
     @Override
     public ILexicalScope getScopePath() {
         return fPath;
+    }
+
+    /**
+     * @param definitionScope
+     * @since 1.0
+     */
+    public void setDefinitionScope(@NonNull IDefinitionScope definitionScope){
+        fDefinitionScope = definitionScope;
     }
 
     /**

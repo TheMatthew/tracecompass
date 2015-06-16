@@ -101,7 +101,7 @@ public final class ArrayDeclaration extends CompoundDeclaration {
     // ------------------------------------------------------------------------
 
     @Override
-    public AbstractArrayDefinition createDefinition(@Nullable IDefinitionScope definitionScope,
+    public AbstractArrayDefinition createDefinition(@NonNull IDefinitionScope definitionScope,
             @NonNull String fieldName, BitBuffer input) throws CTFException {
         alignRead(input);
         if (isAlignedBytes()) {
@@ -123,7 +123,7 @@ public final class ArrayDeclaration extends CompoundDeclaration {
         return "[declaration] array[" + Integer.toHexString(hashCode()) + ']'; //$NON-NLS-1$
     }
 
-    private @NonNull List<Definition> read(@NonNull BitBuffer input, @Nullable IDefinitionScope definitionScope, String fieldName) throws CTFException {
+    private @NonNull List<Definition> read(@NonNull BitBuffer input, @NonNull IDefinitionScope definitionScope, String fieldName) throws CTFException {
         Builder<Definition> definitions = new ImmutableList.Builder<>();
         if (!fChildrenNames.containsKey(fieldName)) {
             for (int i = 0; i < fLength; i++) {
