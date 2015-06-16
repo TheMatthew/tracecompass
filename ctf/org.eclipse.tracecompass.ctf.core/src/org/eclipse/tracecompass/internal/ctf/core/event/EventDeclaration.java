@@ -86,7 +86,9 @@ public class EventDeclaration implements IEventDeclaration {
         ICompositeDefinition packetContext = streamInputReader.getPacketReader().getCurrentPacketEventHeader();
         StructDefinition eventContext = fContext != null ? fContext.createDefinition(fStream.getTrace(), ILexicalScope.CONTEXT, input) : null;
         StructDefinition eventPayload = fFields != null ? fFields.createDefinition(fStream.getTrace(), ILexicalScope.FIELDS, input) : null;
-
+        if( !hasAField() && !hasAContext() ){
+            throw new CTFException("Empty events are not permitted"); //$NON-NLS-1$
+        }
         // a bit lttng specific
         // CTF doesn't require a timestamp,
         // but it's passed to us
@@ -98,6 +100,15 @@ public class EventDeclaration implements IEventDeclaration {
                 eventContext,
                 packetContext,
                 eventPayload);
+    }
+
+    private boolean hasAContext() {
+        final StructDeclaration context = getContext();
+        return context!= null && !context.getFields().isEmpty();
+    }
+
+    private boolean hasAField() {
+        return fFields != null && !fFields.getFields().isEmpty();
     }
 
     // ------------------------------------------------------------------------
