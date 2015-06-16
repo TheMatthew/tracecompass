@@ -83,7 +83,7 @@ public class IOStructGen {
     private static final int INTEGER_BASE_10 = 10;
     private static final int INTEGER_BASE_8 = 8;
     private static final int INTEGER_BASE_2 = 2;
-    private static final long DEFAULT_ALIGNMENT = 8;
+    private static final long DEFAULT_ALIGNMENT = 1;
     private static final int DEFAULT_FLOAT_EXPONENT = 8;
     private static final int DEFAULT_FLOAT_MANTISSA = 24;
     private static final int DEFAULT_INT_BASE = 10;
@@ -1244,7 +1244,7 @@ public class IOStructGen {
         }
         switch (type) {
         case CTFParser.IDENTIFIER:
-            lengthName =  concatenateUnaryStrings(sublist);
+            lengthName = concatenateUnaryStrings(sublist);
             break;
         case CTFParser.EVENT:
             lengthName = parseEventScope(sublist);
@@ -2830,7 +2830,7 @@ public class IOStructGen {
         StringBuilder sb = new StringBuilder();
 
         CommonTree first = getFirstList(strings);
-        if( first.getText().equals(".")) {
+        if (first.getText().equals(".")) {
             first = getFirstChild(first);
         }
         sb.append(parseUnaryString(first));
