@@ -146,6 +146,16 @@ import java.util.HashSet;
         $declaration::isTypedef=false;
     }
 
+    void typedefPush() {
+        debug_print("typedefPush" + $declaration);
+        declaration_stack.push(new declaration_scope());
+    }
+    
+    void typedefPop() {
+        debug_print("typedefPop" + $declaration);
+        declaration_stack.pop();
+    }
+
     boolean inTypedef() {
         return $declaration::isTypedef;
     }
@@ -366,6 +376,8 @@ structName
   ;
 
 structOrVariantDeclarationList
+@init{typedefPush();typedefOff();}
+@after{typedefPop();}
   : structOrVariantDeclaration+
   ;
 
