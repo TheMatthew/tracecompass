@@ -32,6 +32,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.CTFClock;
 import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
@@ -394,6 +395,62 @@ public class CtfTmfTrace extends TmfTrace
      */
     public Map<String, String> getEnvironment() {
         return fTrace.getEnvironment();
+    }
+
+    /**
+     * Convenience method to get the tracer name from the trace's metadata. The
+     * leading and trailing "" will be stripped from the returned string.
+     *
+     * @return The tracer's name, or null if it is not defined in the metadata.
+     * @since 2.0
+     */
+    public @Nullable String getTracerName() {
+        String str = fTrace.getEnvironment().get("tracer_name"); //$NON-NLS-1$
+        if (str == null) {
+            return null;
+        }
+        /* Remove the "" at the start and end of the string */
+        return str.replaceAll("^\"|\"$", ""); //$NON-NLS-1$ //$NON-NLS-2$
+    }
+
+    /**
+     * Convenience method to get the tracer's major version from the trace
+     * metadata.
+     *
+     * @return The tracer's major version, or -1 if it is not defined.
+     * @since 2.0
+     */
+    public int getTracerMajorVersion() {
+        String str = fTrace.getEnvironment().get("tracer_major"); //$NON-NLS-1$
+        if (str == null) {
+            return -1;
+        }
+        try {
+            int ret = Integer.parseInt(str);
+            return ret;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * Convenience method to get the tracer's minor version from the trace
+     * metadata.
+     *
+     * @return The tracer's minor version, or -1 if it is not defined.
+     * @since 2.0
+     */
+    public int getTracerMinorVersion() {
+        String str = fTrace.getEnvironment().get("tracer_minor"); //$NON-NLS-1$
+        if (str == null) {
+            return -1;
+        }
+        try {
+            int ret = Integer.parseInt(str);
+            return ret;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     // -------------------------------------------

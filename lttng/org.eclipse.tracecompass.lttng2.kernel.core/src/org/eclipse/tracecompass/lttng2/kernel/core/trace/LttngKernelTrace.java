@@ -106,26 +106,26 @@ public class LttngKernelTrace extends CtfTmfTrace implements IKernelTrace {
     public void initTrace(IResource resource, String path,
             Class<? extends ITmfEvent> eventType) throws TmfTraceException {
         super.initTrace(resource, path, eventType);
-        fOriginTracer = getTracerFromEnv(this.getEnvironment());
+        fOriginTracer = getTracerFromEnv();
     }
 
     /**
      * Identify which tracer generated a trace from its metadata.
      */
-    private static OriginTracer getTracerFromEnv(Map<String, String> traceEnv) {
-        String tracerName = traceEnv.get("tracer_name"); //$NON-NLS-1$
-        String tracerMajor = traceEnv.get("tracer_major"); //$NON-NLS-1$
-        String tracerMinor = traceEnv.get("tracer_minor"); //$NON-NLS-1$
+    private OriginTracer getTracerFromEnv() {
+        String tracerName = getTracerName();
+        int tracerMajor = getTracerMajorVersion();
+        int tracerMinor = getTracerMinorVersion();
 
-        if ("\"perf\"".equals(tracerName)) { //$NON-NLS-1$
+        if ("perf".equals(tracerName)) { //$NON-NLS-1$
             return OriginTracer.PERF;
 
-        } else if ("\"lttng-modules\"".equals(tracerName) && tracerMajor != null && tracerMinor != null) { //$NON-NLS-1$
+        } else if ("lttng-modules".equals(tracerName)) { //$NON-NLS-1$
             /* Look for specific versions of LTTng */
-            if (Integer.valueOf(tracerMajor) >= 2) {
-                if (Integer.valueOf(tracerMinor) >= 7) {
+            if (tracerMajor >= 2) {
+                if (tracerMinor >= 7) {
                     return OriginTracer.LTTNG27;
-                } else if (Integer.valueOf(tracerMinor) >= 6) {
+                } else if (tracerMinor >= 6) {
                     return OriginTracer.LTTNG26;
                 }
             }
