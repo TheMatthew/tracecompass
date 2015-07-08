@@ -58,7 +58,9 @@ public enum CtfTmfTestTrace {
     /** Trace with non-standard field sizes */
     FUNKY_TRACE,
     /** Example dynamic scope, timestamp in field, empty stream trace */
-    DYNSCOPE;
+    DYNSCOPE,
+    /** Trace with debug-info (ip contexts and libdl instrumentation) */
+    DEBUG_INFO;
 
 
     private final String fPath;

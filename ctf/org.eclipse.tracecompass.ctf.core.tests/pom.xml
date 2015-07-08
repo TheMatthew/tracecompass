@@ -94,6 +94,7 @@
               <filesets>
                 <fileset><directory>traces/ctf-testsuite</directory></fileset>
                 <fileset><directory>traces/cyg-profile</directory></fileset>
+                <fileset><directory>traces/debuginfo-test-app2</directory></fileset>
                 <fileset><directory>traces/django-benchmark</directory></fileset>
                 <fileset><directory>traces/funky_trace</directory></fileset>
                 <fileset><directory>traces/hello-lost</directory></fileset>

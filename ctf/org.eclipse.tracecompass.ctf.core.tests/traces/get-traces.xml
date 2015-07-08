@@ -39,6 +39,7 @@
       <available file="bug446190.tar.bz2" />
       <available file="flipping-endianness.tar.bz2" />
       <available file="bug470846.tar.bz2" />
+      <available file="debuginfo-test-app2.tar.bz2" />
     </and>
   </condition>
   <antcall target="extractTraces"/>
@@ -100,6 +101,7 @@
   <get ignoreerrors="true" maxtime="200" skipexisting="true" dest="bug446190.tar.bz2" src="http://archive.eclipse.org/tracecompass/test-traces/ctf/bug446190.tar.bz2" />
   <get ignoreerrors="true" maxtime="200" skipexisting="true" dest="flipping-endianness.tar.bz2" src="http://archive.eclipse.org/tracecompass/test-traces/ctf/flipping-endianness.tar.bz2" />
   <get ignoreerrors="true" maxtime="200" skipexisting="true" dest="bug470846.tar.bz2" src="http://archive.eclipse.org/tracecompass/test-traces/ctf/bug470846.tar.bz2" />
+  <get ignoreerrors="true" maxtime="200" skipexisting="true" dest="debuginfo-test-app2.tar.bz2" src="http://archive.eclipse.org/tracecompass/test-traces/ctf/debuginfo-test-app2.tar.bz2" />
 </target>
 
 <target name="pullTestSuite" if="testSuiteExists">
@@ -136,6 +138,7 @@
     <bunzip2 src="bug446190.tar.bz2"/>
     <bunzip2 src="flipping-endianness.tar.bz2"/>
     <bunzip2 src="bug470846.tar.bz2"/>
+    <bunzip2 src="debuginfo-test-app2.tar.bz2"/>
     <unzip src="testtraceExp.zip" dest="./exp" />
 
     <untar src="sample-ctf-trace-20120412.tar" dest="." />
@@ -149,6 +152,7 @@
     <untar src="bug446190.tar" dest="." />
     <untar src="flipping-endianness.tar" dest="." />
     <untar src="bug470846.tar" dest="." />
+    <untar src="debuginfo-test-app2.tar" dest="." />
 
     <echo message="Traces extracted successfully"/>
 </target>

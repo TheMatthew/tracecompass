@@ -226,6 +226,18 @@ public enum CtfTestTrace {
      */
     DYNSCOPE("../../ctf/org.eclipse.tracecompass.ctf.core.tests/traces/ctfwriter_JF8nq3", 101003, 1),
 
+    /**
+     * UST Trace with Debug Info information
+     *
+     * <pre>
+     * Trace Size: 76 KB (including index/)
+     * Tracer: lttng-ust 2.8
+     * Event count: 41
+     * Trace length: ~1 s
+     * </pre>
+     */
+    DEBUG_INFO("../../ctf/org.eclipse.tracecompass.ctf.core.tests/traces/debuginfo-test-app2", 41, 1),
+
     /** Set of many traces, do not call getTrace */
     TRACE_EXPERIMENT("../../ctf/org.eclipse.tracecompass.ctf.core.tests/traces/exp", -1, -1);
 
