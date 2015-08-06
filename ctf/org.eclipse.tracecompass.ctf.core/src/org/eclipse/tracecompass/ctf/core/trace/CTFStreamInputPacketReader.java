@@ -13,9 +13,12 @@
  *******************************************************************************/
 package org.eclipse.tracecompass.ctf.core.trace;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.StandardOpenOption;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -49,7 +52,7 @@ import org.eclipse.tracecompass.internal.ctf.core.event.types.composite.EventHea
  * @author Matthew Khouzam
  * @author Simon Marchi
  */
-public class CTFStreamInputPacketReader implements IDefinitionScope, AutoCloseable {
+public class CTFStreamInputPacketReader implements IDefinitionScope, AutoCloseable, IPacketReader {
 
     // ------------------------------------------------------------------------
     // Attributes
@@ -189,19 +192,14 @@ public class CTFStreamInputPacketReader implements IDefinitionScope, AutoCloseab
     // ------------------------------------------------------------------------
 
     /**
-     * Gets the current packet
-     *
-     * @return the current packet
+     * @since 1.1
      */
-    ICTFPacketDescriptor getCurrentPacket() {
+    @Override
+    public ICTFPacketDescriptor getCurrentPacket() {
         return fCurrentPacket;
     }
 
-    /**
-     * Gets the CPU (core) number
-     *
-     * @return the CPU (core) number
-     */
+    @Override
     public int getCPU() {
         return fCurrentCpu;
     }
@@ -217,11 +215,14 @@ public class CTFStreamInputPacketReader implements IDefinitionScope, AutoCloseab
 
     @NonNull
     private ByteBuffer getByteBufferAt(long position, long size) throws CTFException, IOException {
-        ByteBuffer map = SafeMappedByteBuffer.map(fStreamInputReader.getFc(), MapMode.READ_ONLY, position, size);
-        if (map == null) {
-            throw new CTFIOException("Failed to allocate mapped byte buffer"); //$NON-NLS-1$
+        // theoretically a bytebuffer works event if a file is closed.
+        try (FileChannel fc = FileChannel.open(new File(fStreamInputReader.getFilename()).toPath(), StandardOpenOption.READ)) {
+            ByteBuffer map = SafeMappedByteBuffer.map(fc, MapMode.READ_ONLY, position, size);
+            if (map == null) {
+                throw new CTFIOException("Failed to allocate mapped byte buffer"); //$NON-NLS-1$
+            }
+            return map;
         }
-        return map;
     }
 
     /**
@@ -285,11 +286,7 @@ public class CTFStreamInputPacketReader implements IDefinitionScope, AutoCloseab
         }
     }
 
-    /**
-     * Returns whether it is possible to read any more events from this packet.
-     *
-     * @return True if it is possible to read any more events from this packet.
-     */
+    @Override
     public boolean hasMoreEvents() {
         BitBuffer bitBuffer = fBitBuffer;
         ICTFPacketDescriptor currentPacket = fCurrentPacket;
@@ -299,14 +296,7 @@ public class CTFStreamInputPacketReader implements IDefinitionScope, AutoCloseab
         return false;
     }
 
-    /**
-     * Reads the next event of the packet into the right event definition.
-     *
-     * @return The event definition containing the event data that was just
-     *         read.
-     * @throws CTFException
-     *             If there was a problem reading the trace
-     */
+    @Override
     public EventDefinition readNextEvent() throws CTFException {
         /* Default values for those fields */
         // compromise since we cannot have 64 bit addressing of arrays yet.
@@ -326,8 +316,7 @@ public class CTFStreamInputPacketReader implements IDefinitionScope, AutoCloseab
             StructDeclaration lostFields = lostEventDeclaration.getFields();
             // this is a hard coded map, we know it's not null
             IntegerDeclaration lostFieldsDecl = (IntegerDeclaration) lostFields.getField(CTFStrings.LOST_EVENTS_FIELD);
-            if (lostFieldsDecl == null)
-            {
+            if (lostFieldsDecl == null) {
                 throw new IllegalStateException("Lost events count not declared!"); //$NON-NLS-1$
             }
             IntegerDeclaration lostEventsDurationDecl = (IntegerDeclaration) lostFields.getField(CTFStrings.LOST_EVENTS_DURATION);
@@ -349,8 +338,7 @@ public class CTFStreamInputPacketReader implements IDefinitionScope, AutoCloseab
                     new StructDefinition(
                             lostFields,
                             this, "fields", //$NON-NLS-1$
-                            fields
-                    ));
+                            fields));
 
         }
 
@@ -424,7 +412,6 @@ public class CTFStreamInputPacketReader implements IDefinitionScope, AutoCloseab
         return null;
     }
 
-
     /**
      * Get stream event header
      *
@@ -439,6 +426,7 @@ public class CTFStreamInputPacketReader implements IDefinitionScope, AutoCloseab
      *
      * @return the current packet event header
      */
+    @Override
     public StructDefinition getCurrentPacketEventHeader() {
         if (fCurrentTracePacketHeaderDef instanceof StructDefinition) {
             return (StructDefinition) fCurrentTracePacketHeaderDef;

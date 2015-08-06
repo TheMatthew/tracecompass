@@ -32,6 +32,7 @@ import org.eclipse.tracecompass.ctf.core.event.types.StructDefinition;
 import org.eclipse.tracecompass.ctf.core.trace.CTFIOException;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStreamInputReader;
+import org.eclipse.tracecompass.ctf.core.trace.ICTFPacketDescriptor;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.composite.EventHeaderDefinition;
 
 /**
@@ -104,7 +105,7 @@ public class EventDeclaration implements IEventDeclaration {
     public EventDefinition createDefinition(CTFStreamInputReader streamInputReader, ICompositeDefinition eventHeaderDef, @NonNull BitBuffer input, long prevTimestamp) throws CTFException {
         StructDeclaration streamEventContextDecl = streamInputReader.getStreamEventContextDecl();
         StructDefinition streamEventContext = streamEventContextDecl != null ? streamEventContextDecl.createDefinition(fStream.getTrace(), ILexicalScope.STREAM_EVENT_CONTEXT, input) : null;
-        ICompositeDefinition packetContext = streamInputReader.getPacketReader().getCurrentPacketEventHeader();
+        ICompositeDefinition packetContext = streamInputReader.getCurrentPacketReader().getCurrentPacketEventHeader();
         StructDefinition eventContext = fContext != null ? fContext.createFieldDefinition(eventHeaderDef, fStream.getTrace(), ILexicalScope.CONTEXT, input) : null;
         StructDefinition eventPayload = fFields != null ? fFields.createFieldDefinition(eventHeaderDef, fStream.getTrace(), ILexicalScope.FIELDS, input) : null;
         long timestamp = calculateTimestamp(eventHeaderDef, prevTimestamp, eventPayload, eventContext);
@@ -112,6 +113,45 @@ public class EventDeclaration implements IEventDeclaration {
         return new EventDefinition(
                 this,
                 streamInputReader,
+                timestamp,
+                eventHeaderDef,
+                streamEventContext,
+                eventContext,
+                packetContext,
+                eventPayload);
+    }
+
+    /**
+     * Creates an instance of EventDefinition corresponding to this declaration.
+     *
+     * @param streamEventContextDecl
+     *            event context
+     * @param packetDescriptor
+     *            current packet
+     * @param packetContext
+     *            packet context
+     * @param eventHeaderDef
+     *            The event header definition
+     * @param input
+     *            the bitbuffer input source
+     * @param prevTimestamp
+     *            The timestamp when the event was taken
+     * @return A new EventDefinition.
+     * @throws CTFException
+     *             As a bitbuffer is used to read, it could have wrapped
+     *             IOExceptions.
+     */
+    public EventDefinition createDefinition(StructDeclaration streamEventContextDecl, ICTFPacketDescriptor packetDescriptor, ICompositeDefinition packetContext, ICompositeDefinition eventHeaderDef, @NonNull BitBuffer input, long prevTimestamp)
+            throws CTFException {
+        StructDefinition streamEventContext = streamEventContextDecl != null ? streamEventContextDecl.createDefinition(fStream.getTrace(), ILexicalScope.STREAM_EVENT_CONTEXT, input) : null;
+        StructDefinition eventContext = fContext != null ? fContext.createFieldDefinition(eventHeaderDef, fStream.getTrace(), ILexicalScope.CONTEXT, input) : null;
+        StructDefinition eventPayload = fFields != null ? fFields.createFieldDefinition(eventHeaderDef, fStream.getTrace(), ILexicalScope.FIELDS, input) : null;
+        long timestamp = calculateTimestamp(eventHeaderDef, prevTimestamp, eventPayload, eventContext);
+
+        int cpu = (int) packetDescriptor.getTargetId();
+        return new EventDefinition(
+                this,
+                cpu,
                 timestamp,
                 eventHeaderDef,
                 streamEventContext,
@@ -149,7 +189,7 @@ public class EventDeclaration implements IEventDeclaration {
     public EventDefinition createDefinition(CTFStreamInputReader streamInputReader, @NonNull BitBuffer input, long timestamp) throws CTFException {
         StructDeclaration streamEventContextDecl = streamInputReader.getStreamEventContextDecl();
         StructDefinition streamEventContext = streamEventContextDecl != null ? streamEventContextDecl.createDefinition(fStream.getTrace(), ILexicalScope.STREAM_EVENT_CONTEXT, input) : null;
-        ICompositeDefinition packetContext = streamInputReader.getPacketReader().getCurrentPacketEventHeader();
+        ICompositeDefinition packetContext = streamInputReader.getCurrentPacketReader().getCurrentPacketEventHeader();
         StructDefinition eventContext = fContext != null ? fContext.createDefinition(fStream.getTrace(), ILexicalScope.CONTEXT, input) : null;
         StructDefinition eventPayload = fFields != null ? fFields.createDefinition(fStream.getTrace(), ILexicalScope.FIELDS, input) : null;
 

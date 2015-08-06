@@ -478,19 +478,19 @@ public class CTFTrace implements IDefinitionScope {
             streamBitBuffer = new BitBuffer(byteBuffer, this.getByteOrder());
             if (fPacketHeaderDecl != null) {
                 /* Read the packet header */
-                fPacketHeaderDef = fPacketHeaderDecl.createDefinition(this, ILexicalScope.PACKET_HEADER, streamBitBuffer);
+                setPacketHeaderDef(fPacketHeaderDecl.createDefinition(this, ILexicalScope.PACKET_HEADER, streamBitBuffer));
             }
         } catch (IOException e) {
             /* Shouldn't happen at this stage if every other check passed */
             throw new CTFException(e);
         }
-        if (fPacketHeaderDef != null) {
-            validateMagicNumber(fPacketHeaderDef);
+        if (getPacketHeaderDef() != null) {
+            validateMagicNumber(getPacketHeaderDef());
 
-            validateUUID(fPacketHeaderDef);
+            validateUUID(getPacketHeaderDef());
 
             /* Read the stream ID */
-            IDefinition streamIDDef = fPacketHeaderDef.lookupDefinition("stream_id"); //$NON-NLS-1$
+            IDefinition streamIDDef = getPacketHeaderDef().lookupDefinition("stream_id"); //$NON-NLS-1$
 
             if (streamIDDef instanceof IntegerDefinition) {
                 /* This doubles as a null check */
@@ -563,7 +563,7 @@ public class CTFTrace implements IDefinitionScope {
     @Override
     public Definition lookupDefinition(String lookupPath) {
         if (lookupPath.equals(ILexicalScope.TRACE_PACKET_HEADER.getPath())) {
-            return fPacketHeaderDef;
+            return getPacketHeaderDef();
         }
         return null;
     }
@@ -926,6 +926,21 @@ public class CTFTrace implements IDefinitionScope {
      */
     public DeclarationScope getScope() {
         return fScope;
+    }
+
+    /**
+     * gets the packet header definition (UUID, magic number and such)
+     *
+     * @return the packet header definition
+     *
+     * @since 1.1
+     */
+    public StructDefinition getPacketHeaderDef() {
+        return fPacketHeaderDef;
+    }
+
+    private void setPacketHeaderDef(StructDefinition packetHeaderDef) {
+        fPacketHeaderDef = packetHeaderDef;
     }
 }
 

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
 
+import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
@@ -55,8 +56,7 @@ public class CTFTraceReader implements AutoCloseable {
     /**
      * Vector of all the trace file readers.
      */
-    private final List<CTFStreamInputReader> fStreamInputReaders =
-            Collections.synchronizedList(new ArrayList<CTFStreamInputReader>());
+    private final List<CTFStreamInputReader> fStreamInputReaders = Collections.synchronizedList(new ArrayList<CTFStreamInputReader>());
 
     /**
      * Priority queue to order the trace file readers by timestamp.
@@ -115,7 +115,7 @@ public class CTFTraceReader implements AutoCloseable {
          */
         fStartTime = 0;
         if (hasMoreEvents()) {
-            fStartTime = getTopStream().getCurrentEvent().getTimestamp();
+            fStartTime = NonNullUtils.checkNotNull(getTopStream().getCurrentEvent()).getTimestamp();
             setEndTime(fStartTime);
         }
     }
@@ -214,7 +214,7 @@ public class CTFTraceReader implements AutoCloseable {
                 /*
                  * Create a reader and add it to the group.
                  */
-                fStreamInputReaders.add(new CTFStreamInputReader(streamInput));
+                fStreamInputReaders.add(new CTFStreamInputReader(NonNullUtils.checkNotNull(streamInput)));
             }
         }
 
@@ -249,7 +249,7 @@ public class CTFTraceReader implements AutoCloseable {
                  * Create a reader.
                  */
                 CTFStreamInputReader streamInputReader = new CTFStreamInputReader(
-                        streamInput);
+                        NonNullUtils.checkNotNull(streamInput));
 
                 /*
                  * Add it to the group.
@@ -313,7 +313,6 @@ public class CTFTraceReader implements AutoCloseable {
              * Add each trace file reader in the priority queue, if we are able
              * to read an event from it.
              */
-            reader.setParent(this);
             CTFResponse readNextEvent = reader.readNextEvent();
             if (readNextEvent == CTFResponse.OK || readNextEvent == CTFResponse.WAIT) {
                 fPrio.add(reader);
@@ -366,13 +365,12 @@ public class CTFTraceReader implements AutoCloseable {
              * Add it back in the queue.
              */
             fPrio.add(top);
-            final long topEnd = fTrace.timestampCyclesToNanos(top.getCurrentEvent().getTimestamp());
-            setEndTime(Math.max(topEnd, getEndTime()));
-            fEventCountPerTraceFile[top.getName()]++;
-
-            if (top.getCurrentEvent() != null) {
-                fEndTime = Math.max(top.getCurrentEvent().getTimestamp(),
-                        fEndTime);
+            EventDefinition currentEvent = top.getCurrentEvent();
+            if (currentEvent != null) {
+                final long topEnd = fTrace.timestampCyclesToNanos(currentEvent.getTimestamp());
+                setEndTime(Math.max(topEnd, getEndTime()));
+                fEventCountPerTraceFile[top.getName()]++;
+                fEndTime = Math.max(currentEvent.getTimestamp(), fEndTime);
             }
             break;
         }

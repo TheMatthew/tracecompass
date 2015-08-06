@@ -12,6 +12,7 @@
 
 package org.eclipse.tracecompass.ctf.core.trace;
 
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -69,6 +70,8 @@ public class CTFStream {
      * The inputs associated to this stream
      */
     private final Set<CTFStreamInput> fInputs = new HashSet<>();
+
+    private @Nullable ByteOrder fByteOrder;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -254,6 +257,20 @@ public class CTFStream {
             return null;
         }
         return fEvents.get(eventIndex);
+    }
+
+    /**
+     * Gets the byte order of a stream which could theoretically be different
+     * from that of a trace
+     * @return the byte order of the stream
+     *
+     * @since 1.1
+     */
+    public ByteOrder getByteOrder() {
+        if (fByteOrder == null) {
+            return fTrace.getByteOrder();
+        }
+        return fByteOrder;
     }
 
     // ------------------------------------------------------------------------
