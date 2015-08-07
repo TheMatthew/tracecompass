@@ -37,6 +37,14 @@
             name="%latency.view.name"
             restorable="true">
       </view>
+      <view
+            allowMultiple="false"
+            category="org.eclipse.linuxtools.lttng2.ui.views.category"
+            class="org.eclipse.tracecompass.analysis.os.linux.ui.views.contextswitch.ContextSwitchView"
+            id="org.eclipse.tracecompass.analysis.os.linux.ui.views.contextswitch"
+            name="Context Switch"
+            restorable="true">
+      </view>
    </extension>
    <extension
          point="org.eclipse.linuxtools.tmf.core.analysis">
@@ -56,9 +64,16 @@
       </output>
       <output
             class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
-            id="org.eclipse.tracecompass.analysis.os.linux.views.cpuusage">
+            id="org.eclipse.tracecompass.analysis.os.linux.ui.views.contextswitch">
          <analysisModuleClass
                class="org.eclipse.tracecompass.analysis.os.linux.core.cpuusage.KernelCpuUsageAnalysis">
+         </analysisModuleClass>
+      </output>
+            <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.analysis.os.linux.views.cpuusage">
+         <analysisModuleClass
+               class="org.eclipse.tracecompass.analysis.os.linux.ui.views.contextswitch.ContextSwitchView">
          </analysisModuleClass>
       </output>
       <output

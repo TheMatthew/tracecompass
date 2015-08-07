@@ -52,6 +52,12 @@ public class Messages extends NLS {
     public static String ResourcesView_attributeProcessName;
     public static String ResourcesView_attributeSyscallName;
 
+    public static String ContextSwitchView_stateTypeName;
+    public static String ContextSwitchView_multipleStates;
+    public static String ContextSwitchView_contextSwitchInIntervalName;
+    public static String ContextSwitchView_chooseCPUName;
+    public static String ContextSwitchView_chooseCPUDialogName;
+
     static {
         // initialize resource bundle
         NLS.initializeMessages(BUNDLE_NAME, Messages.class);

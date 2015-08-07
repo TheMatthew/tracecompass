@@ -35,6 +35,8 @@
             </module>
       <module
             analysis_module="org.eclipse.tracecompass.analysis.os.linux.core.contextswitch.KernelContextSwitchAnalysis"
+            applies_experiment="false"
+            automatic="false"
             id="org.eclipse.tracecompass.analysis.os.linux.contextswitch"
             name="Context switch analysis">
          <tracetype
