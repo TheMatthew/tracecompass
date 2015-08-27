@@ -38,30 +38,33 @@ public interface ICTFPacketDescriptor {
     long getOffsetBits();
 
     /**
-     * Gets the size of the packet in bits. If you have a 1mb packet that is 499kb
-     * used and the header is 1kb, this will return 1mb
+     * Gets the size of the packet in bits. If you have a 1mb packet that is
+     * 499kb used and the header is 1kb, this will return 1mb
      *
      * @return the packetSizeBits
      */
     long getPacketSizeBits();
 
     /**
-     * Get the content size of the packet in bits. If you have a 1mb packet that is 499kb
-     * used and the header is 1kb, this will return 500kb (used data + header
+     * Get the content size of the packet in bits. If you have a 1mb packet that
+     * is 499kb used and the header is 1kb, this will return 500kb (used data +
+     * header)
      *
      * @return the contentSizeBits
      */
     long getContentSizeBits();
 
     /**
-     * Gets the beginning timestamp of the packet, all events within the packet will have timestamps after or at this time
+     * Gets the beginning timestamp of the packet, all events within the packet
+     * will have timestamps after or at this time
      *
      * @return the timestampBegin
      */
     long getTimestampBegin();
 
     /**
-     * Gets the ending timestamp of the packet, all events within the packet will have timestamps before or at this time
+     * Gets the ending timestamp of the packet, all events within the packet
+     * will have timestamps before or at this time
      *
      * @return the timestampEnd
      */
@@ -103,5 +106,13 @@ public interface ICTFPacketDescriptor {
      * @return The offset of the packet in bytes
      */
     long getOffsetBytes();
+
+    /**
+     * Get the offset where the events start and the packet header ends
+     *
+     * @return the offset in the file of the end of the packet header
+     * @since 2.0
+     */
+    long getPayloadStartBits();
 
 }
