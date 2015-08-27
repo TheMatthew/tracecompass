@@ -12,6 +12,7 @@
 
 package org.eclipse.tracecompass.ctf.core.trace;
 
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -69,6 +70,8 @@ public class CTFStream {
      * The inputs associated to this stream
      */
     private final Set<CTFStreamInput> fInputs = new HashSet<>();
+
+    private @Nullable ByteOrder fByteOrder;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -254,6 +257,44 @@ public class CTFStream {
             return null;
         }
         return fEvents.get(eventIndex);
+    }
+
+    /**
+     * Gets the byte order of a stream which could be different from that of a
+     * trace
+     *
+     * @return the byte order of the stream
+     *
+     * @since 2.0
+     */
+    public ByteOrder getByteOrder() {
+        ByteOrder byteOrder = fByteOrder;
+        if (byteOrder == null) {
+            return fTrace.getByteOrder();
+        }
+        return byteOrder;
+    }
+
+    /**
+     * Set a stream byte order
+     *
+     * @param byteOrder
+     *            the byte order of the stream
+     * @since 2.0
+     */
+    public void setByteOrder(ByteOrder byteOrder) {
+        fByteOrder = byteOrder;
+    }
+
+    /**
+     * Is the local byte order set, this can return false even if the byte order
+     * returns a value since the trace byte order is read if this is null
+     *
+     * @return the local byte order is set?
+     * @since 2.0
+     */
+    public boolean isStreamByteOrderSet() {
+        return fByteOrder != null;
     }
 
     // ------------------------------------------------------------------------

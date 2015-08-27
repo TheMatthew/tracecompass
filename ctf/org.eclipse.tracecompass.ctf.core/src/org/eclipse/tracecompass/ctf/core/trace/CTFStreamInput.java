@@ -199,7 +199,7 @@ public class CTFStreamInput implements IDefinitionScope {
          * The BitBuffer to extract data from the StreamInput
          */
         BitBuffer bitBuffer = new BitBuffer();
-        bitBuffer.setByteOrder(getStream().getTrace().getByteOrder());
+        bitBuffer.setByteOrder(getStream().getByteOrder());
 
     }
 
@@ -272,7 +272,7 @@ public class CTFStreamInput implements IDefinitionScope {
          */
         int maximumSize = fStreamPacketContextDecl.getMaximumSize() + fTracePacketHeaderDecl.getMaximumSize();
         BitBuffer bitBuffer = new BitBuffer(createPacketBitBuffer(fc, dataOffsetbits/Byte.SIZE, maximumSize));
-        bitBuffer.setByteOrder(getStream().getTrace().getByteOrder());
+        bitBuffer.setByteOrder(getStream().getByteOrder());
         return bitBuffer;
     }
 
