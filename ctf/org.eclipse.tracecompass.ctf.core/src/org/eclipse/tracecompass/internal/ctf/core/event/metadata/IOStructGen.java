@@ -626,7 +626,16 @@ public class IOStructGen {
             long streamID = getStreamID(rightNode);
 
             stream.setId(streamID);
-        } else if (left.equals(MetadataStrings.EVENT_HEADER)) {
+        }
+        else if (left.equals(MetadataStrings.BYTE_ORDER)) {
+            if (stream.isStreamByteOrderSet()) {
+                throw new ParseException("stream byte order already defined"); //$NON-NLS-1$
+            }
+
+            ByteOrder byteOrder = getByteOrder(rightNode);
+
+            stream.setByteOrder(byteOrder);
+        }else if (left.equals(MetadataStrings.EVENT_HEADER)) {
             if (stream.isEventHeaderSet()) {
                 throw new ParseException("event.header already defined"); //$NON-NLS-1$
             }

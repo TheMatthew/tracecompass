@@ -151,7 +151,7 @@ public class CTFStreamInputReader implements AutoCloseable {
      * @return the trace byte order
      */
     public ByteOrder getByteOrder() {
-        return fStreamInput.getStream().getTrace().getByteOrder();
+        return fStreamInput.getStream().getByteOrder();
     }
 
     /**
