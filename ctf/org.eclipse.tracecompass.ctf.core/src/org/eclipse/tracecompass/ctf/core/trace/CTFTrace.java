@@ -51,8 +51,10 @@ import org.eclipse.tracecompass.ctf.core.event.types.StructDefinition;
 import org.eclipse.tracecompass.internal.ctf.core.SafeMappedByteBuffer;
 import org.eclipse.tracecompass.internal.ctf.core.event.CTFCallsiteComparator;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.MetadataStrings;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
 import org.eclipse.tracecompass.internal.ctf.core.trace.Utils;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * A CTF trace on the file system.
@@ -127,7 +129,7 @@ public class CTFTrace implements IDefinitionScope {
     /**
      * Collection of environment variables set by the tracer
      */
-    private final Map<String, String> fEnvironment = new HashMap<>();
+    private Map<String, String> fEnvironment = new HashMap<>();
 
     /**
      * Collection of all the clocks in a system.
@@ -633,18 +635,6 @@ public class CTFTrace implements IDefinitionScope {
     }
 
     /**
-     * Add a variable to the environment variables
-     *
-     * @param varName
-     *            the name of the variable
-     * @param varValue
-     *            the value of the variable
-     */
-    public void addEnvironmentVar(String varName, String varValue) {
-        fEnvironment.put(varName, varValue);
-    }
-
-    /**
      * Add a clock to the clock list
      *
      * @param nameValue
@@ -926,6 +916,18 @@ public class CTFTrace implements IDefinitionScope {
      */
     public DeclarationScope getScope() {
         return fScope;
+    }
+
+    /**
+     * Sets the environment map
+     *
+     * @param parseEnvironment
+     *            The environment map
+     * @since 2.0
+     */
+    public void setEnvironment(Map<String, String> parseEnvironment) {
+        fEnvironment = ImmutableMap.copyOf(parseEnvironment);
+
     }
 }
 
