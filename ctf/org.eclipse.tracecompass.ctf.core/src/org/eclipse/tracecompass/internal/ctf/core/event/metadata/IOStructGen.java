@@ -96,6 +96,7 @@ public class IOStructGen {
     private static final ICommonTreeParser fIntegerParser = new UnaryIntegerParser();
     private static final ICommonTreeParser fStringParser = new UnaryStringParser();
     private static final ICommonTreeParser fByteOrderParser = new ByteOrderParser();
+    private static final ICommonTreeParser fAlignmentParser = new AlignmentParser();
     /**
      * The trace
      */
@@ -1498,7 +1499,7 @@ public class IOStructGen {
                 } else if (left.equals(MetadataStrings.MANT_DIG)) {
                     mantissa = ((Long) fIntegerParser.parse((CommonTree) rightNode.getChild(0), null, null)).intValue();
                 } else if (left.equals(MetadataStrings.ALIGN)) {
-                    alignment = getAlignment(rightNode);
+                    alignment = (Long) fAlignmentParser.parse(rightNode, null, null);
                 } else {
                     throw new ParseException("Float: unknown attribute " + left); //$NON-NLS-1$
                 }
@@ -1613,7 +1614,7 @@ public class IOStructGen {
                 } else if (left.equals(SIZE)) {
                     size = getSize(rightNode);
                 } else if (left.equals(MetadataStrings.ALIGN)) {
-                    alignment = getAlignment(rightNode);
+                    alignment = (Long) fAlignmentParser.parse(rightNode, null, null);
                 } else if (left.equals(BASE)) {
                     base = getBase(rightNode);
                 } else if (left.equals(ENCODING)) {
@@ -1742,7 +1743,7 @@ public class IOStructGen {
             case CTFParser.ALIGN: {
                 CommonTree structAlignExpression = (CommonTree) child.getChild(0);
 
-                structAlign = getAlignment(structAlignExpression);
+                structAlign = (Long) fAlignmentParser.parse(structAlignExpression, null, null);
                 break;
             }
             default:
@@ -2572,17 +2573,6 @@ public class IOStructGen {
     }
 
     /**
-     * Determines if the given value is a valid alignment value.
-     *
-     * @param alignment
-     *            The value to check.
-     * @return True if it is valid.
-     */
-    private static boolean isValidAlignment(long alignment) {
-        return !((alignment <= 0) || ((alignment & (alignment - 1)) != 0));
-    }
-
-    /**
      * Gets the value of a "size" integer attribute.
      *
      * @param rightNode
@@ -2608,39 +2598,6 @@ public class IOStructGen {
             return size;
         }
         throw new ParseException("Invalid value for size"); //$NON-NLS-1$
-    }
-
-    /**
-     * Gets the value of a "align" integer or struct attribute.
-     *
-     * @param node
-     *            A CTF_RIGHT node or directly an unary integer.
-     * @return The align value.
-     * @throws ParseException
-     */
-    private static long getAlignment(CommonTree node) throws ParseException {
-
-        /*
-         * If a CTF_RIGHT node was passed, call getAlignment with the first
-         * child
-         */
-        if (node.getType() == CTFParser.CTF_RIGHT) {
-            if (node.getChildCount() > 1) {
-                throw new ParseException("Invalid alignment value"); //$NON-NLS-1$
-            }
-
-            return getAlignment((CommonTree) node.getChild(0));
-        } else if (isUnaryInteger(node)) {
-            long alignment = (Long) fIntegerParser.parse(node, null, null);
-
-            if (!isValidAlignment(alignment)) {
-                throw new ParseException("Invalid value for alignment : " //$NON-NLS-1$
-                        + alignment);
-            }
-
-            return alignment;
-        }
-        throw new ParseException("Invalid value for alignment"); //$NON-NLS-1$
     }
 
     /**
