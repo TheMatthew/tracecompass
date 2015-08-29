@@ -14,6 +14,11 @@
 
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
+import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.concatenateUnaryStrings;
+import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isAnyUnaryString;
+import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryInteger;
+import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryString;
+
 import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -87,6 +92,10 @@ public class IOStructGen {
     private static final int DEFAULT_FLOAT_EXPONENT = 8;
     private static final int DEFAULT_FLOAT_MANTISSA = 24;
     private static final int DEFAULT_INT_BASE = 10;
+
+    private static final ICommonTreeParser fIntegerParser = new UnaryIntegerParser();
+    private static final ICommonTreeParser fStringParser = new UnaryStringParser();
+    private static final ICommonTreeParser fByteOrderParser = new ByteOrderParser();
     /**
      * The trace
      */
@@ -105,7 +114,7 @@ public class IOStructGen {
 
     private boolean fHasBeenParsed = false;
 
-    // ------------------------------------------------------------------------
+    // -()-----------------------------------------------------------------------
     // Constructor
     // ------------------------------------------------------------------------
 
@@ -431,7 +440,7 @@ public class IOStructGen {
             }
 
         } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
-            ByteOrder byteOrder = getByteOrder(rightNode);
+            ByteOrder byteOrder = (ByteOrder) fByteOrderParser.parse(rightNode, fTrace, null);
 
             /*
              * If byte order was already set by a metadata packet, compare it to
@@ -503,8 +512,8 @@ public class IOStructGen {
             EnumDeclaration newEnum = new EnumDeclaration(IntegerDeclaration.createDeclaration(containerType.getLength(), containerType.isSigned(),
                     containerType.getBase(), byteOrder, containerType.getEncoding(),
                     containerType.getClock(), containerType.getAlignment()));
-            for( Entry<String, Pair> entry : decl.getEnumTable().entrySet()){
-               newEnum.add(entry.getValue().getFirst(), entry.getValue().getSecond(), entry.getKey());
+            for (Entry<String, Pair> entry : decl.getEnumTable().entrySet()) {
+                newEnum.add(entry.getValue().getFirst(), entry.getValue().getSecond(), entry.getKey());
             }
 
             parentScope.replaceType(name, newEnum);
@@ -626,16 +635,15 @@ public class IOStructGen {
             long streamID = getStreamID(rightNode);
 
             stream.setId(streamID);
-        }
-        else if (left.equals(MetadataStrings.BYTE_ORDER)) {
+        } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
             if (stream.isStreamByteOrderSet()) {
                 throw new ParseException("stream byte order already defined"); //$NON-NLS-1$
             }
 
-            ByteOrder byteOrder = getByteOrder(rightNode);
+            ByteOrder byteOrder = (ByteOrder) fByteOrderParser.parse(rightNode, fTrace, null);
 
             stream.setByteOrder(byteOrder);
-        }else if (left.equals(MetadataStrings.EVENT_HEADER)) {
+        } else if (left.equals(MetadataStrings.EVENT_HEADER)) {
             if (stream.isEventHeaderSet()) {
                 throw new ParseException("event.header already defined"); //$NON-NLS-1$
             }
@@ -888,11 +896,11 @@ public class IOStructGen {
             final StructDeclaration fields = (StructDeclaration) fieldsDecl;
             event.setFields(fields);
         } else if (left.equals(MetadataStrings.LOGLEVEL2)) {
-            long logLevel = parseUnaryInteger((CommonTree) rightNode.getChild(0));
+            long logLevel = (Long) fIntegerParser.parse((CommonTree) rightNode.getChild(0), null, null);
             event.setLogLevel(logLevel);
         } else {
             /* Custom event attribute, we'll add it to the attributes map */
-            String right = parseUnaryString((CommonTree) rightNode.getChild(0));
+            String right = (String) fStringParser.parse((CommonTree) rightNode.getChild(0), null, null);
             event.setCustomAttribute(left, right);
         }
     }
@@ -1208,7 +1216,7 @@ public class IOStructGen {
                 CommonTree first = lengthChildren.get(0);
                 if (isUnaryInteger(first)) {
                     /* Array */
-                    int arrayLength = (int) parseUnaryInteger(first);
+                    int arrayLength = ((Long) fIntegerParser.parse(first, null, null)).intValue();
 
                     if (arrayLength < 1) {
                         throw new ParseException("Array length is negative"); //$NON-NLS-1$
@@ -1293,7 +1301,7 @@ public class IOStructGen {
         CommonTree nextElem = (CommonTree) lengthChildren.get(1).getChild(0);
         String lengthName = null;
         if (isUnaryString(nextElem)) {
-            lengthName = parseUnaryString(nextElem);
+            lengthName = (String) fStringParser.parse(nextElem, null, null);
         }
 
         int type = nextElem.getType();
@@ -1484,11 +1492,11 @@ public class IOStructGen {
                 String left = concatenateUnaryStrings(leftStrings);
 
                 if (left.equals(MetadataStrings.EXP_DIG)) {
-                    exponent = (int) parseUnaryInteger((CommonTree) rightNode.getChild(0));
+                    exponent = ((Long) fIntegerParser.parse((CommonTree) rightNode.getChild(0), null, null)).intValue();
                 } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
-                    byteOrder = getByteOrder(rightNode);
+                    byteOrder = (ByteOrder) fByteOrderParser.parse(rightNode, fTrace, null);
                 } else if (left.equals(MetadataStrings.MANT_DIG)) {
-                    mantissa = (int) parseUnaryInteger((CommonTree) rightNode.getChild(0));
+                    mantissa = ((Long) fIntegerParser.parse((CommonTree) rightNode.getChild(0), null, null)).intValue();
                 } else if (left.equals(MetadataStrings.ALIGN)) {
                     alignment = getAlignment(rightNode);
                 } else {
@@ -1601,7 +1609,7 @@ public class IOStructGen {
                 if (left.equals(SIGNED)) {
                     signed = getSigned(rightNode);
                 } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
-                    byteOrder = getByteOrder(rightNode);
+                    byteOrder = (ByteOrder) fByteOrderParser.parse(rightNode, fTrace, null);
                 } else if (left.equals(SIZE)) {
                     size = getSize(rightNode);
                 } else if (left.equals(MetadataStrings.ALIGN)) {
@@ -2080,19 +2088,19 @@ public class IOStructGen {
 
         for (CommonTree child : children) {
             if (isAnyUnaryString(child)) {
-                label = parseUnaryString(child);
+                label = (String) fStringParser.parse(child, null, null);
             } else if (child.getType() == CTFParser.ENUM_VALUE) {
 
                 valueSpecified = true;
 
-                low = parseUnaryInteger((CommonTree) child.getChild(0));
+                low = (Long) fIntegerParser.parse((CommonTree) child.getChild(0), null, null);
                 high = low;
             } else if (child.getType() == CTFParser.ENUM_VALUE_RANGE) {
 
                 valueSpecified = true;
 
-                low = parseUnaryInteger((CommonTree) child.getChild(0));
-                high = parseUnaryInteger((CommonTree) child.getChild(1));
+                low = (Long) fIntegerParser.parse((CommonTree) child.getChild(0), null, null);
+                high = (Long) fIntegerParser.parse((CommonTree) child.getChild(1), null, null);
             } else {
                 throw childTypeError(child);
             }
@@ -2472,92 +2480,6 @@ public class IOStructGen {
         }
     }
 
-    /**
-     * @param node
-     *            The node to check.
-     * @return True if the given node is an unary string.
-     */
-    private static boolean isUnaryString(CommonTree node) {
-        return ((node.getType() == CTFParser.UNARY_EXPRESSION_STRING));
-    }
-
-    /**
-     * @param node
-     *            The node to check.
-     * @return True if the given node is any type of unary string (no quotes,
-     *         quotes, etc).
-     */
-    private static boolean isAnyUnaryString(CommonTree node) {
-        return ((node.getType() == CTFParser.UNARY_EXPRESSION_STRING) || (node.getType() == CTFParser.UNARY_EXPRESSION_STRING_QUOTES));
-    }
-
-    /**
-     * @param node
-     *            The node to check.
-     * @return True if the given node is an unary integer.
-     */
-    private static boolean isUnaryInteger(CommonTree node) {
-        return ((node.getType() == CTFParser.UNARY_EXPRESSION_DEC) ||
-                (node.getType() == CTFParser.UNARY_EXPRESSION_HEX) || (node.getType() == CTFParser.UNARY_EXPRESSION_OCT));
-    }
-
-    /**
-     * Parses a unary string node and return the string value.
-     *
-     * @param unaryString
-     *            The unary string node to parse (type UNARY_EXPRESSION_STRING
-     *            or UNARY_EXPRESSION_STRING_QUOTES).
-     * @return The string value.
-     */
-    /*
-     * It would be really nice to remove the quotes earlier, such as in the
-     * parser.
-     */
-    private static String parseUnaryString(CommonTree unaryString) {
-
-        CommonTree value = (CommonTree) unaryString.getChild(0);
-        if (value.getType() == CTFParser.UNARY_EXPRESSION_STRING) {
-            value = (CommonTree) value.getChild(0);
-        }
-        String strval = value.getText();
-
-        /* Remove quotes */
-        if (unaryString.getType() == CTFParser.UNARY_EXPRESSION_STRING_QUOTES) {
-            strval = strval.substring(1, strval.length() - 1);
-        }
-
-        return strval;
-    }
-
-    /**
-     * Parses an unary integer (dec, hex or oct).
-     *
-     * @param unaryInteger
-     *            An unary integer node.
-     * @return The integer value.
-     * @throws ParseException
-     *             on an invalid integer format ("bob" for example)
-     */
-    private static long parseUnaryInteger(CommonTree unaryInteger) throws ParseException {
-
-        List<CommonTree> children = unaryInteger.getChildren();
-        CommonTree value = children.get(0);
-        String strval = value.getText();
-
-        long intval;
-        try {
-            intval = Long.decode(strval);
-        } catch (NumberFormatException e) {
-            throw new ParseException("Invalid integer format: " + strval, e); //$NON-NLS-1$
-        }
-
-        /* The rest of children are sign */
-        if ((children.size() % 2) == 0) {
-            return -intval;
-        }
-        return intval;
-    }
-
     private static long getMajorOrMinor(CommonTree rightNode)
             throws ParseException {
 
@@ -2568,7 +2490,7 @@ public class IOStructGen {
                 throw new ParseException("Invalid value for major/minor"); //$NON-NLS-1$
             }
 
-            long m = parseUnaryInteger(firstChild);
+            long m = (Long) fIntegerParser.parse(firstChild, null, null);
 
             if (m < 0) {
                 throw new ParseException("Invalid value for major/minor"); //$NON-NLS-1$
@@ -2588,7 +2510,7 @@ public class IOStructGen {
                 throw new ParseException("Invalid value for UUID"); //$NON-NLS-1$
             }
 
-            String uuidstr = parseUnaryString(firstChild);
+            String uuidstr = (String) fStringParser.parse(firstChild, null, null);
 
             try {
                 return UUID.fromString(uuidstr);
@@ -2632,7 +2554,7 @@ public class IOStructGen {
                 throw new ParseException("Invalid boolean value"); //$NON-NLS-1$
             }
 
-            long intval = parseUnaryInteger(firstChild);
+            long intval = (Long) fIntegerParser.parse(firstChild, null, null);
 
             if (intval == 1) {
                 ret = true;
@@ -2647,35 +2569,6 @@ public class IOStructGen {
         }
 
         return ret;
-    }
-
-    /**
-     * Gets the value of a "byte_order" integer attribute.
-     *
-     * @param rightNode
-     *            A CTF_RIGHT node.
-     * @return The "byte_order" value.
-     * @throws ParseException
-     */
-    private ByteOrder getByteOrder(CommonTree rightNode) throws ParseException {
-
-        CommonTree firstChild = (CommonTree) rightNode.getChild(0);
-
-        if (isUnaryString(firstChild)) {
-            String strval = concatenateUnaryStrings(rightNode.getChildren());
-
-            if (strval.equals(MetadataStrings.LE)) {
-                return ByteOrder.LITTLE_ENDIAN;
-            } else if (strval.equals(MetadataStrings.BE)
-                    || strval.equals(MetadataStrings.NETWORK)) {
-                return ByteOrder.BIG_ENDIAN;
-            } else if (strval.equals(MetadataStrings.NATIVE)) {
-                return fTrace.getByteOrder();
-            } else {
-                throw new ParseException("Invalid value for byte order"); //$NON-NLS-1$
-            }
-        }
-        throw new ParseException("Invalid value for byte order"); //$NON-NLS-1$
     }
 
     /**
@@ -2706,7 +2599,7 @@ public class IOStructGen {
                 throw new ParseException("Invalid value for size"); //$NON-NLS-1$
             }
 
-            long size = parseUnaryInteger(firstChild);
+            long size = (Long) fIntegerParser.parse(firstChild, null, null);
 
             if (size < 1) {
                 throw new ParseException("Invalid value for size"); //$NON-NLS-1$
@@ -2738,7 +2631,7 @@ public class IOStructGen {
 
             return getAlignment((CommonTree) node.getChild(0));
         } else if (isUnaryInteger(node)) {
-            long alignment = parseUnaryInteger(node);
+            long alignment = (Long) fIntegerParser.parse(node, null, null);
 
             if (!isValidAlignment(alignment)) {
                 throw new ParseException("Invalid value for alignment : " //$NON-NLS-1$
@@ -2767,7 +2660,7 @@ public class IOStructGen {
                 throw new ParseException("invalid base value"); //$NON-NLS-1$
             }
 
-            long intval = parseUnaryInteger(firstChild);
+            long intval = (Long) fIntegerParser.parse(firstChild, null, null);
             if ((intval == INTEGER_BASE_2) || (intval == INTEGER_BASE_8) || (intval == INTEGER_BASE_10)
                     || (intval == INTEGER_BASE_16)) {
                 return (int) intval;
@@ -2841,7 +2734,7 @@ public class IOStructGen {
                 throw new ParseException("invalid value for stream id"); //$NON-NLS-1$
             }
 
-            long intval = parseUnaryInteger(firstChild);
+            long intval = (Long) fIntegerParser.parse(firstChild, null, null);
 
             return intval;
         }
@@ -2870,50 +2763,13 @@ public class IOStructGen {
                 throw new ParseException("invalid value for event id"); //$NON-NLS-1$
             }
 
-            long intval = parseUnaryInteger(firstChild);
+            long intval = (Long) fIntegerParser.parse(firstChild, null, null);
             if (intval > Integer.MAX_VALUE) {
                 throw new ParseException("Event id larger than int.maxvalue, something is amiss"); //$NON-NLS-1$
             }
             return intval;
         }
         throw new ParseException("invalid value for event id"); //$NON-NLS-1$
-    }
-
-    /**
-     * Concatenates a list of unary strings separated by arrows (->) or dots.
-     *
-     * @param strings
-     *            A list, first element being an unary string, subsequent
-     *            elements being ARROW or DOT nodes with unary strings as child.
-     * @return The string representation of the unary string chain.
-     */
-    private static String concatenateUnaryStrings(List<CommonTree> strings) {
-
-        StringBuilder sb = new StringBuilder();
-
-        CommonTree first = strings.get(0);
-        sb.append(parseUnaryString(first));
-
-        boolean isFirst = true;
-
-        for (CommonTree ref : strings) {
-            if (isFirst) {
-                isFirst = false;
-                continue;
-            }
-
-            CommonTree id = (CommonTree) ref.getChild(0);
-
-            if (ref.getType() == CTFParser.ARROW) {
-                sb.append("->"); //$NON-NLS-1$
-            } else { /* DOT */
-                sb.append('.');
-            }
-
-            sb.append(parseUnaryString(id));
-        }
-
-        return sb.toString();
     }
 
     /**
