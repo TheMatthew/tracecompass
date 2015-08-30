@@ -14,6 +14,7 @@
 
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
+import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.concatenateUnaryStrings;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isAnyUnaryString;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryInteger;
@@ -73,32 +74,26 @@ public class IOStructGen {
     // Attributes
     // ------------------------------------------------------------------------
 
-    private static final @NonNull String MAP = "map"; //$NON-NLS-1$
     private static final @NonNull String ENCODING = "encoding"; //$NON-NLS-1$
-    private static final @NonNull String BASE = "base"; //$NON-NLS-1$
-    private static final @NonNull String SIZE = "size"; //$NON-NLS-1$
-    private static final @NonNull String SIGNED = "signed"; //$NON-NLS-1$
     private static final @NonNull String LINE = "line"; //$NON-NLS-1$
     private static final @NonNull String FILE = "file"; //$NON-NLS-1$
     private static final @NonNull String IP = "ip"; //$NON-NLS-1$
     private static final @NonNull String FUNC = "func"; //$NON-NLS-1$
     private static final @NonNull String NAME = "name"; //$NON-NLS-1$
     private static final @NonNull String EMPTY_STRING = ""; //$NON-NLS-1$
-    private static final int INTEGER_BASE_16 = 16;
-    private static final int INTEGER_BASE_10 = 10;
-    private static final int INTEGER_BASE_8 = 8;
-    private static final int INTEGER_BASE_2 = 2;
+
     private static final long DEFAULT_ALIGNMENT = 1;
     private static final int DEFAULT_FLOAT_EXPONENT = 8;
     private static final int DEFAULT_FLOAT_MANTISSA = 24;
-    private static final int DEFAULT_INT_BASE = 10;
 
     private static final ICommonTreeParser fIntegerParser = new UnaryIntegerParser();
     private static final ICommonTreeParser fStringParser = new UnaryStringParser();
     private static final ICommonTreeParser BYTE_ORDER_PARSER = new ByteOrderParser();
-    private static final ICommonTreeParser fAlignmentParser = new AlignmentParser();
-    private static final ICommonTreeParser fSizeParser = new SizeParser();
+    private static final ICommonTreeParser ALIGNMENT_PARSER = new AlignmentParser();
+
     private static final ICommonTreeParser ENCODING_PARSER = new EncodingParser();
+
+    private static final ICommonTreeParser INTEGER_DECL_PARSER = new IntegerDeclarationParser();
     /**
      * The trace
      */
@@ -1408,7 +1403,7 @@ public class IOStructGen {
             declaration = parseFloat(firstChild);
             break;
         case CTFParser.INTEGER:
-            declaration = parseInteger(firstChild);
+            declaration = (IntegerDeclaration) INTEGER_DECL_PARSER.parse(firstChild, fTrace, null);
             break;
         case CTFParser.STRING:
             declaration = parseString(firstChild);
@@ -1501,7 +1496,7 @@ public class IOStructGen {
                 } else if (left.equals(MetadataStrings.MANT_DIG)) {
                     mantissa = ((Long) fIntegerParser.parse((CommonTree) rightNode.getChild(0), null, null)).intValue();
                 } else if (left.equals(MetadataStrings.ALIGN)) {
-                    alignment = (Long) fAlignmentParser.parse(rightNode, null, null);
+                    alignment = (Long) ALIGNMENT_PARSER.parse(rightNode, null, null);
                 } else {
                     throw new ParseException("Float: unknown attribute " + left); //$NON-NLS-1$
                 }
@@ -1558,101 +1553,6 @@ public class IOStructGen {
         return decl;
     }
 
-    /**
-     * Parses an integer declaration node.
-     *
-     * @param integer
-     *            An INTEGER node.
-     * @return The corresponding integer declaration.
-     * @throws ParseException
-     */
-    private IntegerDeclaration parseInteger(CommonTree integer)
-            throws ParseException {
-
-        List<CommonTree> children = integer.getChildren();
-
-        /*
-         * If the integer has no attributes, then it is missing the size
-         * attribute which is required
-         */
-        if (children == null) {
-            throw new ParseException("integer: missing size attribute"); //$NON-NLS-1$
-        }
-
-        /* The return value */
-        IntegerDeclaration integerDeclaration = null;
-        boolean signed = false;
-        ByteOrder byteOrder = fTrace.getByteOrder();
-        long size = 0;
-        long alignment = 0;
-        int base = DEFAULT_INT_BASE;
-        @NonNull
-        String clock = EMPTY_STRING;
-
-        Encoding encoding = Encoding.NONE;
-
-        /* Iterate on all integer children */
-        for (CommonTree child : children) {
-            switch (child.getType()) {
-            case CTFParser.CTF_EXPRESSION_VAL:
-                /*
-                 * An assignment expression must have 2 children, left and right
-                 */
-
-                CommonTree leftNode = (CommonTree) child.getChild(0);
-                CommonTree rightNode = (CommonTree) child.getChild(1);
-
-                List<CommonTree> leftStrings = leftNode.getChildren();
-
-                if (!isAnyUnaryString(leftStrings.get(0))) {
-                    throw new ParseException("Left side of ctf expression must be a string"); //$NON-NLS-1$
-                }
-                String left = concatenateUnaryStrings(leftStrings);
-
-                if (left.equals(SIGNED)) {
-                    signed = getSigned(rightNode);
-                } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
-                    byteOrder = (ByteOrder) BYTE_ORDER_PARSER.parse(rightNode, fTrace, null);
-                } else if (left.equals(SIZE)) {
-                    size = (Long) fSizeParser.parse(rightNode, null, null);
-                } else if (left.equals(MetadataStrings.ALIGN)) {
-                    alignment = (Long) fAlignmentParser.parse(rightNode, null, null);
-                } else if (left.equals(BASE)) {
-                    base = getBase(rightNode);
-                } else if (left.equals(ENCODING)) {
-                    encoding = getEncoding(rightNode);
-                } else if (left.equals(MAP)) {
-                    clock = getClock(rightNode);
-                } else {
-                    Activator.log(IStatus.WARNING, Messages.IOStructGen_UnknownIntegerAttributeWarning + " " + left); //$NON-NLS-1$
-                }
-
-                break;
-            default:
-                throw childTypeError(child);
-            }
-        }
-
-        if (size <= 0) {
-            throw new ParseException("Invalid size attribute in Integer: " + size); //$NON-NLS-1$
-        }
-
-        if (alignment == 0) {
-            alignment = ((size % DEFAULT_ALIGNMENT) == 0) ? 1 : DEFAULT_ALIGNMENT;
-        }
-
-        integerDeclaration = IntegerDeclaration.createDeclaration((int) size, signed, base,
-                byteOrder, encoding, clock, alignment);
-
-        return integerDeclaration;
-    }
-
-    @NonNull
-    private static String getClock(CommonTree rightNode) {
-        String clock = rightNode.getChild(1).getChild(0).getChild(0).getText();
-        return clock == null ? EMPTY_STRING : clock;
-    }
-
     private static StringDeclaration parseString(CommonTree string)
             throws ParseException {
 
@@ -1682,7 +1582,7 @@ public class IOStructGen {
                     String left = concatenateUnaryStrings(leftStrings);
 
                     if (left.equals(ENCODING)) {
-                        encoding = getEncoding(rightNode);
+                        encoding = (Encoding) ENCODING_PARSER.parse(rightNode, null, null);
                     } else {
                         throw new ParseException("String: unknown attribute " //$NON-NLS-1$
                                 + left);
@@ -1745,7 +1645,7 @@ public class IOStructGen {
             case CTFParser.ALIGN: {
                 CommonTree structAlignExpression = (CommonTree) child.getChild(0);
 
-                structAlign = (Long) fAlignmentParser.parse(structAlignExpression, null, null);
+                structAlign = (Long) ALIGNMENT_PARSER.parse(structAlignExpression, null, null);
                 break;
             }
             default:
@@ -2524,122 +2424,6 @@ public class IOStructGen {
         throw new ParseException("Invalid value for UUID"); //$NON-NLS-1$
     }
 
-    /**
-     * Gets the value of a "signed" integer attribute.
-     *
-     * @param rightNode
-     *            A CTF_RIGHT node.
-     * @return The "signed" value as a boolean.
-     * @throws ParseException
-     */
-    private static boolean getSigned(CommonTree rightNode)
-            throws ParseException {
-
-        boolean ret = false;
-        CommonTree firstChild = (CommonTree) rightNode.getChild(0);
-
-        if (isUnaryString(firstChild)) {
-            String strval = concatenateUnaryStrings(rightNode.getChildren());
-
-            if (strval.equals(MetadataStrings.TRUE)
-                    || strval.equals(MetadataStrings.TRUE2)) {
-                ret = true;
-            } else if (strval.equals(MetadataStrings.FALSE)
-                    || strval.equals(MetadataStrings.FALSE2)) {
-                ret = false;
-            } else {
-                throw new ParseException("Invalid boolean value " //$NON-NLS-1$
-                        + firstChild.getChild(0).getText());
-            }
-        } else if (isUnaryInteger(firstChild)) {
-            /* Happens if the value is something like "1234.hello" */
-            if (rightNode.getChildCount() > 1) {
-                throw new ParseException("Invalid boolean value"); //$NON-NLS-1$
-            }
-
-            long intval = (Long) fIntegerParser.parse(firstChild, null, null);
-
-            if (intval == 1) {
-                ret = true;
-            } else if (intval == 0) {
-                ret = false;
-            } else {
-                throw new ParseException("Invalid boolean value " //$NON-NLS-1$
-                        + firstChild.getChild(0).getText());
-            }
-        } else {
-            throw new ParseException();
-        }
-
-        return ret;
-    }
-
-    /**
-     * Gets the value of a "base" integer attribute.
-     *
-     * @param rightNode
-     *            An CTF_RIGHT node.
-     * @return The "base" value.
-     * @throws ParseException
-     */
-    private static int getBase(CommonTree rightNode) throws ParseException {
-
-        CommonTree firstChild = (CommonTree) rightNode.getChild(0);
-
-        if (isUnaryInteger(firstChild)) {
-            if (rightNode.getChildCount() > 1) {
-                throw new ParseException("invalid base value"); //$NON-NLS-1$
-            }
-
-            long intval = (Long) fIntegerParser.parse(firstChild, null, null);
-            if ((intval == INTEGER_BASE_2) || (intval == INTEGER_BASE_8) || (intval == INTEGER_BASE_10)
-                    || (intval == INTEGER_BASE_16)) {
-                return (int) intval;
-            }
-            throw new ParseException("Invalid value for base"); //$NON-NLS-1$
-        } else if (isUnaryString(firstChild)) {
-            switch (concatenateUnaryStrings(rightNode.getChildren())) {
-            case MetadataStrings.DECIMAL:
-            case MetadataStrings.DEC:
-            case MetadataStrings.DEC_CTE:
-            case MetadataStrings.INT_MOD:
-            case MetadataStrings.UNSIGNED_CTE:
-                return INTEGER_BASE_10;
-            case MetadataStrings.HEXADECIMAL:
-            case MetadataStrings.HEX:
-            case MetadataStrings.X:
-            case MetadataStrings.X2:
-            case MetadataStrings.POINTER:
-                return INTEGER_BASE_16;
-            case MetadataStrings.OCT:
-            case MetadataStrings.OCTAL:
-            case MetadataStrings.OCTAL_CTE:
-                return INTEGER_BASE_8;
-            case MetadataStrings.BIN:
-            case MetadataStrings.BINARY:
-                return INTEGER_BASE_2;
-            default:
-                throw new ParseException("Invalid value for base"); //$NON-NLS-1$
-            }
-        } else {
-            throw new ParseException("invalid value for base"); //$NON-NLS-1$
-        }
-    }
-
-    /**
-     * Gets the value of an "encoding" integer attribute.
-     *
-     * @param rightNode
-     *            A CTF_RIGHT node.
-     * @return The "encoding" value.
-     * @throws ParseException
-     */
-    @NonNull
-    private static Encoding getEncoding(CommonTree rightNode)
-            throws ParseException {
-        return (Encoding) ENCODING_PARSER.parse(rightNode, null, null);
-    }
-
     private static long getStreamID(CommonTree rightNode) throws ParseException {
 
         CommonTree firstChild = (CommonTree) rightNode.getChild(0);
@@ -2685,24 +2469,6 @@ public class IOStructGen {
             return intval;
         }
         throw new ParseException("invalid value for event id"); //$NON-NLS-1$
-    }
-
-    /**
-     * Throws a ParseException stating that the parent-child relation between
-     * the given node and its parent is not valid. It means that the shape of
-     * the AST is unexpected.
-     *
-     * @param child
-     *            The invalid child node.
-     * @return ParseException with details
-     */
-    private static ParseException childTypeError(CommonTree child) {
-        CommonTree parent = (CommonTree) child.getParent();
-        String error = "Parent " + CTFParser.tokenNames[parent.getType()] //$NON-NLS-1$
-                + " can't have a child of type " //$NON-NLS-1$
-                + CTFParser.tokenNames[child.getType()] + "."; //$NON-NLS-1$
-
-        return new ParseException(error);
     }
 
     // ------------------------------------------------------------------------

@@ -3,7 +3,7 @@ package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 import java.util.List;
 
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryStringParser;
-
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 
@@ -91,6 +91,24 @@ public final class TsdlUtils {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Throws a ParseException stating that the parent-child relation between
+     * the given node and its parent is not valid. It means that the shape of
+     * the AST is unexpected.
+     *
+     * @param child
+     *            The invalid child node.
+     * @return ParseException with details
+     */
+    public static ParseException childTypeError(CommonTree child) {
+        CommonTree parent = (CommonTree) child.getParent();
+        String error = "Parent " + CTFParser.tokenNames[parent.getType()] //$NON-NLS-1$
+                + " can't have a child of type " //$NON-NLS-1$
+                + CTFParser.tokenNames[child.getType()] + "."; //$NON-NLS-1$
+
+        return new ParseException(error);
     }
 
 }
