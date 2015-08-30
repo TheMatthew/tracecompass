@@ -9,6 +9,8 @@
 
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
+import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
+
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 
@@ -46,7 +48,7 @@ public final class UnaryStringParser implements ICommonTreeParser {
             strval = strval.substring(1, strval.length() - 1);
         }
 
-        return strval;
+        return checkNotNull(strval);
     }
 
 }
