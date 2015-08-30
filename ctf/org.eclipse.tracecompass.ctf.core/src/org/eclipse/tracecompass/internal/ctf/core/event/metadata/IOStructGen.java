@@ -97,6 +97,7 @@ public class IOStructGen {
     private static final ICommonTreeParser fStringParser = new UnaryStringParser();
     private static final ICommonTreeParser fByteOrderParser = new ByteOrderParser();
     private static final ICommonTreeParser fAlignmentParser = new AlignmentParser();
+    private static final ICommonTreeParser fSizeParser = new SizeParser();
     /**
      * The trace
      */
@@ -1612,7 +1613,7 @@ public class IOStructGen {
                 } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
                     byteOrder = (ByteOrder) fByteOrderParser.parse(rightNode, fTrace, null);
                 } else if (left.equals(SIZE)) {
-                    size = getSize(rightNode);
+                    size = (Long) fSizeParser.parse(rightNode, null, null);
                 } else if (left.equals(MetadataStrings.ALIGN)) {
                     alignment = (Long) fAlignmentParser.parse(rightNode, null, null);
                 } else if (left.equals(BASE)) {
@@ -2570,34 +2571,6 @@ public class IOStructGen {
         }
 
         return ret;
-    }
-
-    /**
-     * Gets the value of a "size" integer attribute.
-     *
-     * @param rightNode
-     *            A CTF_RIGHT node.
-     * @return The "size" value.
-     * @throws ParseException
-     */
-    private static long getSize(CommonTree rightNode) throws ParseException {
-
-        CommonTree firstChild = (CommonTree) rightNode.getChild(0);
-
-        if (isUnaryInteger(firstChild)) {
-            if (rightNode.getChildCount() > 1) {
-                throw new ParseException("Invalid value for size"); //$NON-NLS-1$
-            }
-
-            long size = (Long) fIntegerParser.parse(firstChild, null, null);
-
-            if (size < 1) {
-                throw new ParseException("Invalid value for size"); //$NON-NLS-1$
-            }
-
-            return size;
-        }
-        throw new ParseException("Invalid value for size"); //$NON-NLS-1$
     }
 
     /**
