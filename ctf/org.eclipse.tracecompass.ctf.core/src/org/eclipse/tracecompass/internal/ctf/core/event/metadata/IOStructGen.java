@@ -62,6 +62,7 @@ import org.eclipse.tracecompass.internal.ctf.core.event.types.StructDeclarationF
 import org.eclipse.tracecompass.internal.ctf.core.event.types.composite.EventHeaderCompactDeclaration;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.composite.EventHeaderLargeDeclaration;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 
 /**
@@ -200,10 +201,12 @@ public class IOStructGen {
                 events.add(child);
                 break;
             case CTFParser.CLOCK:
-                parseClock(child);
+                CTFClock ctfClock = parseClock(child);
+                String nameValue = ctfClock.getName();
+                fTrace.addClock(nameValue, ctfClock);
                 break;
             case CTFParser.ENV:
-                parseEnvironment(child);
+                fTrace.setEnvironment(parseEnvironment(child));
                 break;
             case CTFParser.CALLSITE:
                 parseCallsite(child);
@@ -252,10 +255,12 @@ public class IOStructGen {
                 events.add(child);
                 break;
             case CTFParser.CLOCK:
-                parseClock(child);
+                CTFClock ctfClock = parseClock(child);
+                String nameValue = ctfClock.getName();
+                fTrace.addClock(nameValue, ctfClock);
                 break;
             case CTFParser.ENV:
-                parseEnvironment(child);
+                fTrace.setEnvironment(parseEnvironment(child));
                 break;
             case CTFParser.CALLSITE:
                 parseCallsite(child);
@@ -306,18 +311,20 @@ public class IOStructGen {
         fTrace.addCallsite(name, funcName, ip, fileName, lineNumber);
     }
 
-    private void parseEnvironment(CommonTree environment) {
+    private static Map<String, String> parseEnvironment(CommonTree environment) {
+        ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
         List<CommonTree> children = environment.getChildren();
         for (CommonTree child : children) {
             String left;
             String right;
             left = child.getChild(0).getChild(0).getChild(0).getText();
             right = child.getChild(1).getChild(0).getChild(0).getText();
-            fTrace.addEnvironmentVar(left, right);
+            builder.put(left, right);
         }
+        return builder.build();
     }
 
-    private void parseClock(CommonTree clock) throws ParseException {
+    private static CTFClock parseClock(CommonTree clock) throws ParseException {
         List<CommonTree> children = clock.getChildren();
         CTFClock ctfClock = new CTFClock();
         for (CommonTree child : children) {
@@ -351,8 +358,8 @@ public class IOStructGen {
             }
 
         }
-        String nameValue = ctfClock.getName();
-        fTrace.addClock(nameValue, ctfClock);
+        return ctfClock;
+
     }
 
     private void parseTrace(CommonTree traceNode) throws ParseException {
