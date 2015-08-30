@@ -95,7 +95,7 @@ public class IOStructGen {
 
     private static final ICommonTreeParser fIntegerParser = new UnaryIntegerParser();
     private static final ICommonTreeParser fStringParser = new UnaryStringParser();
-    private static final ICommonTreeParser fByteOrderParser = new ByteOrderParser();
+    private static final ICommonTreeParser BYTE_ORDER_PARSER = new ByteOrderParser();
     private static final ICommonTreeParser fAlignmentParser = new AlignmentParser();
     private static final ICommonTreeParser fSizeParser = new SizeParser();
     private static final ICommonTreeParser ENCODING_PARSER = new EncodingParser();
@@ -443,7 +443,7 @@ public class IOStructGen {
             }
 
         } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
-            ByteOrder byteOrder = (ByteOrder) fByteOrderParser.parse(rightNode, fTrace, null);
+            ByteOrder byteOrder = (ByteOrder) BYTE_ORDER_PARSER.parse(rightNode, fTrace, null);
 
             /*
              * If byte order was already set by a metadata packet, compare it to
@@ -643,7 +643,7 @@ public class IOStructGen {
                 throw new ParseException("stream byte order already defined"); //$NON-NLS-1$
             }
 
-            ByteOrder byteOrder = (ByteOrder) fByteOrderParser.parse(rightNode, fTrace, null);
+            ByteOrder byteOrder = (ByteOrder) BYTE_ORDER_PARSER.parse(rightNode, fTrace, null);
 
             stream.setByteOrder(byteOrder);
         } else if (left.equals(MetadataStrings.EVENT_HEADER)) {
@@ -1497,7 +1497,7 @@ public class IOStructGen {
                 if (left.equals(MetadataStrings.EXP_DIG)) {
                     exponent = ((Long) fIntegerParser.parse((CommonTree) rightNode.getChild(0), null, null)).intValue();
                 } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
-                    byteOrder = (ByteOrder) fByteOrderParser.parse(rightNode, fTrace, null);
+                    byteOrder = (ByteOrder) BYTE_ORDER_PARSER.parse(rightNode, fTrace, null);
                 } else if (left.equals(MetadataStrings.MANT_DIG)) {
                     mantissa = ((Long) fIntegerParser.parse((CommonTree) rightNode.getChild(0), null, null)).intValue();
                 } else if (left.equals(MetadataStrings.ALIGN)) {
@@ -1612,7 +1612,7 @@ public class IOStructGen {
                 if (left.equals(SIGNED)) {
                     signed = getSigned(rightNode);
                 } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
-                    byteOrder = (ByteOrder) fByteOrderParser.parse(rightNode, fTrace, null);
+                    byteOrder = (ByteOrder) BYTE_ORDER_PARSER.parse(rightNode, fTrace, null);
                 } else if (left.equals(SIZE)) {
                     size = (Long) fSizeParser.parse(rightNode, null, null);
                 } else if (left.equals(MetadataStrings.ALIGN)) {
