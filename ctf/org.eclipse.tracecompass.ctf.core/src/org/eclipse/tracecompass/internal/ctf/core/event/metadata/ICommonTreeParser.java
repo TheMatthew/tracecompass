@@ -10,6 +10,7 @@
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import org.antlr.runtime.tree.CommonTree;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 /**
@@ -39,6 +40,7 @@ public interface ICommonTreeParser {
      * @throws ParseException
      *             if the tree or data is wrong
      */
+    @NonNull
     Object parse(CommonTree tree, Object param, String errorMsg) throws ParseException;
 
 }

@@ -98,6 +98,7 @@ public class IOStructGen {
     private static final ICommonTreeParser fByteOrderParser = new ByteOrderParser();
     private static final ICommonTreeParser fAlignmentParser = new AlignmentParser();
     private static final ICommonTreeParser fSizeParser = new SizeParser();
+    private static final ICommonTreeParser ENCODING_PARSER = new EncodingParser();
     /**
      * The trace
      */
@@ -2636,23 +2637,7 @@ public class IOStructGen {
     @NonNull
     private static Encoding getEncoding(CommonTree rightNode)
             throws ParseException {
-
-        CommonTree firstChild = (CommonTree) rightNode.getChild(0);
-
-        if (isUnaryString(firstChild)) {
-            String strval = concatenateUnaryStrings(rightNode.getChildren());
-
-            if (strval.equals(MetadataStrings.UTF8)) {
-                return Encoding.UTF8;
-            } else if (strval.equals(MetadataStrings.ASCII)) {
-                return Encoding.ASCII;
-            } else if (strval.equals(MetadataStrings.NONE)) {
-                return Encoding.NONE;
-            } else {
-                throw new ParseException("Invalid value for encoding"); //$NON-NLS-1$
-            }
-        }
-        throw new ParseException("Invalid value for encoding"); //$NON-NLS-1$
+        return (Encoding) ENCODING_PARSER.parse(rightNode, null, null);
     }
 
     private static long getStreamID(CommonTree rightNode) throws ParseException {
