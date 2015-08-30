@@ -41,7 +41,6 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.ctf.core.CTFStrings;
 import org.eclipse.tracecompass.ctf.core.event.CTFClock;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
-import org.eclipse.tracecompass.ctf.core.event.types.Encoding;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration.Pair;
 import org.eclipse.tracecompass.ctf.core.event.types.FloatDeclaration;
@@ -74,7 +73,7 @@ public class IOStructGen {
     // Attributes
     // ------------------------------------------------------------------------
 
-    private static final @NonNull String ENCODING = "encoding"; //$NON-NLS-1$
+
     private static final @NonNull String LINE = "line"; //$NON-NLS-1$
     private static final @NonNull String FILE = "file"; //$NON-NLS-1$
     private static final @NonNull String IP = "ip"; //$NON-NLS-1$
@@ -90,10 +89,8 @@ public class IOStructGen {
     private static final ICommonTreeParser fStringParser = new UnaryStringParser();
     private static final ICommonTreeParser BYTE_ORDER_PARSER = new ByteOrderParser();
     private static final ICommonTreeParser ALIGNMENT_PARSER = new AlignmentParser();
-
-    private static final ICommonTreeParser ENCODING_PARSER = new EncodingParser();
-
     private static final ICommonTreeParser INTEGER_DECL_PARSER = new IntegerDeclarationParser();
+    private static final ICommonTreeParser STRING_DECLARATION_PARSER = new StringDeclarationParser();
     /**
      * The trace
      */
@@ -1555,49 +1552,7 @@ public class IOStructGen {
 
     private static StringDeclaration parseString(CommonTree string)
             throws ParseException {
-
-        List<CommonTree> children = string.getChildren();
-        StringDeclaration stringDeclaration = null;
-
-        if (children == null) {
-            stringDeclaration = StringDeclaration.getStringDeclaration(Encoding.UTF8);
-        } else {
-            Encoding encoding = Encoding.UTF8;
-            for (CommonTree child : children) {
-                switch (child.getType()) {
-                case CTFParser.CTF_EXPRESSION_VAL:
-                    /*
-                     * An assignment expression must have 2 children, left and
-                     * right
-                     */
-
-                    CommonTree leftNode = (CommonTree) child.getChild(0);
-                    CommonTree rightNode = (CommonTree) child.getChild(1);
-
-                    List<CommonTree> leftStrings = leftNode.getChildren();
-
-                    if (!isAnyUnaryString(leftStrings.get(0))) {
-                        throw new ParseException("Left side of ctf expression must be a string"); //$NON-NLS-1$
-                    }
-                    String left = concatenateUnaryStrings(leftStrings);
-
-                    if (left.equals(ENCODING)) {
-                        encoding = (Encoding) ENCODING_PARSER.parse(rightNode, null, null);
-                    } else {
-                        throw new ParseException("String: unknown attribute " //$NON-NLS-1$
-                                + left);
-                    }
-
-                    break;
-                default:
-                    throw childTypeError(child);
-                }
-            }
-
-            stringDeclaration = StringDeclaration.getStringDeclaration(encoding);
-        }
-
-        return stringDeclaration;
+        return (StringDeclaration) STRING_DECLARATION_PARSER.parse(string, null, null);
     }
 
     /**
