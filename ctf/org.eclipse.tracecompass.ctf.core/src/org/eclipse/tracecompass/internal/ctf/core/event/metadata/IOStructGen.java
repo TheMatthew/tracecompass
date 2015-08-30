@@ -74,7 +74,6 @@ public class IOStructGen {
     // Attributes
     // ------------------------------------------------------------------------
 
-
     private static final @NonNull String LINE = "line"; //$NON-NLS-1$
     private static final @NonNull String FILE = "file"; //$NON-NLS-1$
     private static final @NonNull String IP = "ip"; //$NON-NLS-1$
@@ -82,16 +81,15 @@ public class IOStructGen {
     private static final @NonNull String NAME = "name"; //$NON-NLS-1$
     private static final @NonNull String EMPTY_STRING = ""; //$NON-NLS-1$
 
-    private static final long DEFAULT_ALIGNMENT = 1;
-    private static final int DEFAULT_FLOAT_EXPONENT = 8;
-    private static final int DEFAULT_FLOAT_MANTISSA = 24;
-
     private static final ICommonTreeParser fIntegerParser = new UnaryIntegerParser();
     private static final ICommonTreeParser fStringParser = new UnaryStringParser();
     private static final ICommonTreeParser BYTE_ORDER_PARSER = new ByteOrderParser();
     private static final ICommonTreeParser ALIGNMENT_PARSER = new AlignmentParser();
     private static final ICommonTreeParser INTEGER_DECL_PARSER = new IntegerDeclarationParser();
     private static final ICommonTreeParser STRING_DECLARATION_PARSER = new StringDeclarationParser();
+    private static final ICommonTreeParser UUID_PARSER = new UUIDParser();
+    private static final ICommonTreeParser STREAM_ID_PARSER = new StreamIdParser();
+    private static final ICommonTreeParser FLOAT_DECLARATION_PARSER = new FloatDeclarationParser();
     /**
      * The trace
      */
@@ -426,7 +424,7 @@ public class IOStructGen {
 
             fTrace.setMinor(getMajorOrMinor(rightNode));
         } else if (left.equals(MetadataStrings.UUID_STRING)) {
-            UUID uuid = getUUID(rightNode);
+            UUID uuid = (UUID) UUID_PARSER.parse(rightNode, null, null);
 
             /*
              * If uuid was already set by a metadata packet, compare it to see
@@ -634,7 +632,7 @@ public class IOStructGen {
                 throw new ParseException("stream id already defined"); //$NON-NLS-1$
             }
 
-            long streamID = getStreamID(rightNode);
+            long streamID = (long) STREAM_ID_PARSER.parse(rightNode, null, null);
 
             stream.setId(streamID);
         } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
@@ -847,7 +845,7 @@ public class IOStructGen {
                 throw new ParseException("stream id already defined"); //$NON-NLS-1$
             }
 
-            long streamId = getStreamID(rightNode);
+            long streamId = (long) STREAM_ID_PARSER.parse(rightNode, null, null);
 
             CTFStream stream = fTrace.getStream(streamId);
 
@@ -1404,13 +1402,13 @@ public class IOStructGen {
 
         switch (firstChild.getType()) {
         case CTFParser.FLOATING_POINT:
-            declaration = parseFloat(firstChild);
+            declaration = (IDeclaration) FLOAT_DECLARATION_PARSER.parse(firstChild, fTrace, null);
             break;
         case CTFParser.INTEGER:
             declaration = (IntegerDeclaration) INTEGER_DECL_PARSER.parse(firstChild, fTrace, null);
             break;
         case CTFParser.STRING:
-            declaration = parseString(firstChild);
+            declaration = (StringDeclaration) STRING_DECLARATION_PARSER.parse(firstChild, null, null);
             break;
         case CTFParser.STRUCT:
             declaration = parseStruct(firstChild, identifier);
@@ -1454,77 +1452,6 @@ public class IOStructGen {
         return declaration;
     }
 
-    private IDeclaration parseFloat(CommonTree floatingPoint)
-            throws ParseException {
-
-        List<CommonTree> children = floatingPoint.getChildren();
-
-        /*
-         * If the integer has no attributes, then it is missing the size
-         * attribute which is required
-         */
-        if (children == null) {
-            throw new ParseException("float: missing size attribute"); //$NON-NLS-1$
-        }
-
-        /* The return value */
-        FloatDeclaration floatDeclaration = null;
-        ByteOrder byteOrder = fTrace.getByteOrder();
-        long alignment = 0;
-
-        int exponent = DEFAULT_FLOAT_EXPONENT;
-        int mantissa = DEFAULT_FLOAT_MANTISSA;
-
-        /* Iterate on all integer children */
-        for (CommonTree child : children) {
-            switch (child.getType()) {
-            case CTFParser.CTF_EXPRESSION_VAL:
-                /*
-                 * An assignment expression must have 2 children, left and right
-                 */
-
-                CommonTree leftNode = (CommonTree) child.getChild(0);
-                CommonTree rightNode = (CommonTree) child.getChild(1);
-
-                List<CommonTree> leftStrings = leftNode.getChildren();
-
-                if (!isAnyUnaryString(leftStrings.get(0))) {
-                    throw new ParseException("Left side of ctf expression must be a string"); //$NON-NLS-1$
-                }
-                String left = concatenateUnaryStrings(leftStrings);
-
-                if (left.equals(MetadataStrings.EXP_DIG)) {
-                    exponent = ((Long) fIntegerParser.parse((CommonTree) rightNode.getChild(0), null, null)).intValue();
-                } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
-                    byteOrder = (ByteOrder) BYTE_ORDER_PARSER.parse(rightNode, fTrace, null);
-                } else if (left.equals(MetadataStrings.MANT_DIG)) {
-                    mantissa = ((Long) fIntegerParser.parse((CommonTree) rightNode.getChild(0), null, null)).intValue();
-                } else if (left.equals(MetadataStrings.ALIGN)) {
-                    alignment = (Long) ALIGNMENT_PARSER.parse(rightNode, null, null);
-                } else {
-                    throw new ParseException("Float: unknown attribute " + left); //$NON-NLS-1$
-                }
-
-                break;
-            default:
-                throw childTypeError(child);
-            }
-        }
-        int size = mantissa + exponent;
-        if (size == 0) {
-            throw new ParseException("Float missing size attribute"); //$NON-NLS-1$
-        }
-
-        if (alignment == 0) {
-            alignment = ((size % DEFAULT_ALIGNMENT) == 0) ? 1 : DEFAULT_ALIGNMENT;
-        }
-
-        floatDeclaration = new FloatDeclaration(exponent, mantissa, byteOrder, alignment);
-
-        return floatDeclaration;
-
-    }
-
     /**
      * Parses a type specifier list as a user-declared type.
      *
@@ -1555,11 +1482,6 @@ public class IOStructGen {
         }
 
         return decl;
-    }
-
-    private static StringDeclaration parseString(CommonTree string)
-            throws ParseException {
-        return (StringDeclaration) STRING_DECLARATION_PARSER.parse(string, null, null);
     }
 
     /**
@@ -2364,42 +2286,6 @@ public class IOStructGen {
             return m;
         }
         throw new ParseException("Invalid value for major/minor"); //$NON-NLS-1$
-    }
-
-    private static UUID getUUID(CommonTree rightNode) throws ParseException {
-
-        CommonTree firstChild = (CommonTree) rightNode.getChild(0);
-
-        if (isAnyUnaryString(firstChild)) {
-            if (rightNode.getChildCount() > 1) {
-                throw new ParseException("Invalid value for UUID"); //$NON-NLS-1$
-            }
-
-            String uuidstr = (String) fStringParser.parse(firstChild, null, null);
-
-            try {
-                return UUID.fromString(uuidstr);
-            } catch (IllegalArgumentException e) {
-                throw new ParseException("Invalid format for UUID", e); //$NON-NLS-1$
-            }
-        }
-        throw new ParseException("Invalid value for UUID"); //$NON-NLS-1$
-    }
-
-    private static long getStreamID(CommonTree rightNode) throws ParseException {
-
-        CommonTree firstChild = (CommonTree) rightNode.getChild(0);
-
-        if (isUnaryInteger(firstChild)) {
-            if (rightNode.getChildCount() > 1) {
-                throw new ParseException("invalid value for stream id"); //$NON-NLS-1$
-            }
-
-            long intval = (Long) fIntegerParser.parse(firstChild, null, null);
-
-            return intval;
-        }
-        throw new ParseException("invalid value for stream id"); //$NON-NLS-1$
     }
 
     private static String getEventName(CommonTree rightNode)
