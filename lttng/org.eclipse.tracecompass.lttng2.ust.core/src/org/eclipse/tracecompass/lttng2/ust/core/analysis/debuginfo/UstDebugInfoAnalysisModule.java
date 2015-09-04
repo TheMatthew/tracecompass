@@ -172,7 +172,7 @@ public class UstDebugInfoAnalysisModule extends TmfStateSystemAnalysisModule {
      * @return The {@link BinaryFile} object, containing both the binary's path
      *         and its build ID.
      */
-    public @Nullable BinaryFile getMatchingFile(long ts, long vpid, long ip) {
+    public @Nullable LoadedBinaryFile getMatchingFile(long ts, long vpid, long ip) {
         waitForCompletion();
         final ITmfStateSystem ss = checkNotNull(getStateSystem());
 
@@ -224,10 +224,12 @@ public class UstDebugInfoAnalysisModule extends TmfStateSystemAnalysisModule {
             }
 
             /* Ok, we have everything we need! Return the information. */
+            long baddr = Long.parseLong(ss.getAttributeName(baddrQuark));
+
             int buildIdQuark = potentialBuildIdQuark.get().intValue();
             String buildId = ss.getAttributeName(buildIdQuark);
             String filePath = fullState.get(buildIdQuark).getStateValue().unboxStr();
-            return new BinaryFile(filePath, buildId);
+            return new LoadedBinaryFile(baddr, filePath, buildId);
 
         } catch (AttributeNotFoundException e) {
             /* We're only using quarks we've checked for. */
@@ -239,11 +241,45 @@ public class UstDebugInfoAnalysisModule extends TmfStateSystemAnalysisModule {
     }
 
     /**
+     * Simply extension to {@link BinaryFile} that adds the base address at
+     * which the given binary or library is loaded.
+     */
+    public static class LoadedBinaryFile extends BinaryFile {
+
+        private final long baseAddress;
+
+        /**
+         * Constructor
+         *
+         * @param baseAddress
+         *            The base address at which the binary or library is loaded
+         * @param filePath
+         *            The file path of the loaded binary/library
+         * @param buildId
+         *            The build ID of the binary object
+         */
+        public LoadedBinaryFile(long baseAddress, String filePath, String buildId) {
+            super(filePath, buildId);
+            this.baseAddress = baseAddress;
+        }
+
+        /**
+         * Return the base address at which the object is loaded.
+         *
+         * @return The base address
+         */
+        public long getBaseAddress() {
+            return baseAddress;
+        }
+
+    }
+
+    /**
      * Wrapper class to reference to a particular binary, which can be an
      * executable or library. It contains both the complete file path (at the
      * time the trace was taken) and the build ID of the binary.
      */
-    public static final class BinaryFile implements Comparable<BinaryFile> {
+    public static class BinaryFile implements Comparable<BinaryFile> {
 
         private final String filePath;
         private final String buildId;
