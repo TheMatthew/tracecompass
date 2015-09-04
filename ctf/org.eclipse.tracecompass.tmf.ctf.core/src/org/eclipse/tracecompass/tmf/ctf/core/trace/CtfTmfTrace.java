@@ -35,6 +35,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.ctf.core.CTFException;
 import org.eclipse.tracecompass.ctf.core.event.CTFClock;
+import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.ctf.core.event.IEventDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
@@ -67,6 +68,7 @@ import org.eclipse.tracecompass.tmf.ctf.core.context.CtfLocation;
 import org.eclipse.tracecompass.tmf.ctf.core.context.CtfLocationInfo;
 import org.eclipse.tracecompass.tmf.ctf.core.context.CtfTmfContext;
 import org.eclipse.tracecompass.tmf.ctf.core.event.CtfTmfEvent;
+import org.eclipse.tracecompass.tmf.ctf.core.event.CtfTmfEventFactory;
 import org.eclipse.tracecompass.tmf.ctf.core.event.CtfTmfEventType;
 import org.eclipse.tracecompass.tmf.ctf.core.event.aspect.CtfChannelAspect;
 import org.eclipse.tracecompass.tmf.ctf.core.event.aspect.CtfCpuAspect;
@@ -95,16 +97,15 @@ public class CtfTmfTrace extends TmfTrace
 
     /**
      * Event aspects available for all CTF traces
+     *
      * @since 1.0
      */
-    protected static final @NonNull Collection<ITmfEventAspect> CTF_ASPECTS =
-            checkNotNull(ImmutableList.of(
-                    ITmfEventAspect.BaseAspects.TIMESTAMP,
-                    new CtfChannelAspect(),
-                    new CtfCpuAspect(),
-                    ITmfEventAspect.BaseAspects.EVENT_TYPE,
-                    ITmfEventAspect.BaseAspects.CONTENTS
-                    ));
+    protected static final @NonNull Collection<ITmfEventAspect> CTF_ASPECTS = checkNotNull(ImmutableList.of(
+            ITmfEventAspect.BaseAspects.TIMESTAMP,
+            new CtfChannelAspect(),
+            new CtfCpuAspect(),
+            ITmfEventAspect.BaseAspects.EVENT_TYPE,
+            ITmfEventAspect.BaseAspects.CONTENTS));
 
     /**
      * The Ctf clock unique identifier field
@@ -117,11 +118,9 @@ public class CtfTmfTrace extends TmfTrace
     // Fields
     // -------------------------------------------
 
-    private final Map<String, CtfTmfEventType> fContainedEventTypes =
-            Collections.synchronizedMap(new HashMap<String, CtfTmfEventType>());
+    private final Map<String, CtfTmfEventType> fContainedEventTypes = Collections.synchronizedMap(new HashMap<String, CtfTmfEventType>());
 
-    private final CtfIteratorManager fIteratorManager =
-            new CtfIteratorManager(this);
+    private final CtfIteratorManager fIteratorManager = new CtfIteratorManager(this);
 
     /* Reference to the CTF Trace */
     private CTFTrace fTrace;
@@ -212,6 +211,17 @@ public class CtfTmfTrace extends TmfTrace
         super.dispose();
     }
 
+    @Override
+    public Class<? extends CtfTmfEvent> getEventType() {
+        Class<? extends ITmfEvent> type = super.getEventType();
+        if (!CtfTmfEvent.class.isAssignableFrom(type)) {
+            throw new IllegalStateException();
+        }
+        @SuppressWarnings("unchecked")
+        Class<? extends CtfTmfEvent> castedType = (Class<? extends CtfTmfEvent>) type;
+        return castedType;
+    }
+
     /**
      * {@inheritDoc}
      * <p>
@@ -220,11 +230,11 @@ public class CtfTmfTrace extends TmfTrace
      * Firstly a weak validation of the metadata is done to determine if the
      * path is actually for a CTF trace. After that a full validation is done.
      *
-     * If the weak and full validation are successful the confidence is set
-     * to 10.
+     * If the weak and full validation are successful the confidence is set to
+     * 10.
      *
-     * If the weak validation was successful, but the full validation fails
-     * a TraceValidationStatus with severity warning and confidence of 1 is
+     * If the weak validation was successful, but the full validation fails a
+     * TraceValidationStatus with severity warning and confidence of 1 is
      * returned.
      *
      * If both weak and full validation fails an error status is returned.
@@ -250,12 +260,13 @@ public class CtfTmfTrace extends TmfTrace
                 }
 
                 // Validate using reader initialization
-                try (CTFTraceReader ctfTraceReader = new CTFTraceReader(trace)) {}
+                try (CTFTraceReader ctfTraceReader = new CTFTraceReader(trace)) {
+                }
 
                 // Trace is validated, return with confidence
                 return new CtfTraceValidationStatus(CONFIDENCE, Activator.PLUGIN_ID, trace.getEnvironment());
 
-            } catch (final CTFException | BufferOverflowException e ) {
+            } catch (final CTFException | BufferOverflowException e) {
                 // return warning since it's a CTF trace but with errors in it
                 return new TraceValidationStatus(MIN_CONFIDENCE, IStatus.WARNING, Activator.PLUGIN_ID, Messages.CtfTmfTrace_ReadingError + ": " + e.toString(), e); //$NON-NLS-1$
             }
@@ -681,5 +692,15 @@ public class CtfTmfTrace extends TmfTrace
         } catch (CoreException e) {
             Activator.getDefault().logError(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Convert an EventDef to a CtfTmfEvent
+     * @param eventDef
+     * @return
+     * @since 2.0
+     */
+    public CtfTmfEvent createEvent(EventDefinition eventDef, String fileName) {
+        return CtfTmfEventFactory.INSTANCE.createEvent(eventDef, fileName, this);
     }
 }
