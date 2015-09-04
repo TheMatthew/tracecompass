@@ -34,18 +34,18 @@ import org.eclipse.tracecompass.tmf.ctf.core.trace.CtfTmfTrace;
  */
 public class CtfTmfEventFactory {
 
-    private static final @NonNull String NO_STREAM = "No stream"; //$NON-NLS-1$
+    static final @NonNull
+    protected String NO_STREAM = "No stream"; //$NON-NLS-1$
 
     /**
      * @since 2.0
      *
      */
-    public static final CtfTmfEventFactory INSTANCE = new CtfTmfEventFactory();
 
     /**
-     * Don't let anyone instantiate this class.
+     * Let anyone instantiate this class.
      */
-    private CtfTmfEventFactory() {
+    public CtfTmfEventFactory() {
     }
 
     /**

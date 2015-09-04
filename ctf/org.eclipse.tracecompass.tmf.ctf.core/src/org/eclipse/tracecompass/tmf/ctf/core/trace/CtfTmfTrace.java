@@ -86,6 +86,8 @@ public class CtfTmfTrace extends TmfTrace
         implements ITmfTraceProperties, ITmfPersistentlyIndexable,
         ITmfTraceWithPreDefinedEvents {
 
+    private final CtfTmfEventFactory fEventFactory = new CtfTmfEventFactory();
+
     // -------------------------------------------
     // Constants
     // -------------------------------------------
@@ -701,6 +703,6 @@ public class CtfTmfTrace extends TmfTrace
      * @since 2.0
      */
     public CtfTmfEvent createEvent(EventDefinition eventDef, String fileName) {
-        return CtfTmfEventFactory.INSTANCE.createEvent(eventDef, fileName, this);
+        return fEventFactory.createEvent(eventDef, fileName, this);
     }
 }

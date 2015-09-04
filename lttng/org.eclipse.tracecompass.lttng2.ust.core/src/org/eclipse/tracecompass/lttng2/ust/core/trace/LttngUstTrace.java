@@ -24,6 +24,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
+import org.eclipse.tracecompass.ctf.core.event.EventDefinition;
 import org.eclipse.tracecompass.internal.lttng2.ust.core.Activator;
 import org.eclipse.tracecompass.internal.lttng2.ust.core.trace.layout.LttngUst20EventLayout;
 import org.eclipse.tracecompass.internal.lttng2.ust.core.trace.layout.LttngUst27EventLayout;
@@ -34,6 +35,7 @@ import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.core.event.aspect.ITmfEventAspect;
 import org.eclipse.tracecompass.tmf.core.exceptions.TmfTraceException;
 import org.eclipse.tracecompass.tmf.core.trace.TraceValidationStatus;
+import org.eclipse.tracecompass.tmf.ctf.core.event.CtfTmfEvent;
 import org.eclipse.tracecompass.tmf.ctf.core.trace.CtfTmfTrace;
 import org.eclipse.tracecompass.tmf.ctf.core.trace.CtfTraceValidationStatus;
 
@@ -58,6 +60,8 @@ public class LttngUstTrace extends CtfTmfTrace {
     }
 
     private @Nullable ILttngUstEventLayout fLayout = null;
+
+    private final LttngUstEventFactory fEventFactory = new LttngUstEventFactory();
 
     /**
      * Default constructor
@@ -120,6 +124,8 @@ public class LttngUstTrace extends CtfTmfTrace {
      * <p>
      * This implementation sets the confidence to 100 if the trace is a valid
      * CTF trace in the "ust" domain.
+     *
+     * @since 2.0
      */
     @Override
     public IStatus validate(final IProject project, final String path) {
@@ -134,5 +140,10 @@ public class LttngUstTrace extends CtfTmfTrace {
             return new TraceValidationStatus(CONFIDENCE, Activator.PLUGIN_ID);
         }
         return status;
+    }
+
+    @Override
+    public CtfTmfEvent createEvent(EventDefinition eventDef, String fileName) {
+        return fEventFactory.createEvent(eventDef, fileName, this);
     }
 }
