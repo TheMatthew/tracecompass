@@ -20,7 +20,6 @@ import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtil
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryInteger;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryString;
 
-import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -85,7 +84,7 @@ public class IOStructGen {
     private static final ICommonTreeParser fStringParser = UnaryStringParser.INSTANCE;
     private static final ICommonTreeParser BYTE_ORDER_PARSER = ByteOrderParser.INSTANCE;
     private static final ICommonTreeParser ALIGNMENT_PARSER = AlignmentParser.INSTANCE;
-    private static final ICommonTreeParser INTEGER_DECL_PARSER = IntegerDeclarationParser.INSTANCE  ;
+    private static final ICommonTreeParser INTEGER_DECL_PARSER = IntegerDeclarationParser.INSTANCE;
     private static final ICommonTreeParser STRING_DECLARATION_PARSER = StringDeclarationParser.INSTANCE;
     private static final ICommonTreeParser UUID_PARSER = UUIDParser.INSTANCE;
     private static final ICommonTreeParser STREAM_ID_PARSER = StreamIdParser.INSTANCE;
@@ -322,8 +321,6 @@ public class IOStructGen {
         }
         return builder.build();
     }
-
-
 
     private void parseTrace(CommonTree traceNode) throws ParseException {
 
@@ -789,7 +786,7 @@ public class IOStructGen {
                 throw new ParseException("name already defined"); //$NON-NLS-1$
             }
 
-            String name = EventNameParser.INSTANCE.parse(rightNode,null,null);
+            String name = EventNameParser.INSTANCE.parse(rightNode, null, null);
 
             event.setName(name);
         } else if (left.equals(MetadataStrings.ID)) {
@@ -1747,7 +1744,7 @@ public class IOStructGen {
             enumDeclaration = new EnumDeclaration(containerTypeDeclaration);
 
             /* Parse the body */
-            parseEnumBody(enumBody, enumDeclaration, enumName);
+            EnumBodyParser.INSTANCE.parse(enumBody, new EnumBodyParser.Param(enumDeclaration, enumName, getCurrentScope()), null);
 
             /* If the enum has name, add it to the current scope. */
             if (enumName != null) {
@@ -1776,107 +1773,6 @@ public class IOStructGen {
 
         return enumDeclaration;
 
-    }
-
-    /**
-     * Parses an enum body, adding the enumerators to the specified enum
-     * declaration.
-     *
-     * @param enumBody
-     *            An ENUM_BODY node.
-     * @param enumDeclaration
-     *            The enum declaration.
-     * @throws ParseException
-     */
-    private void parseEnumBody(CommonTree enumBody,
-            EnumDeclaration enumDeclaration, @Nullable String enumName) throws ParseException {
-
-        List<CommonTree> enumerators = enumBody.getChildren();
-        /* enum body can't be empty (unlike struct). */
-
-        pushNamedScope(enumName, MetadataStrings.ENUM);
-
-        /*
-         * Start at -1, so that if the first enumrator has no explicit value, it
-         * will choose 0
-         */
-        long lastHigh = -1;
-
-        for (CommonTree enumerator : enumerators) {
-            lastHigh = parseEnumEnumerator(enumerator, enumDeclaration,
-                    lastHigh);
-        }
-
-        popScope();
-
-    }
-
-    /**
-     * Parses an enumerator node and adds an enumerator declaration to an
-     * enumeration declaration.
-     *
-     * The high value of the range of the last enumerator is needed in case the
-     * current enumerator does not specify its value.
-     *
-     * @param enumerator
-     *            An ENUM_ENUMERATOR node.
-     * @param enumDeclaration
-     *            en enumeration declaration to which will be added the
-     *            enumerator.
-     * @param lastHigh
-     *            The high value of the range of the last enumerator
-     * @return The high value of the value range of the current enumerator.
-     * @throws ParseException
-     */
-    private static long parseEnumEnumerator(CommonTree enumerator,
-            EnumDeclaration enumDeclaration, long lastHigh)
-                    throws ParseException {
-
-        List<CommonTree> children = enumerator.getChildren();
-
-        long low = 0, high = 0;
-        boolean valueSpecified = false;
-        String label = null;
-
-        for (CommonTree child : children) {
-            if (isAnyUnaryString(child)) {
-                label = (String) fStringParser.parse(child, null, null);
-            } else if (child.getType() == CTFParser.ENUM_VALUE) {
-
-                valueSpecified = true;
-
-                low = (Long) UNARY_INTEGER_PARSER.parse((CommonTree) child.getChild(0), null, null);
-                high = low;
-            } else if (child.getType() == CTFParser.ENUM_VALUE_RANGE) {
-
-                valueSpecified = true;
-
-                low = (Long) UNARY_INTEGER_PARSER.parse((CommonTree) child.getChild(0), null, null);
-                high = (Long) UNARY_INTEGER_PARSER.parse((CommonTree) child.getChild(1), null, null);
-            } else {
-                throw childTypeError(child);
-            }
-        }
-
-        if (!valueSpecified) {
-            low = lastHigh + 1;
-            high = low;
-        }
-
-        if (low > high) {
-            throw new ParseException("enum low value greater than high value"); //$NON-NLS-1$
-        }
-
-        if (!enumDeclaration.add(low, high, label)) {
-            throw new ParseException("enum declarator values overlap."); //$NON-NLS-1$
-        }
-
-        if (valueSpecified && (BigInteger.valueOf(low).compareTo(enumDeclaration.getContainerType().getMinValue()) == -1 ||
-                BigInteger.valueOf(high).compareTo(enumDeclaration.getContainerType().getMaxValue()) == 1)) {
-            throw new ParseException("enum value is not in range"); //$NON-NLS-1$
-        }
-
-        return high;
     }
 
     /**
