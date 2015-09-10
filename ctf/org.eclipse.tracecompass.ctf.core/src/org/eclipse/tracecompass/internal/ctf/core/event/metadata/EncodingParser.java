@@ -23,6 +23,13 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
  */
 public class EncodingParser implements ICommonTreeParser {
 
+    /**
+     * Instance
+     */
+    public static final EncodingParser INSTANCE = new EncodingParser();
+
+    private EncodingParser() { }
+
     private static final String INVALID_VALUE_FOR_ENCODING = "Invalid value for encoding"; //$NON-NLS-1$
 
     /**

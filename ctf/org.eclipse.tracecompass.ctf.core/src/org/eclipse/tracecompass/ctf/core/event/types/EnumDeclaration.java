@@ -145,6 +145,20 @@ public final class EnumDeclaration extends Declaration implements ISimpleDatatyp
     }
 
     /**
+     * Add a value. Do not overlap, this is <em><strong>not</strong></em> an
+     * interval tree.
+     *
+     * @param label
+     *            the name of the value.
+     * @return was the value be added? true == success
+     * @since 2.0
+     */
+    public boolean add(@Nullable String label) {
+        fLabels.add(label);
+        return fTable.add(label);
+    }
+
+    /**
      * Check if the label for a value (enum a{day=0,night=1} would return "day"
      * for query(0)
      *
@@ -189,6 +203,20 @@ public final class EnumDeclaration extends Declaration implements ISimpleDatatyp
         private final List<LabelAndRange> ranges = new LinkedList<>();
 
         public EnumTable() {
+        }
+
+        public synchronized boolean add(@Nullable String label) {
+            LabelAndRange lastAdded = ranges.isEmpty() ? new LabelAndRange(-1, -1, "") : ranges.get(ranges.size() - 1); //$NON-NLS-1$
+            LabelAndRange newRange = new LabelAndRange(lastAdded.low, lastAdded.high, label);
+            for (LabelAndRange r : ranges) {
+                if (r.intersects(newRange)) {
+                    return false;
+                }
+            }
+
+            ranges.add(newRange);
+
+            return true;
         }
 
         public synchronized boolean add(long low, long high, @Nullable String label) {

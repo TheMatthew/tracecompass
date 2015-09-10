@@ -13,18 +13,28 @@ import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
-public class FloatDeclarationParser implements ICommonTreeParser{
+/**
+ * Float parser
+ *
+ * @author Matthew Khouzam
+ *
+ */
+public class FloatDeclarationParser implements ICommonTreeParser {
+
+    /**
+     * Instance
+     */
+    public static final FloatDeclarationParser INSTANCE = new FloatDeclarationParser();
 
     private static final int DEFAULT_FLOAT_EXPONENT = 8;
     private static final int DEFAULT_FLOAT_MANTISSA = 24;
-    private static final ICommonTreeParser UNARY_INTEGER_PARSER = new UnaryIntegerParser();
-    private static final ICommonTreeParser BYTE_ORDER_PARSER = new ByteOrderParser();
-    private static final ICommonTreeParser ALIGNMENT_PARSER = new AlignmentParser();
 
+    private FloatDeclarationParser() {
+    }
 
     @Override
     public Object parse(CommonTree floatingPoint, Object param, String errorMsg) throws ParseException {
-        if(!(param instanceof CTFTrace)){
+        if (!(param instanceof CTFTrace)) {
             throw new IllegalArgumentException();
         }
         CTFTrace trace = (CTFTrace) param;
@@ -65,13 +75,13 @@ public class FloatDeclarationParser implements ICommonTreeParser{
                 String left = concatenateUnaryStrings(leftStrings);
 
                 if (left.equals(MetadataStrings.EXP_DIG)) {
-                    exponent = ((Long) UNARY_INTEGER_PARSER.parse((CommonTree) rightNode.getChild(0), null, null)).intValue();
+                    exponent = UnaryIntegerParser.INSTANCE.parse((CommonTree) rightNode.getChild(0), null, null).intValue();
                 } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
-                    byteOrder = (ByteOrder) BYTE_ORDER_PARSER.parse(rightNode, trace, null);
+                    byteOrder = ByteOrderParser.INSTANCE.parse(rightNode, trace, null);
                 } else if (left.equals(MetadataStrings.MANT_DIG)) {
-                    mantissa = ((Long) UNARY_INTEGER_PARSER.parse((CommonTree) rightNode.getChild(0), null, null)).intValue();
+                    mantissa = UnaryIntegerParser.INSTANCE.parse((CommonTree) rightNode.getChild(0), null, null).intValue();
                 } else if (left.equals(MetadataStrings.ALIGN)) {
-                    alignment = (Long) ALIGNMENT_PARSER.parse(rightNode, null, null);
+                    alignment = AlignmentParser.INSTANCE.parse(rightNode, null, null);
                 } else {
                     throw new ParseException("Float: unknown attribute " + left); //$NON-NLS-1$
                 }

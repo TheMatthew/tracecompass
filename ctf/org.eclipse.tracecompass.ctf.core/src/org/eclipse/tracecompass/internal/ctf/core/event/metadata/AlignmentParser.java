@@ -46,8 +46,14 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
  */
 public final class AlignmentParser implements ICommonTreeParser {
 
+    /**
+     * Alignment parser instance
+     */
+    public static final AlignmentParser INSTANCE = new AlignmentParser();
+
     private static final String INVALID_VALUE_FOR_ALIGNMENT = "Invalid value for alignment"; //$NON-NLS-1$
 
+    private AlignmentParser(){}
     /**
      * Gets the value of a "align" integer or struct attribute.
      *

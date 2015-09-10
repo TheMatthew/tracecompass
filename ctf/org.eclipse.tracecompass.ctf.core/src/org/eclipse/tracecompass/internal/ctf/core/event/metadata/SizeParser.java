@@ -32,11 +32,19 @@ public class SizeParser implements ICommonTreeParser {
     private static final String INVALID_VALUE_FOR_SIZE = "Invalid value for size"; //$NON-NLS-1$
 
     /**
+     * Instance
+     */
+    public static final SizeParser INSTANCE = new SizeParser();
+
+    private SizeParser() {
+    }
+
+    /**
      * Gets the value of a "size" integer attribute.
      *
      * @param rightNode
      *            A CTF_RIGHT node.
-     * @return The "size" value.
+     * @return The "size" value. Can be 4 bytes.
      * @throws ParseException
      *             if the size is not an int or a negative
      */

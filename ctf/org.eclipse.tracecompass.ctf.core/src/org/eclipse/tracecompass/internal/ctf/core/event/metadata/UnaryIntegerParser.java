@@ -24,6 +24,14 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
 public final class UnaryIntegerParser implements ICommonTreeParser {
 
     /**
+     * Instance
+     */
+    public static final UnaryIntegerParser INSTANCE = new UnaryIntegerParser();
+
+    private UnaryIntegerParser() {
+    }
+
+    /**
      * Parses an unary integer (dec, hex or oct).
      *
      * @param unaryInteger

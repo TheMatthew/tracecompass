@@ -36,6 +36,8 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 /**
  * The class <code>CTFTraceTest</code> contains tests for the class
  * <code>{@link CTFTrace}</code>.
@@ -370,9 +372,9 @@ public class CTFTraceTest {
     @Test
     public void testLookupEnvironment_3() {
         String key = "test";
-        fixture.addEnvironmentVar(key, key);
+        fixture.setEnvironment(ImmutableMap.<String,String>of(key, key));
         String result = fixture.getEnvironment().get(key);
-        assertTrue(result.equals(key));
+        assertEquals(key, result);
     }
 
     /**
@@ -381,8 +383,7 @@ public class CTFTraceTest {
     @Test
     public void testLookupEnvironment_4() {
         String key = "test";
-        fixture.addEnvironmentVar(key, "bozo");
-        fixture.addEnvironmentVar(key, "the clown");
+        fixture.setEnvironment(ImmutableMap.<String,String>of(key, "bozo"));
         String result = fixture.getEnvironment().get(key);
         assertNotNull(result);
     }

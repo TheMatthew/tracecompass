@@ -52,6 +52,11 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
  */
 public class IntegerDeclarationParser implements ICommonTreeParser {
 
+    /**
+     * Instance
+     */
+    public static final IntegerDeclarationParser INSTANCE = new IntegerDeclarationParser();
+
     private static final @NonNull String ENCODING = "encoding"; //$NON-NLS-1$
     private static final @NonNull String EMPTY_STRING = ""; //$NON-NLS-1$
     private static final int DEFAULT_INT_BASE = 10;
@@ -60,13 +65,8 @@ public class IntegerDeclarationParser implements ICommonTreeParser {
     private static final @NonNull String SIZE = "size"; //$NON-NLS-1$
     private static final @NonNull String SIGNED = "signed"; //$NON-NLS-1$
 
-    private static final ICommonTreeParser SIGNED_PARSER = new SignedParser();
-    private static final ICommonTreeParser BASE_PARSER = new BaseParser();
-    private static final ICommonTreeParser CLOCK_PARSER = new ClockParser();
-    private static final ICommonTreeParser SIZE_PARSER = new SizeParser();
-    private static final ICommonTreeParser BYTE_ORDER_PARSER = new ByteOrderParser();
-    private static final ICommonTreeParser ALIGNMENT_PARSER = new AlignmentParser();
-    private static final ICommonTreeParser ENCODING_PARSER = new EncodingParser();
+    private IntegerDeclarationParser() {
+    }
 
     /**
      * Parses an integer declaration node.
@@ -123,25 +123,25 @@ public class IntegerDeclarationParser implements ICommonTreeParser {
 
                 switch (left) {
                 case SIGNED:
-                    signed = (Boolean) SIGNED_PARSER.parse(rightNode, null, null);
+                    signed = SignedParser.INSTANCE.parse(rightNode, null, null);
                     break;
                 case MetadataStrings.BYTE_ORDER:
-                    byteOrder = (ByteOrder) BYTE_ORDER_PARSER.parse(rightNode, trace, null);
+                    byteOrder = ByteOrderParser.INSTANCE.parse(rightNode, trace, null);
                     break;
                 case SIZE:
-                    size = (Long) SIZE_PARSER.parse(rightNode, null, null);
+                    size = SizeParser.INSTANCE.parse(rightNode, null, null);
                     break;
                 case MetadataStrings.ALIGN:
-                    alignment = (Long) ALIGNMENT_PARSER.parse(rightNode, null, null);
+                    alignment = AlignmentParser.INSTANCE.parse(rightNode, null, null);
                     break;
                 case BASE:
-                    base = (int) BASE_PARSER.parse(rightNode, null, null);
+                    base = BaseParser.INSTANCE.parse(rightNode, null, null);
                     break;
                 case ENCODING:
-                    encoding = (Encoding) ENCODING_PARSER.parse(rightNode, null, null);
+                    encoding = EncodingParser.INSTANCE.parse(rightNode, null, null);
                     break;
                 case MAP:
-                    clock = (String) CLOCK_PARSER.parse(rightNode, null, null);
+                    clock = ClockMapParser.INSTANCE.parse(rightNode, null, null);
                     break;
                 default:
                     Activator.log(IStatus.WARNING, Messages.IOStructGen_UnknownIntegerAttributeWarning + " " + left); //$NON-NLS-1$

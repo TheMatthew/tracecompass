@@ -23,13 +23,18 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
  */
 public final class BaseParser implements ICommonTreeParser {
 
+    /**
+     * BaseParser instance
+     */
+    public static final BaseParser INSTANCE = new BaseParser();
+
     private static final String INVALID_VALUE_FOR_BASE = "Invalid value for base"; //$NON-NLS-1$
     private static final int INTEGER_BASE_16 = 16;
     private static final int INTEGER_BASE_10 = 10;
     private static final int INTEGER_BASE_8 = 8;
     private static final int INTEGER_BASE_2 = 2;
 
-    private static final UnaryIntegerParser INTEGER_PARSER = new UnaryIntegerParser();
+    private BaseParser() { }
 
     @Override
     public Integer parse(CommonTree tree, Object param, String errorMsg) throws ParseException {
@@ -41,7 +46,7 @@ public final class BaseParser implements ICommonTreeParser {
                 throw new ParseException("invalid base value"); //$NON-NLS-1$
             }
 
-            long intval = INTEGER_PARSER.parse(firstChild, null, null);
+            long intval = UnaryIntegerParser.INSTANCE.parse(firstChild, null, null);
             if ((intval == INTEGER_BASE_2) || (intval == INTEGER_BASE_8) || (intval == INTEGER_BASE_10)
                     || (intval == INTEGER_BASE_16)) {
                 return (int) intval;

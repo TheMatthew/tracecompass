@@ -39,8 +39,16 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
  *
  */
 public class StringDeclarationParser implements ICommonTreeParser {
+
+    /**
+     * Instance
+     */
+    public static final StringDeclarationParser INSTANCE = new StringDeclarationParser();
+
     private static final @NonNull String ENCODING = "encoding"; //$NON-NLS-1$
-    private static final ICommonTreeParser ENCODING_PARSER = new EncodingParser();
+
+    private StringDeclarationParser() {
+    }
 
     @Override
     public StringDeclaration parse(CommonTree string, Object param, String errorMsg) throws ParseException {
@@ -70,7 +78,7 @@ public class StringDeclarationParser implements ICommonTreeParser {
                     String left = concatenateUnaryStrings(leftStrings);
 
                     if (left.equals(ENCODING)) {
-                        encoding = (Encoding) ENCODING_PARSER.parse(rightNode, null, null);
+                        encoding = EncodingParser.INSTANCE.parse(rightNode, null, null);
                     } else {
                         throw new ParseException("String: unknown attribute " //$NON-NLS-1$
                                 + left);

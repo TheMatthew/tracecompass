@@ -81,15 +81,16 @@ public class IOStructGen {
     private static final @NonNull String NAME = "name"; //$NON-NLS-1$
     private static final @NonNull String EMPTY_STRING = ""; //$NON-NLS-1$
 
-    private static final ICommonTreeParser fIntegerParser = new UnaryIntegerParser();
-    private static final ICommonTreeParser fStringParser = new UnaryStringParser();
-    private static final ICommonTreeParser BYTE_ORDER_PARSER = new ByteOrderParser();
-    private static final ICommonTreeParser ALIGNMENT_PARSER = new AlignmentParser();
-    private static final ICommonTreeParser INTEGER_DECL_PARSER = new IntegerDeclarationParser();
-    private static final ICommonTreeParser STRING_DECLARATION_PARSER = new StringDeclarationParser();
-    private static final ICommonTreeParser UUID_PARSER = new UUIDParser();
-    private static final ICommonTreeParser STREAM_ID_PARSER = new StreamIdParser();
-    private static final ICommonTreeParser FLOAT_DECLARATION_PARSER = new FloatDeclarationParser();
+    private static final ICommonTreeParser UNARY_INTEGER_PARSER = UnaryIntegerParser.INSTANCE;
+    private static final ICommonTreeParser fStringParser = UnaryStringParser.INSTANCE;
+    private static final ICommonTreeParser BYTE_ORDER_PARSER = ByteOrderParser.INSTANCE;
+    private static final ICommonTreeParser ALIGNMENT_PARSER = AlignmentParser.INSTANCE;
+    private static final ICommonTreeParser INTEGER_DECL_PARSER = IntegerDeclarationParser.INSTANCE  ;
+    private static final ICommonTreeParser STRING_DECLARATION_PARSER = StringDeclarationParser.INSTANCE;
+    private static final ICommonTreeParser UUID_PARSER = UUIDParser.INSTANCE;
+    private static final ICommonTreeParser STREAM_ID_PARSER = StreamIdParser.INSTANCE;
+    private static final ICommonTreeParser FLOAT_DECLARATION_PARSER = FloatDeclarationParser.INSTANCE;
+    private static final ClockParser CLOCK_PARSER = ClockParser.INSTANCE;
     /**
      * The trace
      */
@@ -199,7 +200,7 @@ public class IOStructGen {
                 events.add(child);
                 break;
             case CTFParser.CLOCK:
-                CTFClock ctfClock = parseClock(child);
+                CTFClock ctfClock = CLOCK_PARSER.parse(child, null, null);
                 String nameValue = ctfClock.getName();
                 fTrace.addClock(nameValue, ctfClock);
                 break;
@@ -253,7 +254,7 @@ public class IOStructGen {
                 events.add(child);
                 break;
             case CTFParser.CLOCK:
-                CTFClock ctfClock = parseClock(child);
+                CTFClock ctfClock = CLOCK_PARSER.parse(child, null, null);
                 String nameValue = ctfClock.getName();
                 fTrace.addClock(nameValue, ctfClock);
                 break;
@@ -322,43 +323,7 @@ public class IOStructGen {
         return builder.build();
     }
 
-    private static CTFClock parseClock(CommonTree clock) throws ParseException {
-        List<CommonTree> children = clock.getChildren();
-        CTFClock ctfClock = new CTFClock();
-        for (CommonTree child : children) {
-            final String key = child.getChild(0).getChild(0).getChild(0).getText();
-            final CommonTree value = (CommonTree) child.getChild(1).getChild(0).getChild(0);
-            final int type = value.getType();
-            final String text = value.getText();
-            switch (type) {
-            case CTFParser.INTEGER:
-            case CTFParser.DECIMAL_LITERAL:
-                /*
-                 * Not a pretty hack, this is to make sure that there is no
-                 * number overflow due to 63 bit integers. The offset should
-                 * only really be an issue in the year 2262. the tracer in C/ASM
-                 * can write an offset in an unsigned 64 bit long. In java, the
-                 * last bit, being set to 1 will be read as a negative number,
-                 * but since it is too big a positive it will throw an
-                 * exception. this will happen in 2^63 ns from 1970. Therefore
-                 * 293 years from 1970
-                 */
-                Long numValue;
-                try {
-                    numValue = Long.parseLong(text);
-                } catch (NumberFormatException e) {
-                    throw new ParseException("Number conversion issue with " + text, e); //$NON-NLS-1$
-                }
-                ctfClock.addAttribute(key, numValue);
-                break;
-            default:
-                ctfClock.addAttribute(key, text);
-            }
 
-        }
-        return ctfClock;
-
-    }
 
     private void parseTrace(CommonTree traceNode) throws ParseException {
 
@@ -824,7 +789,7 @@ public class IOStructGen {
                 throw new ParseException("name already defined"); //$NON-NLS-1$
             }
 
-            String name = getEventName(rightNode);
+            String name = EventNameParser.INSTANCE.parse(rightNode,null,null);
 
             event.setName(name);
         } else if (left.equals(MetadataStrings.ID)) {
@@ -845,7 +810,7 @@ public class IOStructGen {
                 throw new ParseException("stream id already defined"); //$NON-NLS-1$
             }
 
-            long streamId = (long) STREAM_ID_PARSER.parse(rightNode, null, null);
+            long streamId = (long) StreamIdParser.INSTANCE.parse(rightNode, null, null);
 
             CTFStream stream = fTrace.getStream(streamId);
 
@@ -896,7 +861,7 @@ public class IOStructGen {
             final StructDeclaration fields = (StructDeclaration) fieldsDecl;
             event.setFields(fields);
         } else if (left.equals(MetadataStrings.LOGLEVEL2)) {
-            long logLevel = (Long) fIntegerParser.parse((CommonTree) rightNode.getChild(0), null, null);
+            long logLevel = (Long) UNARY_INTEGER_PARSER.parse((CommonTree) rightNode.getChild(0), null, null);
             event.setLogLevel(logLevel);
         } else {
             /* Custom event attribute, we'll add it to the attributes map */
@@ -1216,7 +1181,7 @@ public class IOStructGen {
                 CommonTree first = lengthChildren.get(0);
                 if (isUnaryInteger(first)) {
                     /* Array */
-                    int arrayLength = ((Long) fIntegerParser.parse(first, null, null)).intValue();
+                    int arrayLength = ((Long) UNARY_INTEGER_PARSER.parse(first, null, null)).intValue();
 
                     if (arrayLength < 1) {
                         throw new ParseException("Array length is negative"); //$NON-NLS-1$
@@ -1880,14 +1845,14 @@ public class IOStructGen {
 
                 valueSpecified = true;
 
-                low = (Long) fIntegerParser.parse((CommonTree) child.getChild(0), null, null);
+                low = (Long) UNARY_INTEGER_PARSER.parse((CommonTree) child.getChild(0), null, null);
                 high = low;
             } else if (child.getType() == CTFParser.ENUM_VALUE_RANGE) {
 
                 valueSpecified = true;
 
-                low = (Long) fIntegerParser.parse((CommonTree) child.getChild(0), null, null);
-                high = (Long) fIntegerParser.parse((CommonTree) child.getChild(1), null, null);
+                low = (Long) UNARY_INTEGER_PARSER.parse((CommonTree) child.getChild(0), null, null);
+                high = (Long) UNARY_INTEGER_PARSER.parse((CommonTree) child.getChild(1), null, null);
             } else {
                 throw childTypeError(child);
             }
@@ -2168,77 +2133,7 @@ public class IOStructGen {
             firstItem = false;
 
             /* Append the string that represents this type specifier. */
-            createTypeSpecifierString(child, sb);
-        }
-    }
-
-    /**
-     * Creates the string representation of a type specifier.
-     *
-     * @param typeSpecifier
-     *            A TYPE_SPECIFIER node.
-     * @param sb
-     *            A StringBuilder to which will be appended the string.
-     * @throws ParseException
-     */
-    private static void createTypeSpecifierString(CommonTree typeSpecifier,
-            StringBuilder sb) throws ParseException {
-        switch (typeSpecifier.getType()) {
-        case CTFParser.FLOATTOK:
-        case CTFParser.INTTOK:
-        case CTFParser.LONGTOK:
-        case CTFParser.SHORTTOK:
-        case CTFParser.SIGNEDTOK:
-        case CTFParser.UNSIGNEDTOK:
-        case CTFParser.CHARTOK:
-        case CTFParser.DOUBLETOK:
-        case CTFParser.VOIDTOK:
-        case CTFParser.BOOLTOK:
-        case CTFParser.COMPLEXTOK:
-        case CTFParser.IMAGINARYTOK:
-        case CTFParser.CONSTTOK:
-        case CTFParser.IDENTIFIER:
-            sb.append(typeSpecifier.getText());
-            break;
-        case CTFParser.STRUCT: {
-            CommonTree structName = (CommonTree) typeSpecifier.getFirstChildWithType(CTFParser.STRUCT_NAME);
-            if (structName == null) {
-                throw new ParseException("nameless struct found in createTypeSpecifierString"); //$NON-NLS-1$
-            }
-
-            CommonTree structNameIdentifier = (CommonTree) structName.getChild(0);
-
-            sb.append(structNameIdentifier.getText());
-            break;
-        }
-        case CTFParser.VARIANT: {
-            CommonTree variantName = (CommonTree) typeSpecifier.getFirstChildWithType(CTFParser.VARIANT_NAME);
-            if (variantName == null) {
-                throw new ParseException("nameless variant found in createTypeSpecifierString"); //$NON-NLS-1$
-            }
-
-            CommonTree variantNameIdentifier = (CommonTree) variantName.getChild(0);
-
-            sb.append(variantNameIdentifier.getText());
-            break;
-        }
-        case CTFParser.ENUM: {
-            CommonTree enumName = (CommonTree) typeSpecifier.getFirstChildWithType(CTFParser.ENUM_NAME);
-            if (enumName == null) {
-                throw new ParseException("nameless enum found in createTypeSpecifierString"); //$NON-NLS-1$
-            }
-
-            CommonTree enumNameIdentifier = (CommonTree) enumName.getChild(0);
-
-            sb.append(enumNameIdentifier.getText());
-            break;
-        }
-        case CTFParser.FLOATING_POINT:
-        case CTFParser.INTEGER:
-        case CTFParser.STRING:
-            throw new ParseException("CTF type found in createTypeSpecifierString"); //$NON-NLS-1$
-        default:
-            throw childTypeError(typeSpecifier);
+            sb.append(TypeSpecifierListParser.INSTANCE.parse(child, null, null));
         }
     }
 
@@ -2277,7 +2172,7 @@ public class IOStructGen {
                 throw new ParseException("Invalid value for major/minor"); //$NON-NLS-1$
             }
 
-            long m = (Long) fIntegerParser.parse(firstChild, null, null);
+            long m = (Long) UNARY_INTEGER_PARSER.parse(firstChild, null, null);
 
             if (m < 0) {
                 throw new ParseException("Invalid value for major/minor"); //$NON-NLS-1$
@@ -2286,19 +2181,6 @@ public class IOStructGen {
             return m;
         }
         throw new ParseException("Invalid value for major/minor"); //$NON-NLS-1$
-    }
-
-    private static String getEventName(CommonTree rightNode)
-            throws ParseException {
-
-        CommonTree firstChild = (CommonTree) rightNode.getChild(0);
-
-        if (isAnyUnaryString(firstChild)) {
-            String str = concatenateUnaryStrings(rightNode.getChildren());
-
-            return str;
-        }
-        throw new ParseException("invalid value for event name"); //$NON-NLS-1$
     }
 
     private static long getEventID(CommonTree rightNode) throws ParseException {
@@ -2310,7 +2192,7 @@ public class IOStructGen {
                 throw new ParseException("invalid value for event id"); //$NON-NLS-1$
             }
 
-            long intval = (Long) fIntegerParser.parse(firstChild, null, null);
+            long intval = (Long) UNARY_INTEGER_PARSER.parse(firstChild, null, null);
             if (intval > Integer.MAX_VALUE) {
                 throw new ParseException("Event id larger than int.maxvalue, something is amiss"); //$NON-NLS-1$
             }

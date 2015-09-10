@@ -23,9 +23,15 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
  * @author Matthew Khouzam
  */
 public class SignedParser implements ICommonTreeParser {
+    /**
+     * Instance
+     */
+    public static final SignedParser INSTANCE = new SignedParser();
+
     private static final String INVALID_BOOLEAN_VALUE = "Invalid boolean value "; //$NON-NLS-1$
 
-    private static final ICommonTreeParser INTEGER_PARSER = new UnaryIntegerParser();
+    private SignedParser() {
+    }
 
     @Override
     public Boolean parse(CommonTree tree, Object param, String errorMsg) throws ParseException {
@@ -51,7 +57,7 @@ public class SignedParser implements ICommonTreeParser {
                 throw new ParseException("Invalid boolean value"); //$NON-NLS-1$
             }
 
-            long intval = (Long) INTEGER_PARSER.parse(firstChild, null, null);
+            long intval = UnaryIntegerParser.INSTANCE.parse(firstChild, null, null);
 
             if (intval == 1) {
                 ret = true;

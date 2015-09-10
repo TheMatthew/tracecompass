@@ -1,22 +1,59 @@
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
-import org.antlr.runtime.tree.CommonTree;
-import org.eclipse.jdt.annotation.NonNull;
+import java.util.List;
 
-/**
- * A reference to the clock map in a given integer.
- *
- * @author Matthew Khouzam
- *
- */
+import org.antlr.runtime.tree.CommonTree;
+import org.eclipse.tracecompass.ctf.core.event.CTFClock;
+import org.eclipse.tracecompass.ctf.parser.CTFParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
+
 public class ClockParser implements ICommonTreeParser {
 
-    private static final @NonNull String EMPTY_STRING = ""; //$NON-NLS-1$
+    /**
+     * Instance
+     */
+    public static final ClockParser INSTANCE =  new ClockParser();
+
+    private ClockParser() {
+    }
 
     @Override
-    public String parse(CommonTree tree, Object param, String errorMsg) {
-        String clock = tree.getChild(1).getChild(0).getChild(0).getText();
-        return clock == null ? EMPTY_STRING : clock;
+    public CTFClock parse(CommonTree clock, Object unused, String unused2) throws ParseException {
+            List<CommonTree> children = clock.getChildren();
+            CTFClock ctfClock = new CTFClock();
+            for (CommonTree child : children) {
+                final String key = child.getChild(0).getChild(0).getChild(0).getText();
+                final CommonTree value = (CommonTree) child.getChild(1).getChild(0).getChild(0);
+                final int type = value.getType();
+                final String text = value.getText();
+                switch (type) {
+                case CTFParser.INTEGER:
+                case CTFParser.DECIMAL_LITERAL:
+                    /*
+                     * Not a pretty hack, this is to make sure that there is no
+                     * number overflow due to 63 bit integers. The offset should
+                     * only really be an issue in the year 2262. the tracer in C/ASM
+                     * can write an offset in an unsigned 64 bit long. In java, the
+                     * last bit, being set to 1 will be read as a negative number,
+                     * but since it is too big a positive it will throw an
+                     * exception. this will happen in 2^63 ns from 1970. Therefore
+                     * 293 years from 1970
+                     */
+                    Long numValue;
+                    try {
+                        numValue = Long.parseLong(text);
+                    } catch (NumberFormatException e) {
+                        throw new ParseException("Number conversion issue with " + text, e); //$NON-NLS-1$
+                    }
+                    ctfClock.addAttribute(key, numValue);
+                    break;
+                default:
+                    ctfClock.addAttribute(key, text);
+                }
+
+            }
+            return ctfClock;
+
     }
 
 }

@@ -23,6 +23,11 @@ import org.eclipse.tracecompass.ctf.parser.CTFParser;
  */
 public final class UnaryStringParser implements ICommonTreeParser {
 
+    /** Instance */
+    public static final UnaryStringParser INSTANCE = new UnaryStringParser();
+
+    private UnaryStringParser() { }
+
     /**
      * Parses a unary string node and return the string value.
      *

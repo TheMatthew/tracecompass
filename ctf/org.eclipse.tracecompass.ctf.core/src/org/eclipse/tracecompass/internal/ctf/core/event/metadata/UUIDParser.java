@@ -8,8 +8,20 @@ import java.util.UUID;
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
+/**
+ * UUID parser
+ *
+ * @author Matthew Khouzam
+ *
+ */
 public class UUIDParser implements ICommonTreeParser {
-    private static final ICommonTreeParser UNARY_STRING_PARSER = new UnaryStringParser();
+
+    /** Instance */
+    public static final UUIDParser INSTANCE = new UUIDParser();
+
+    private UUIDParser() {
+    }
+
     @Override
     public Object parse(CommonTree tree, Object param, String errorMsg) throws ParseException {
 
@@ -20,7 +32,7 @@ public class UUIDParser implements ICommonTreeParser {
                 throw new ParseException("Invalid value for UUID"); //$NON-NLS-1$
             }
 
-            String uuidstr = (String) UNARY_STRING_PARSER.parse(firstChild, null, null);
+            String uuidstr = UnaryStringParser.INSTANCE.parse(firstChild, null, null);
 
             try {
                 return checkNotNull(UUID.fromString(uuidstr));

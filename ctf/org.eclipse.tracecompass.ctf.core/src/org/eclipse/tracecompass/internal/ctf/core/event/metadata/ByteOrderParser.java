@@ -47,7 +47,14 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
  */
 public final class ByteOrderParser implements ICommonTreeParser {
 
+    /**
+     * Instance
+     */
+    public static final ByteOrderParser INSTANCE = new ByteOrderParser();
+
     private static final String INVALID_VALUE_FOR_BYTE_ORDER = "Invalid value for byte order"; //$NON-NLS-1$
+
+    private ByteOrderParser() { }
 
     /**
      * Gets the value of a "byte_order" integer attribute.

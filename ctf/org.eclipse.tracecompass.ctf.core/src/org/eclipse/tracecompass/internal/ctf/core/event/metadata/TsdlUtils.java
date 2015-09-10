@@ -16,7 +16,7 @@ import org.eclipse.tracecompass.ctf.parser.CTFParser;
  */
 public final class TsdlUtils {
 
-    private static UnaryStringParser stringParser = new UnaryStringParser();
+    private static UnaryStringParser stringParser = UnaryStringParser.INSTANCE;
 
     private TsdlUtils() {
     }
