@@ -378,13 +378,13 @@ public class IOStructGen {
                 throw new ParseException("major is already set"); //$NON-NLS-1$
             }
 
-            fTrace.setMajor(getMajorOrMinor(rightNode));
+            fTrace.setMajor(VersionNumberParser.INSTANCE.parse(rightNode, null, null));
         } else if (left.equals(MetadataStrings.MINOR)) {
             if (fTrace.minorIsSet()) {
                 throw new ParseException("minor is already set"); //$NON-NLS-1$
             }
 
-            fTrace.setMinor(getMajorOrMinor(rightNode));
+            fTrace.setMinor(VersionNumberParser.INSTANCE.parse(rightNode, null, null));
         } else if (left.equals(MetadataStrings.UUID_STRING)) {
             UUID uuid = (UUID) UUID_PARSER.parse(rightNode, null, null);
 
@@ -794,7 +794,7 @@ public class IOStructGen {
                 throw new ParseException("id already defined"); //$NON-NLS-1$
             }
 
-            long id = getEventID(rightNode);
+            long id = EventIDParser.INSTANCE.parse(rightNode, null, null);
             if (id > Integer.MAX_VALUE) {
                 throw new ParseException("id is greater than int.maxvalue, unsupported. id : " + id); //$NON-NLS-1$
             }
@@ -931,7 +931,7 @@ public class IOStructGen {
             throw new ParseException("Typealias of untagged variant is not permitted"); //$NON-NLS-1$
         }
 
-        String aliasString = parseTypealiasAlias(alias);
+        String aliasString = TypeAliasAliasParser.INSTANCE.parse(alias, null,null);
 
         getCurrentScope().registerType(aliasString, targetDeclaration);
     }
@@ -1001,70 +1001,6 @@ public class IOStructGen {
         return targetDeclaration;
     }
 
-    /**
-     * Parses the alias part of a typealias. It parses the underlying specifier
-     * list and declarator and creates the string representation that will be
-     * used to register the type.
-     *
-     * @param alias
-     *            A TYPEALIAS_ALIAS node.
-     * @return The string representation of the alias.
-     * @throws ParseException
-     */
-    private static String parseTypealiasAlias(CommonTree alias)
-            throws ParseException {
-
-        List<CommonTree> children = alias.getChildren();
-
-        CommonTree typeSpecifierList = null;
-        CommonTree typeDeclaratorList = null;
-        CommonTree typeDeclarator = null;
-        List<CommonTree> pointers = new LinkedList<>();
-
-        for (CommonTree child : children) {
-            switch (child.getType()) {
-            case CTFParser.TYPE_SPECIFIER_LIST:
-                typeSpecifierList = child;
-                break;
-            case CTFParser.TYPE_DECLARATOR_LIST:
-                typeDeclaratorList = child;
-                break;
-            default:
-                throw childTypeError(child);
-            }
-        }
-
-        /* If there is a type declarator list, extract the pointers */
-        if (typeDeclaratorList != null) {
-            /*
-             * Only allow one declarator
-             *
-             * eg: "typealias uint8_t := puint8_t *, **;" is not permitted.
-             */
-            if (typeDeclaratorList.getChildCount() != 1) {
-                throw new ParseException("Only one type declarator is allowed in the typealias alias"); //$NON-NLS-1$
-            }
-
-            typeDeclarator = (CommonTree) typeDeclaratorList.getChild(0);
-
-            List<CommonTree> typeDeclaratorChildren = typeDeclarator.getChildren();
-
-            for (CommonTree child : typeDeclaratorChildren) {
-                switch (child.getType()) {
-                case CTFParser.POINTER:
-                    pointers.add(child);
-                    break;
-                case CTFParser.IDENTIFIER:
-                    throw new ParseException("Identifier (" + child.getText() //$NON-NLS-1$
-                            + ") not expected in the typealias target"); //$NON-NLS-1$
-                default:
-                    throw childTypeError(child);
-                }
-            }
-        }
-
-        return createTypeDeclarationString(typeSpecifierList, pointers);
-    }
 
     /**
      * Parses a typedef node. This creates and registers a new declaration for
@@ -1429,8 +1365,7 @@ public class IOStructGen {
     private IDeclaration parseTypeDeclaration(CommonTree typeSpecifierList,
             List<CommonTree> pointerList) throws ParseException {
         /* Create the string representation of the type declaration */
-        String typeStringRepresentation = createTypeDeclarationString(
-                typeSpecifierList, pointerList);
+        String typeStringRepresentation = TypeDeclarationStringParser.INSTANCE.parse(typeSpecifierList, pointerList, null);
 
         /*
          * Use the string representation to search the type in the current scope
@@ -1979,122 +1914,6 @@ public class IOStructGen {
 
             variant.addField(name, decl);
         }
-    }
-
-    /**
-     * Creates the string representation of a type declaration (type specifier
-     * list + pointers).
-     *
-     * @param typeSpecifierList
-     *            A TYPE_SPECIFIER_LIST node.
-     * @param pointers
-     *            A list of POINTER nodes.
-     * @return The string representation.
-     * @throws ParseException
-     */
-    private static String createTypeDeclarationString(
-            CommonTree typeSpecifierList, List<CommonTree> pointers)
-                    throws ParseException {
-        StringBuilder sb = new StringBuilder();
-
-        createTypeSpecifierListString(typeSpecifierList, sb);
-        createPointerListString(pointers, sb);
-
-        return sb.toString();
-    }
-
-    /**
-     * Creates the string representation of a list of type specifiers.
-     *
-     * @param typeSpecifierList
-     *            A TYPE_SPECIFIER_LIST node.
-     * @param sb
-     *            A StringBuilder to which will be appended the string.
-     * @throws ParseException
-     */
-    private static void createTypeSpecifierListString(
-            CommonTree typeSpecifierList, StringBuilder sb)
-                    throws ParseException {
-
-        List<CommonTree> children = typeSpecifierList.getChildren();
-
-        boolean firstItem = true;
-
-        for (CommonTree child : children) {
-            if (!firstItem) {
-                sb.append(' ');
-
-            }
-
-            firstItem = false;
-
-            /* Append the string that represents this type specifier. */
-            sb.append(TypeSpecifierListParser.INSTANCE.parse(child, null, null));
-        }
-    }
-
-    /**
-     * Creates the string representation of a list of pointers.
-     *
-     * @param pointerList
-     *            A list of pointer nodes. If pointerList is null, this function
-     *            does nothing.
-     * @param sb
-     *            A stringbuilder to which will be appended the string.
-     */
-    private static void createPointerListString(List<CommonTree> pointerList,
-            StringBuilder sb) {
-        if (pointerList == null) {
-            return;
-        }
-
-        for (CommonTree pointer : pointerList) {
-
-            sb.append(" *"); //$NON-NLS-1$
-            if (pointer.getChildCount() > 0) {
-
-                sb.append(" const"); //$NON-NLS-1$
-            }
-        }
-    }
-
-    private static long getMajorOrMinor(CommonTree rightNode)
-            throws ParseException {
-
-        CommonTree firstChild = (CommonTree) rightNode.getChild(0);
-
-        if (isUnaryInteger(firstChild)) {
-            if (rightNode.getChildCount() > 1) {
-                throw new ParseException("Invalid value for major/minor"); //$NON-NLS-1$
-            }
-
-            long m = (Long) UNARY_INTEGER_PARSER.parse(firstChild, null, null);
-
-            if (m < 0) {
-                throw new ParseException("Invalid value for major/minor"); //$NON-NLS-1$
-            }
-
-            return m;
-        }
-        throw new ParseException("Invalid value for major/minor"); //$NON-NLS-1$
-    }
-
-    private static long getEventID(CommonTree rightNode) throws ParseException {
-
-        CommonTree firstChild = (CommonTree) rightNode.getChild(0);
-
-        if (isUnaryInteger(firstChild)) {
-            if (rightNode.getChildCount() > 1) {
-                throw new ParseException("invalid value for event id"); //$NON-NLS-1$
-            }
-
-            long intval = (Long) UNARY_INTEGER_PARSER.parse(firstChild, null, null);
-            if (intval > Integer.MAX_VALUE) {
-                throw new ParseException("Event id larger than int.maxvalue, something is amiss"); //$NON-NLS-1$
-            }
-            return intval;
-        }
-        throw new ParseException("invalid value for event id"); //$NON-NLS-1$
     }
 
     // ------------------------------------------------------------------------

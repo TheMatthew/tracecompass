@@ -372,7 +372,7 @@ public class CTFTraceTest {
     @Test
     public void testLookupEnvironment_3() {
         String key = "test";
-        fixture.setEnvironment(ImmutableMap.<String,String>of(key, key));
+        fixture.setEnvironment(ImmutableMap.<String, String> of(key, key));
         String result = fixture.getEnvironment().get(key);
         assertEquals(key, result);
     }
@@ -383,7 +383,7 @@ public class CTFTraceTest {
     @Test
     public void testLookupEnvironment_4() {
         String key = "test";
-        fixture.setEnvironment(ImmutableMap.<String,String>of(key, "bozo"));
+        fixture.setEnvironment(ImmutableMap.<String, String> of(key, "bozo"));
         String result = fixture.getEnvironment().get(key);
         assertNotNull(result);
     }
