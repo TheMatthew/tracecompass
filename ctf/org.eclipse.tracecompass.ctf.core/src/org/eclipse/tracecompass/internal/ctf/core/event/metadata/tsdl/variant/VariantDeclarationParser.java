@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.variant;
 
 import java.util.List;
 
@@ -15,6 +15,9 @@ import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.TypeDeclaratorParser;
 
 public class VariantDeclarationParser extends AbstractScopedCommonTreeParser {
 
@@ -57,8 +60,8 @@ public class VariantDeclarationParser extends AbstractScopedCommonTreeParser {
 
             StringBuilder identifierSB = new StringBuilder();
 
-            IDeclaration decl = parseTypeDeclarator(typeDeclaratorNode,
-                    typeSpecifierListNode, identifierSB);
+            IDeclaration decl = TypeDeclaratorParser.INSTANCE.parse(typeDeclaratorNode,
+                    new TypeDeclaratorParser.Param(typeSpecifierListNode, getCurrentScope(), identifierSB), null);
 
             String name = identifierSB.toString();
 

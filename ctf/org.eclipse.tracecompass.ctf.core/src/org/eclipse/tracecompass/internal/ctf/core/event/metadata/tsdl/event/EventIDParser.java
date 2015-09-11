@@ -6,11 +6,14 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.event;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryInteger;
 
 import org.antlr.runtime.tree.CommonTree;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryIntegerParser;
 
 public final class EventIDParser implements ICommonTreeParser {
 

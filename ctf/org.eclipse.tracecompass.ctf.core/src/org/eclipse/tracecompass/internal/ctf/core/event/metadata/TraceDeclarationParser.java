@@ -30,7 +30,7 @@ import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.Activator;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.ByteOrderParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.ByteOrderParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.IntegerDeclarationParser.Param;
 
 public class TraceDeclarationParser extends AbstractScopedCommonTreeParser {

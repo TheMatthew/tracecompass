@@ -7,7 +7,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.enumeration;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isAnyUnaryString;
@@ -18,6 +18,10 @@ import java.util.List;
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryIntegerParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryStringParser;
 
 public final class EnumeratorParser implements ICommonTreeParser {
 

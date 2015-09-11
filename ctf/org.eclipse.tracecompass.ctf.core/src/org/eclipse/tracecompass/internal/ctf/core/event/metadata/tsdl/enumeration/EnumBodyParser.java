@@ -7,13 +7,16 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.enumeration;
 
 import java.util.List;
 
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.MetadataStrings;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
 
 public class EnumBodyParser extends AbstractScopedCommonTreeParser {
 

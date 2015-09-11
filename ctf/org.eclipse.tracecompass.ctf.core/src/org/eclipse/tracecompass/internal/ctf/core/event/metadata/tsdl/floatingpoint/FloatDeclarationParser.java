@@ -7,7 +7,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.floatingpoint;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.concatenateUnaryStrings;
@@ -20,8 +20,12 @@ import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.types.FloatDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.MetadataStrings;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryIntegerParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.AlignmentParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.ByteOrderParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.ByteOrderParser;
 
 /**
  * Float parser

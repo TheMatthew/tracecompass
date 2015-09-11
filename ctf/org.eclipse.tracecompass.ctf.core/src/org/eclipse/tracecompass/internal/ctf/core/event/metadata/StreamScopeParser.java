@@ -15,6 +15,7 @@ import java.util.List;
 
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.event.EventScopeParser;
 
 public final class StreamScopeParser implements ICommonTreeParser {
 

@@ -29,9 +29,9 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreePars
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.Messages;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.MetadataStrings;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.SignedParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.SizeParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.AlignmentParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.ByteOrderParser;
 
 /**
  * Signed integers are represented in two-complement. Integer alignment, size,

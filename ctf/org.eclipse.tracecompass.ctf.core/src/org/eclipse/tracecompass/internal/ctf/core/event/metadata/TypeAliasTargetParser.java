@@ -15,7 +15,6 @@ import java.util.List;
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
-import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 
 public class TypeAliasTargetParser extends AbstractScopedCommonTreeParser {
@@ -86,8 +85,8 @@ public class TypeAliasTargetParser extends AbstractScopedCommonTreeParser {
         }
 
         /* Parse the target type and get the declaration */
-        IDeclaration targetDeclaration = parseTypeDeclarator(typeDeclarator,
-                typeSpecifierList, identifierSB);
+        IDeclaration targetDeclaration = TypeDeclaratorParser.INSTANCE.parse(typeDeclarator,
+                new TypeDeclaratorParser.Param(typeSpecifierList, getCurrentScope(),identifierSB),null);
 
         /*
          * We don't allow identifier in the target

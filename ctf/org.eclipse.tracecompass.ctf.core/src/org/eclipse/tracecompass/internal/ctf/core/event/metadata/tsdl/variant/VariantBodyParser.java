@@ -6,22 +6,24 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.variant;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
-import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.MetadataStrings;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.TypeAliasParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.TypedefParser;
 
 public class VariantBodyParser extends AbstractScopedCommonTreeParser {
 
@@ -30,7 +32,7 @@ public class VariantBodyParser extends AbstractScopedCommonTreeParser {
         private final String fName;
         private final VariantDeclaration fVariantDeclaration;
 
-        public Param(VariantDeclaration variantDeclaration,String name, DeclarationScope scope) {
+        public Param(VariantDeclaration variantDeclaration, String name, DeclarationScope scope) {
             fVariantDeclaration = variantDeclaration;
             fDeclarationScope = scope;
             fName = name;
@@ -60,7 +62,7 @@ public class VariantBodyParser extends AbstractScopedCommonTreeParser {
                 TypeAliasParser.INSTANCE.parse(declarationNode, new TypeAliasParser.Param(getCurrentScope()), null);
                 break;
             case CTFParser.TYPEDEF:
-                Map<String, IDeclaration> decs = parseTypedef(declarationNode);
+                Map<String, IDeclaration> decs = TypedefParser.INSTANCE.parse(declarationNode, new TypedefParser.Param(getCurrentScope()), null);
                 for (Entry<String, IDeclaration> declarationEntry : decs.entrySet()) {
                     variantDeclaration.addField(declarationEntry.getKey(), declarationEntry.getValue());
                 }
@@ -74,6 +76,7 @@ public class VariantBodyParser extends AbstractScopedCommonTreeParser {
         }
 
         popScope();
+        return variantDeclaration;
     }
 
 }

@@ -17,19 +17,13 @@ package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.concatenateUnaryStrings;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isAnyUnaryString;
-import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryInteger;
 
-import java.io.ObjectInputStream.GetField;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import org.antlr.runtime.tree.CommonTree;
 import org.antlr.runtime.tree.Tree;
@@ -42,7 +36,6 @@ import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IEventHeaderDeclaration;
-import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
@@ -50,12 +43,14 @@ import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.Activator;
 import org.eclipse.tracecompass.internal.ctf.core.event.EventDeclaration;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.VariantDeclarationParser.Param;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.AlignmentParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.ByteOrderParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.ByteOrderParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.enumeration.EnumParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.event.EventIDParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.event.EventNameParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.floatingpoint.FloatDeclarationParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.IntegerDeclarationParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.types.ArrayDeclaration;
-import org.eclipse.tracecompass.internal.ctf.core.event.types.SequenceDeclaration;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.variant.VariantParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.StructDeclarationFlattener;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.composite.EventHeaderCompactDeclaration;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.composite.EventHeaderLargeDeclaration;
@@ -735,8 +730,7 @@ public class IOStructGen {
         for (CommonTree typeDeclaratorNode : typeDeclaratorList) {
             StringBuilder identifierSB = new StringBuilder();
 
-            IDeclaration typeDeclaration = parseTypeDeclarator(
-                    typeDeclaratorNode, typeSpecifierListNode, identifierSB);
+            IDeclaration typeDeclaration = TypeDeclaratorParser.INSTANCE.parse(typeDeclaratorNode, new TypeDeclaratorParser.Param(typeSpecifierListNode, getCurrentScope(), identifierSB), null);
 
             if ((typeDeclaration instanceof VariantDeclaration)
                     && !((VariantDeclaration) typeDeclaration).isTagged()) {
@@ -749,179 +743,6 @@ public class IOStructGen {
             declarations.put(identifierSB.toString(), typeDeclaration);
         }
         return declarations;
-    }
-
-    /**
-     * Parses a pair type declarator / type specifier list and returns the
-     * corresponding declaration. If it is present, it also writes the
-     * identifier of the declarator in the given {@link StringBuilder}.
-     *
-     * @param typeDeclarator
-     *            A TYPE_DECLARATOR node.
-     * @param typeSpecifierList
-     *            A TYPE_SPECIFIER_LIST node.
-     * @param identifierSB
-     *            A StringBuilder that will receive the identifier found in the
-     *            declarator.
-     * @return The corresponding declaration.
-     * @throws ParseException
-     *             If there is an error finding or creating the declaration.
-     */
-    private IDeclaration parseTypeDeclarator(CommonTree typeDeclarator,
-            CommonTree typeSpecifierList, StringBuilder identifierSB)
-                    throws ParseException {
-
-        IDeclaration declaration = null;
-        List<CommonTree> children = null;
-        List<CommonTree> pointers = new LinkedList<>();
-        List<CommonTree> lengths = new LinkedList<>();
-        CommonTree identifier = null;
-
-        /* Separate the tokens by type */
-        if (typeDeclarator != null) {
-            children = typeDeclarator.getChildren();
-            for (CommonTree child : children) {
-
-                switch (child.getType()) {
-                case CTFParser.POINTER:
-                    pointers.add(child);
-                    break;
-                case CTFParser.IDENTIFIER:
-                    identifier = child;
-                    break;
-                case CTFParser.LENGTH:
-                    lengths.add(child);
-                    break;
-                default:
-                    throw childTypeError(child);
-                }
-            }
-
-        }
-
-        /*
-         * Parse the type specifier list, which is the "base" type. For example,
-         * it would be int in int a[3][len].
-         */
-        declaration = parseTypeSpecifierList(typeSpecifierList, pointers, identifier);
-
-        /*
-         * Each length subscript means that we must create a nested array or
-         * sequence. For example, int a[3][len] means that we have an array of 3
-         * (sequences of length 'len' of (int)).
-         */
-        if (!lengths.isEmpty()) {
-            /* We begin at the end */
-            Collections.reverse(lengths);
-
-            for (CommonTree length : lengths) {
-                /*
-                 * By looking at the first expression, we can determine whether
-                 * it is an array or a sequence.
-                 */
-                List<CommonTree> lengthChildren = length.getChildren();
-
-                CommonTree first = lengthChildren.get(0);
-                if (isUnaryInteger(first)) {
-                    /* Array */
-                    int arrayLength = UnaryIntegerParser.INSTANCE.parse(first, null, null).intValue();
-
-                    if (arrayLength < 1) {
-                        throw new ParseException("Array length is negative"); //$NON-NLS-1$
-                    }
-
-                    /* Create the array declaration. */
-                    declaration = new ArrayDeclaration(arrayLength, declaration);
-                } else if (isAnyUnaryString(first)) {
-                    /* Sequence */
-                    String lengthName = concatenateUnaryStrings(lengthChildren);
-
-                    /* check that lengthName was declared */
-                    if (isSignedIntegerField(lengthName)) {
-                        throw new ParseException("Sequence declared with length that is not an unsigned integer"); //$NON-NLS-1$
-                    }
-                    /* Create the sequence declaration. */
-                    declaration = new SequenceDeclaration(lengthName,
-                            declaration);
-                } else if (isTrace(first)) {
-                    /* Sequence */
-                    String lengthName = TraceScopeParser.INSTANCE.parse(null, new TraceScopeParser.Param(lengthChildren), null);
-
-                    /* check that lengthName was declared */
-                    if (isSignedIntegerField(lengthName)) {
-                        throw new ParseException("Sequence declared with length that is not an unsigned integer"); //$NON-NLS-1$
-                    }
-                    /* Create the sequence declaration. */
-                    declaration = new SequenceDeclaration(lengthName,
-                            declaration);
-
-                } else if (isStream(first)) {
-                    /* Sequence */
-                    String lengthName = StreamScopeParser.INSTANCE.parse(null, new StreamScopeParser.Param(lengthChildren), null);
-
-                    /* check that lengthName was declared */
-                    if (isSignedIntegerField(lengthName)) {
-                        throw new ParseException("Sequence declared with length that is not an unsigned integer"); //$NON-NLS-1$
-                    }
-                    /* Create the sequence declaration. */
-                    declaration = new SequenceDeclaration(lengthName,
-                            declaration);
-                } else if (isEvent(first)) {
-                    /* Sequence */
-                    String lengthName = EventScopeParser.INSTANCE.parse(null, new EventScopeParser.Param(lengthChildren), null);
-
-                    /* check that lengthName was declared */
-                    if (isSignedIntegerField(lengthName)) {
-                        throw new ParseException("Sequence declared with length that is not an unsigned integer"); //$NON-NLS-1$
-                    }
-                    /* Create the sequence declaration. */
-                    declaration = new SequenceDeclaration(lengthName,
-                            declaration);
-                } else {
-                    throw childTypeError(first);
-                }
-            }
-        }
-
-        if (identifier != null) {
-            final String text = identifier.getText();
-            identifierSB.append(text);
-            registerType(declaration, text);
-        }
-
-        return declaration;
-    }
-
-    private void registerType(IDeclaration declaration, String identifier) throws ParseException {
-        final DeclarationScope currentScope = getCurrentScope();
-        if (declaration instanceof EnumDeclaration) {
-            if (currentScope.lookupEnum(identifier) == null) {
-                currentScope.registerEnum(identifier, (EnumDeclaration) declaration);
-            }
-        } else if (declaration instanceof VariantDeclaration) {
-            currentScope.registerVariant(identifier, (VariantDeclaration) declaration);
-        }
-    }
-
-    private static boolean isEvent(CommonTree first) {
-        return first.getType() == CTFParser.EVENT;
-    }
-
-    private static boolean isStream(CommonTree first) {
-        return first.getType() == CTFParser.STREAM;
-    }
-
-    private static boolean isTrace(CommonTree first) {
-        return first.getType() == CTFParser.TRACE;
-    }
-
-    private boolean isSignedIntegerField(String lengthName) throws ParseException {
-        IDeclaration decl = getCurrentScope().lookupIdentifierRecursive(lengthName);
-        if (decl instanceof IntegerDeclaration) {
-            return ((IntegerDeclaration) decl).isSigned();
-        }
-        throw new ParseException("Is not an integer: " + lengthName); //$NON-NLS-1$
-
     }
 
     private IDeclaration parseTypeSpecifierList(CommonTree typeSpecifierList) throws ParseException {
@@ -975,10 +796,10 @@ public class IOStructGen {
             }
             break;
         case CTFParser.VARIANT:
-            declaration = parseVariant(firstChild);
+            declaration = VariantParser.INSTANCE.parse(firstChild, new VariantParser.Param(getCurrentScope()), null);
             break;
         case CTFParser.ENUM:
-            declaration = parseEnum(firstChild);
+            declaration = EnumParser.INSTANCE.parse(firstChild, new EnumParser.Param(getCurrentScope()), null);
             break;
         case CTFParser.IDENTIFIER:
         case CTFParser.FLOATTOK:
@@ -993,44 +814,13 @@ public class IOStructGen {
         case CTFParser.BOOLTOK:
         case CTFParser.COMPLEXTOK:
         case CTFParser.IMAGINARYTOK:
-            declaration = parseTypeDeclaration(typeSpecifierList, pointerList);
+            declaration = TypeDeclarationParser.INSTANCE.parse(typeSpecifierList, new TypeDeclarationParser.Param(pointerList, getCurrentScope()), null);
             break;
         default:
             throw childTypeError(firstChild);
         }
 
         return declaration;
-    }
-
-    /**
-     * Parses a type specifier list as a user-declared type.
-     *
-     * @param typeSpecifierList
-     *            A TYPE_SPECIFIER_LIST node containing a user-declared type.
-     * @param pointerList
-     *            A list of POINTER nodes that apply to the type specified in
-     *            typeSpecifierList.
-     * @return The corresponding declaration.
-     * @throws ParseException
-     *             If the type does not exist (has not been found).
-     */
-    private IDeclaration parseTypeDeclaration(CommonTree typeSpecifierList,
-            List<CommonTree> pointerList) throws ParseException {
-        /* Create the string representation of the type declaration */
-        String typeStringRepresentation = TypeDeclarationStringParser.INSTANCE.parse(typeSpecifierList, new TypeDeclarationStringParser.Param(pointerList), null);
-
-        /*
-         * Use the string representation to search the type in the current scope
-         */
-        IDeclaration decl = getCurrentScope().lookupTypeRecursive(
-                typeStringRepresentation);
-
-        if (decl == null) {
-            throw new ParseException("Type " + typeStringRepresentation //$NON-NLS-1$
-                    + " has not been defined."); //$NON-NLS-1$
-        }
-
-        return decl;
     }
 
     /**
@@ -1224,8 +1014,7 @@ public class IOStructGen {
 
             StringBuilder identifierSB = new StringBuilder();
 
-            IDeclaration decl = parseTypeDeclarator(typeDeclaratorNode,
-                    typeSpecifierListNode, identifierSB);
+            IDeclaration decl = TypeDeclaratorParser.INSTANCE.parse(typeDeclaratorNode, new TypeDeclaratorParser.Param(typeSpecifierListNode, getCurrentScope(), identifierSB), null);
             String fieldName = identifierSB.toString();
             getCurrentScope().registerIdentifier(fieldName, decl);
 
@@ -1237,162 +1026,6 @@ public class IOStructGen {
             struct.addField(fieldName, decl);
 
         }
-    }
-
-    /**
-     * Parses an enum declaration and returns the corresponding declaration.
-     *
-     * @param theEnum
-     *            An ENUM node.
-     * @return The corresponding enum declaration.
-     * @throws ParseException
-     */
-    private EnumDeclaration parseEnum(CommonTree theEnum) throws ParseException {
-
-        List<CommonTree> children = theEnum.getChildren();
-
-        /* The return value */
-        EnumDeclaration enumDeclaration = null;
-
-        /* Name */
-        String enumName = null;
-
-        /* Body */
-        CommonTree enumBody = null;
-
-        /* Container type */
-        IntegerDeclaration containerTypeDeclaration = null;
-
-        /* Loop on all children and identify what we have to work with. */
-        for (CommonTree child : children) {
-            switch (child.getType()) {
-            case CTFParser.ENUM_NAME: {
-                CommonTree enumNameIdentifier = (CommonTree) child.getChild(0);
-                enumName = enumNameIdentifier.getText();
-                break;
-            }
-            case CTFParser.ENUM_BODY: {
-                enumBody = child;
-                break;
-            }
-            case CTFParser.ENUM_CONTAINER_TYPE: {
-                containerTypeDeclaration = parseEnumContainerType(child);
-                break;
-            }
-            default:
-                throw childTypeError(child);
-            }
-        }
-
-        /*
-         * If the container type has not been defined explicitly, we assume it
-         * is "int".
-         */
-        if (containerTypeDeclaration == null) {
-            IDeclaration enumDecl;
-            /*
-             * it could be because the enum was already declared.
-             */
-            if (enumName != null) {
-                getCurrentScope().setName(enumName);
-                enumDecl = getCurrentScope().lookupEnumRecursive(enumName);
-                if (enumDecl != null) {
-                    return (EnumDeclaration) enumDecl;
-                }
-            }
-
-            IDeclaration decl = getCurrentScope().lookupTypeRecursive("int"); //$NON-NLS-1$
-
-            if (decl == null) {
-                throw new ParseException("enum container type implicit and type int not defined"); //$NON-NLS-1$
-            } else if (!(decl instanceof IntegerDeclaration)) {
-                throw new ParseException("enum container type implicit and type int not an integer"); //$NON-NLS-1$
-            }
-
-            containerTypeDeclaration = (IntegerDeclaration) decl;
-        }
-
-        /*
-         * If it has a body, it's a new declaration, otherwise it's a reference
-         * to an existing declaration. Same logic as struct.
-         */
-        if (enumBody != null) {
-            /*
-             * If enum has a name, check if already defined in the current
-             * scope.
-             */
-            if ((enumName != null)
-                    && (getCurrentScope().lookupEnum(enumName) != null)) {
-                throw new ParseException("enum " + enumName //$NON-NLS-1$
-                        + " already defined"); //$NON-NLS-1$
-            }
-
-            /* Create the declaration */
-            enumDeclaration = new EnumDeclaration(containerTypeDeclaration);
-
-            /* Parse the body */
-            EnumBodyParser.INSTANCE.parse(enumBody, new EnumBodyParser.Param(enumDeclaration, enumName, getCurrentScope()), null);
-
-            /* If the enum has name, add it to the current scope. */
-            if (enumName != null) {
-                getCurrentScope().registerEnum(enumName, enumDeclaration);
-            }
-        } else {
-            if (enumName != null) {
-                /* Name and !body */
-
-                /* Lookup the name in the current scope. */
-                enumDeclaration = getCurrentScope().lookupEnumRecursive(enumName);
-
-                /*
-                 * If not found, it means that an enum with such name has not
-                 * been defined
-                 */
-                if (enumDeclaration == null) {
-                    throw new ParseException("enum " + enumName //$NON-NLS-1$
-                            + " is not defined"); //$NON-NLS-1$
-                }
-            } else {
-                /* !Name and !body */
-                throw new ParseException("enum with no name and no body"); //$NON-NLS-1$
-            }
-        }
-
-        return enumDeclaration;
-
-    }
-
-    /**
-     * Parses an enum container type node and returns the corresponding integer
-     * type.
-     *
-     * @param enumContainerType
-     *            An ENUM_CONTAINER_TYPE node.
-     * @return An integer declaration corresponding to the container type.
-     * @throws ParseException
-     *             If the type does not parse correctly or if it is not an
-     *             integer type.
-     */
-    private IntegerDeclaration parseEnumContainerType(
-            CommonTree enumContainerType) throws ParseException {
-
-        /* Get the child, which should be a type specifier list */
-        CommonTree typeSpecifierList = (CommonTree) enumContainerType.getChild(0);
-
-        /* Parse it and get the corresponding declaration */
-        IDeclaration decl = parseTypeSpecifierList(typeSpecifierList);
-
-        /* If is is an integer, return it, else throw an error */
-        if (decl instanceof IntegerDeclaration) {
-            return (IntegerDeclaration) decl;
-        }
-        throw new ParseException("enum container type must be an integer"); //$NON-NLS-1$
-    }
-
-    private VariantDeclaration parseVariant(CommonTree variant)
-            throws ParseException {
-        return VariantParser.INSTANCE.parse(variant, new VariantParser.Param(getCurrentScope()), null);
-
     }
 
     // ------------------------------------------------------------------------
