@@ -14,7 +14,6 @@ import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtil
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryString;
 
 import org.antlr.runtime.tree.CommonTree;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 /**
  * Singed status, whether an integer is capable of accepting negative values or
@@ -34,7 +33,7 @@ public class SignedParser implements ICommonTreeParser {
     }
 
     @Override
-    public Boolean parse(CommonTree tree, Object param, String errorMsg) throws ParseException {
+    public Boolean parse(CommonTree tree, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
         boolean ret = false;
         CommonTree firstChild = (CommonTree) tree.getChild(0);
 

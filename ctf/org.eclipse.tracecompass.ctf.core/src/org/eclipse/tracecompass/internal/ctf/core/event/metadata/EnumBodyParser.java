@@ -1,3 +1,12 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
+
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import java.util.List;
@@ -5,11 +14,10 @@ import java.util.List;
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 public class EnumBodyParser extends AbstractScopedCommonTreeParser {
 
-    public static final class Param {
+    public static final class Param implements ICommonTreeParserParameter {
 
         private final EnumDeclaration fEnumDeclaration;
         private final String fEnumName;
@@ -29,7 +37,7 @@ public class EnumBodyParser extends AbstractScopedCommonTreeParser {
     }
 
     @Override
-    public Object parse(CommonTree tree, Object param, String errorMsg) throws ParseException {
+    public Object parse(CommonTree tree, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
         if (!(param instanceof Param)) {
             throw new IllegalArgumentException("param must be of type EnumBodyParser.Param"); //$NON-NLS-1$
         }
@@ -43,7 +51,7 @@ public class EnumBodyParser extends AbstractScopedCommonTreeParser {
          * will choose 0
          */
         for (CommonTree enumerator : enumerators) {
-            EnumeratorParser.INSTANCE.parse(enumerator, parameter.fEnumDeclaration,
+            EnumeratorParser.INSTANCE.parse(enumerator, new EnumeratorParser.Param(parameter.fEnumDeclaration),
                     null);
         }
         popScope();

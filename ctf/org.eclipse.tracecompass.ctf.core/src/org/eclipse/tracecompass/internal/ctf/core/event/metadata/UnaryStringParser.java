@@ -42,7 +42,7 @@ public final class UnaryStringParser implements ICommonTreeParser {
      * parser.
      */
     @Override
-    public String parse(CommonTree unaryString, Object notUsed, String errorMsg) {
+    public String parse(CommonTree unaryString, ICommonTreeParserParameter notUsed, String errorMsg) {
         CommonTree value = (CommonTree) unaryString.getChild(0);
         if (value.getType() == CTFParser.UNARY_EXPRESSION_STRING) {
             value = (CommonTree) value.getChild(0);

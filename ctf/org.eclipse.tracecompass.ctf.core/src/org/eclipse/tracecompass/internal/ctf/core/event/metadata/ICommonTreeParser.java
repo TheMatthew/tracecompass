@@ -11,11 +11,10 @@ package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 /**
  * Common tree parser interface. Should only have one method
- * {@link #parse(CommonTree, Object, String)}
+ * {@link #parse(CommonTree, ICommonTreeParserParameter, String)}
  *
  * It is recommended to add to the javadoc on this inerface as it is not
  * specific
@@ -24,6 +23,16 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
  *
  */
 public interface ICommonTreeParser {
+
+    /**
+     * Parameter object to avoid passing "Object" as a parameter
+     * @author Matthew Khouzam
+     *
+     */
+    public interface ICommonTreeParserParameter{
+
+    }
+
     /**
      * The only parse method of the common tree parser. Caution must be used
      * handling this as it can return any type and thus care must be used with
@@ -41,6 +50,6 @@ public interface ICommonTreeParser {
      *             if the tree or data is wrong
      */
     @NonNull
-    Object parse(CommonTree tree, Object param, String errorMsg) throws ParseException;
+    Object parse(CommonTree tree, ICommonTreeParserParameter param, String errorMsg) throws ParseException;
 
 }

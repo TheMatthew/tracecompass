@@ -1,9 +1,17 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
+
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryInteger;
 
 import org.antlr.runtime.tree.CommonTree;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 public final class VersionNumberParser implements ICommonTreeParser {
 
@@ -14,7 +22,7 @@ public final class VersionNumberParser implements ICommonTreeParser {
     }
 
     @Override
-    public Long parse(CommonTree tree, Object param, String errorMsg) throws ParseException {
+    public Long parse(CommonTree tree, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
 
         CommonTree firstChild = (CommonTree) tree.getChild(0);
 

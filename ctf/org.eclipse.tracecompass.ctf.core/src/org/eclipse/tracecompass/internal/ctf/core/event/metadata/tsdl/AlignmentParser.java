@@ -7,13 +7,15 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryInteger;
 
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryIntegerParser;
 
 /**
  * Alignment parser, we define byte-packed types as aligned on the byte size,
@@ -53,7 +55,9 @@ public final class AlignmentParser implements ICommonTreeParser {
 
     private static final String INVALID_VALUE_FOR_ALIGNMENT = "Invalid value for alignment"; //$NON-NLS-1$
 
-    private AlignmentParser(){}
+    private AlignmentParser() {
+    }
+
     /**
      * Gets the value of a "align" integer or struct attribute.
      *
@@ -64,11 +68,7 @@ public final class AlignmentParser implements ICommonTreeParser {
      *             Invalid alignment value
      */
     @Override
-    public Long parse(CommonTree node, Object parser, String unused2) throws ParseException {
-        if (!(parser instanceof UnaryIntegerParser)) {
-            throw new IllegalArgumentException("The Object must be a UnaryIntegerParser"); //$NON-NLS-1$
-        }
-        UnaryIntegerParser integerParser = (UnaryIntegerParser) parser;
+    public Long parse(CommonTree node, ICommonTreeParserParameter parser, String unused2) throws ParseException {
         /*
          * If a CTF_RIGHT node was passed, call getAlignment with the first
          * child
@@ -78,9 +78,9 @@ public final class AlignmentParser implements ICommonTreeParser {
                 throw new ParseException(INVALID_VALUE_FOR_ALIGNMENT);
             }
 
-            return parse((CommonTree) node.getChild(0), (Object) integerParser, null);
+            return parse((CommonTree) node.getChild(0), parser, null);
         } else if (isUnaryInteger(node)) {
-            long alignment = integerParser.parse(node, null, null);
+            long alignment = UnaryIntegerParser.INSTANCE.parse(node, null, null);
 
             if (!isValidAlignment(alignment)) {
                 throw new ParseException(INVALID_VALUE_FOR_ALIGNMENT + " : " //$NON-NLS-1$

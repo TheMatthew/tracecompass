@@ -7,14 +7,17 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.concatenateUnaryStrings;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryInteger;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryString;
 
 import org.antlr.runtime.tree.CommonTree;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.MetadataStrings;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryIntegerParser;
 
 /**
  * Parse the base of an integer, can return 16, 10, 8 or 2
@@ -37,7 +40,7 @@ public final class BaseParser implements ICommonTreeParser {
     private BaseParser() { }
 
     @Override
-    public Integer parse(CommonTree tree, Object param, String errorMsg) throws ParseException {
+    public Integer parse(CommonTree tree, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
 
         CommonTree firstChild = (CommonTree) tree.getChild(0);
 

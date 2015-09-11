@@ -1,9 +1,16 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import java.util.List;
 
 import org.antlr.runtime.tree.CommonTree;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 public class TypeSpecifierListStringParser implements ICommonTreeParser {
 
@@ -25,7 +32,7 @@ public class TypeSpecifierListStringParser implements ICommonTreeParser {
      *             invalid node
      */
     @Override
-    public StringBuilder parse(CommonTree typeSpecifierList, Object param, String errorMsg) throws ParseException {
+    public StringBuilder parse(CommonTree typeSpecifierList, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
         StringBuilder sb = new StringBuilder();
         List<CommonTree> children = typeSpecifierList.getChildren();
 

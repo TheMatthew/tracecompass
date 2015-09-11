@@ -12,7 +12,6 @@ package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 import java.util.List;
 
 import org.antlr.runtime.tree.CommonTree;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 /**
  * Unary String Parser, along with Unary integer parser, one of the two most
@@ -41,7 +40,7 @@ public final class UnaryIntegerParser implements ICommonTreeParser {
      *             on an invalid integer format ("bob" for example)
      */
     @Override
-    public Long parse(CommonTree unaryInteger, Object notUsed, String errorMsg) throws ParseException {
+    public Long parse(CommonTree unaryInteger, ICommonTreeParserParameter notUsed, String errorMsg) throws ParseException {
         List<CommonTree> children = unaryInteger.getChildren();
         CommonTree value = children.get(0);
         String strval = value.getText();

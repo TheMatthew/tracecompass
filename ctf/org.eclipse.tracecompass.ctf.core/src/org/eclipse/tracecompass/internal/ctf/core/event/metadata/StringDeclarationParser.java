@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
@@ -11,7 +19,6 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.ctf.core.event.types.Encoding;
 import org.eclipse.tracecompass.ctf.core.event.types.StringDeclaration;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 /**
  * Strings are an array of bytes of variable size and are terminated by a '\0'
@@ -51,7 +58,7 @@ public class StringDeclarationParser implements ICommonTreeParser {
     }
 
     @Override
-    public StringDeclaration parse(CommonTree string, Object param, String errorMsg) throws ParseException {
+    public StringDeclaration parse(CommonTree string, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
         List<CommonTree> children = string.getChildren();
         StringDeclaration stringDeclaration = null;
 

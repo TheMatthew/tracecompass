@@ -1,9 +1,16 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryInteger;
 
 import org.antlr.runtime.tree.CommonTree;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 /**
  *
@@ -19,17 +26,13 @@ public class StreamIdParser implements ICommonTreeParser {
     }
 
     @Override
-    public Object parse(CommonTree tree, Object param, String errorMsg) throws ParseException {
-
+    public Object parse(CommonTree tree, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
         CommonTree firstChild = (CommonTree) tree.getChild(0);
-
         if (isUnaryInteger(firstChild)) {
             if (tree.getChildCount() > 1) {
                 throw new ParseException("invalid value for stream id"); //$NON-NLS-1$
             }
-
             long intval = UnaryIntegerParser.INSTANCE.parse(firstChild, null, null);
-
             return intval;
         }
         throw new ParseException("invalid value for stream id"); //$NON-NLS-1$

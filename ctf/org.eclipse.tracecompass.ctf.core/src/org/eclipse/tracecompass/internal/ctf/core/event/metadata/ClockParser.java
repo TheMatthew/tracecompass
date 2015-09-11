@@ -1,3 +1,12 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
+
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import java.util.List;
@@ -5,7 +14,6 @@ import java.util.List;
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.CTFClock;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 public class ClockParser implements ICommonTreeParser {
 
@@ -18,7 +26,7 @@ public class ClockParser implements ICommonTreeParser {
     }
 
     @Override
-    public CTFClock parse(CommonTree clock, Object unused, String unused2) throws ParseException {
+    public CTFClock parse(CommonTree clock, ICommonTreeParserParameter unused, String unused2) throws ParseException {
             List<CommonTree> children = clock.getChildren();
             CTFClock ctfClock = new CTFClock();
             for (CommonTree child : children) {

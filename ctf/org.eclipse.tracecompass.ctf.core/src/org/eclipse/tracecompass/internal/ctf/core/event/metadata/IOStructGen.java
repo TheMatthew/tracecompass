@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.UUID;
 
 import org.antlr.runtime.tree.CommonTree;
 import org.antlr.runtime.tree.Tree;
@@ -41,12 +40,9 @@ import org.eclipse.tracecompass.ctf.core.CTFStrings;
 import org.eclipse.tracecompass.ctf.core.event.CTFClock;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
-import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration.Pair;
-import org.eclipse.tracecompass.ctf.core.event.types.FloatDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IEventHeaderDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
-import org.eclipse.tracecompass.ctf.core.event.types.StringDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
@@ -54,7 +50,9 @@ import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.Activator;
 import org.eclipse.tracecompass.internal.ctf.core.event.EventDeclaration;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.AlignmentParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.ByteOrderParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.IntegerDeclarationParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.ArrayDeclaration;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.SequenceDeclaration;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.StructDeclarationFlattener;
@@ -80,16 +78,6 @@ public class IOStructGen {
     private static final @NonNull String NAME = "name"; //$NON-NLS-1$
     private static final @NonNull String EMPTY_STRING = ""; //$NON-NLS-1$
 
-    private static final ICommonTreeParser UNARY_INTEGER_PARSER = UnaryIntegerParser.INSTANCE;
-    private static final ICommonTreeParser fStringParser = UnaryStringParser.INSTANCE;
-    private static final ICommonTreeParser BYTE_ORDER_PARSER = ByteOrderParser.INSTANCE;
-    private static final ICommonTreeParser ALIGNMENT_PARSER = AlignmentParser.INSTANCE;
-    private static final ICommonTreeParser INTEGER_DECL_PARSER = IntegerDeclarationParser.INSTANCE;
-    private static final ICommonTreeParser STRING_DECLARATION_PARSER = StringDeclarationParser.INSTANCE;
-    private static final ICommonTreeParser UUID_PARSER = UUIDParser.INSTANCE;
-    private static final ICommonTreeParser STREAM_ID_PARSER = StreamIdParser.INSTANCE;
-    private static final ICommonTreeParser FLOAT_DECLARATION_PARSER = FloatDeclarationParser.INSTANCE;
-    private static final ClockParser CLOCK_PARSER = ClockParser.INSTANCE;
     /**
      * The trace
      */
@@ -199,7 +187,7 @@ public class IOStructGen {
                 events.add(child);
                 break;
             case CTFParser.CLOCK:
-                CTFClock ctfClock = CLOCK_PARSER.parse(child, null, null);
+                CTFClock ctfClock = ClockParser.INSTANCE.parse(child, null, null);
                 String nameValue = ctfClock.getName();
                 fTrace.addClock(nameValue, ctfClock);
                 break;
@@ -253,7 +241,7 @@ public class IOStructGen {
                 events.add(child);
                 break;
             case CTFParser.CLOCK:
-                CTFClock ctfClock = CLOCK_PARSER.parse(child, null, null);
+                CTFClock ctfClock = ClockParser.INSTANCE.parse(child, null, null);
                 String nameValue = ctfClock.getName();
                 fTrace.addClock(nameValue, ctfClock);
                 break;
@@ -359,180 +347,7 @@ public class IOStructGen {
 
     private void parseTraceDeclaration(CommonTree traceDecl)
             throws ParseException {
-
-        /* There should be a left and right */
-
-        CommonTree leftNode = (CommonTree) traceDecl.getChild(0);
-        CommonTree rightNode = (CommonTree) traceDecl.getChild(1);
-
-        List<CommonTree> leftStrings = leftNode.getChildren();
-
-        if (!isAnyUnaryString(leftStrings.get(0))) {
-            throw new ParseException("Left side of CTF assignment must be a string"); //$NON-NLS-1$
-        }
-
-        String left = concatenateUnaryStrings(leftStrings);
-
-        if (left.equals(MetadataStrings.MAJOR)) {
-            if (fTrace.majorIsSet()) {
-                throw new ParseException("major is already set"); //$NON-NLS-1$
-            }
-
-            fTrace.setMajor(VersionNumberParser.INSTANCE.parse(rightNode, null, null));
-        } else if (left.equals(MetadataStrings.MINOR)) {
-            if (fTrace.minorIsSet()) {
-                throw new ParseException("minor is already set"); //$NON-NLS-1$
-            }
-
-            fTrace.setMinor(VersionNumberParser.INSTANCE.parse(rightNode, null, null));
-        } else if (left.equals(MetadataStrings.UUID_STRING)) {
-            UUID uuid = (UUID) UUID_PARSER.parse(rightNode, null, null);
-
-            /*
-             * If uuid was already set by a metadata packet, compare it to see
-             * if it matches
-             */
-            if (fTrace.uuidIsSet()) {
-                if (fTrace.getUUID().compareTo(uuid) != 0) {
-                    throw new ParseException("UUID mismatch. Packet says " //$NON-NLS-1$
-                            + fTrace.getUUID() + " but metadata says " + uuid); //$NON-NLS-1$
-                }
-            } else {
-                fTrace.setUUID(uuid);
-            }
-
-        } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
-            ByteOrder byteOrder = (ByteOrder) BYTE_ORDER_PARSER.parse(rightNode, fTrace, null);
-
-            /*
-             * If byte order was already set by a metadata packet, compare it to
-             * see if it matches
-             */
-            if (fTrace.getByteOrder() != null) {
-                if (fTrace.getByteOrder() != byteOrder) {
-                    throw new ParseException(
-                            "Endianness mismatch. Magic number says " //$NON-NLS-1$
-                                    + fTrace.getByteOrder()
-                                    + " but metadata says " + byteOrder); //$NON-NLS-1$
-                }
-            } else {
-                fTrace.setByteOrder(byteOrder);
-
-                final DeclarationScope currentScope = getCurrentScope();
-                for (String type : currentScope.getTypeNames()) {
-                    IDeclaration d = currentScope.lookupType(type);
-                    if (d instanceof IntegerDeclaration) {
-                        addByteOrder(byteOrder, currentScope, type, (IntegerDeclaration) d);
-                    } else if (d instanceof FloatDeclaration) {
-                        addByteOrder(byteOrder, currentScope, type, (FloatDeclaration) d);
-                    } else if (d instanceof EnumDeclaration) {
-                        addByteOrder(byteOrder, currentScope, type, (EnumDeclaration) d);
-                    } else if (d instanceof StructDeclaration) {
-                        setAlign(currentScope, (StructDeclaration) d, byteOrder);
-                    }
-                }
-            }
-        } else if (left.equals(MetadataStrings.PACKET_HEADER)) {
-            if (fTrace.packetHeaderIsSet()) {
-                throw new ParseException("packet.header already defined"); //$NON-NLS-1$
-            }
-
-            CommonTree typeSpecifier = (CommonTree) rightNode.getChild(0);
-
-            if (typeSpecifier.getType() != CTFParser.TYPE_SPECIFIER_LIST) {
-                throw new ParseException("packet.header expects a type specifier"); //$NON-NLS-1$
-            }
-
-            IDeclaration packetHeaderDecl = parseTypeSpecifierList(typeSpecifier);
-
-            if (!(packetHeaderDecl instanceof StructDeclaration)) {
-                throw new ParseException("packet.header expects a struct"); //$NON-NLS-1$
-            }
-
-            fTrace.setPacketHeader((StructDeclaration) packetHeaderDecl);
-        } else {
-            Activator.log(IStatus.WARNING, Messages.IOStructGen_UnknownTraceAttributeWarning + " " + left); //$NON-NLS-1$
-        }
-    }
-
-    private static void addByteOrder(ByteOrder byteOrder,
-            final DeclarationScope parentScope, String name,
-            IntegerDeclaration decl) throws ParseException {
-
-        if (decl.getByteOrder() != byteOrder) {
-            IntegerDeclaration newI;
-            newI = IntegerDeclaration.createDeclaration(decl.getLength(), decl.isSigned(),
-                    decl.getBase(), byteOrder, decl.getEncoding(),
-                    decl.getClock(), decl.getAlignment());
-            parentScope.replaceType(name, newI);
-        }
-    }
-
-    private static void addByteOrder(ByteOrder byteOrder, DeclarationScope parentScope, String name, EnumDeclaration decl) throws ParseException {
-        final IntegerDeclaration containerType = decl.getContainerType();
-        if (containerType.getByteOrder() != byteOrder) {
-            EnumDeclaration newEnum = new EnumDeclaration(IntegerDeclaration.createDeclaration(containerType.getLength(), containerType.isSigned(),
-                    containerType.getBase(), byteOrder, containerType.getEncoding(),
-                    containerType.getClock(), containerType.getAlignment()));
-            for (Entry<String, Pair> entry : decl.getEnumTable().entrySet()) {
-                newEnum.add(entry.getValue().getFirst(), entry.getValue().getSecond(), entry.getKey());
-            }
-
-            parentScope.replaceType(name, newEnum);
-        }
-    }
-
-    private static void addByteOrder(ByteOrder byteOrder, DeclarationScope parentScope, String name, FloatDeclaration decl) throws ParseException {
-        if (decl.getByteOrder() != byteOrder) {
-            FloatDeclaration newFloat = new FloatDeclaration(decl.getExponent(), decl.getMantissa(), byteOrder, decl.getAlignment());
-            parentScope.replaceType(name, newFloat);
-        }
-    }
-
-    private void setAlign(DeclarationScope parentScope, StructDeclaration sd,
-            ByteOrder byteOrder) throws ParseException {
-
-        for (String s : sd.getFieldsList()) {
-            IDeclaration d = sd.getField(s);
-
-            if (d instanceof StructDeclaration) {
-                setAlign(parentScope, (StructDeclaration) d, byteOrder);
-
-            } else if (d instanceof VariantDeclaration) {
-                setAlign(parentScope, (VariantDeclaration) d, byteOrder);
-            } else if (d instanceof IntegerDeclaration) {
-                IntegerDeclaration decl = (IntegerDeclaration) d;
-                if (decl.getByteOrder() != byteOrder) {
-                    IntegerDeclaration newI;
-                    newI = IntegerDeclaration.createDeclaration(decl.getLength(),
-                            decl.isSigned(), decl.getBase(), byteOrder,
-                            decl.getEncoding(), decl.getClock(),
-                            decl.getAlignment());
-                    sd.getFields().put(s, newI);
-                }
-            }
-        }
-    }
-
-    private void setAlign(DeclarationScope parentScope, VariantDeclaration vd,
-            ByteOrder byteOrder) throws ParseException {
-
-        for (String s : vd.getFields().keySet()) {
-            IDeclaration d = vd.getFields().get(s);
-
-            if (d instanceof StructDeclaration) {
-                setAlign(parentScope, (StructDeclaration) d, byteOrder);
-
-            } else if (d instanceof IntegerDeclaration) {
-                IntegerDeclaration decl = (IntegerDeclaration) d;
-                IntegerDeclaration newI;
-                newI = IntegerDeclaration.createDeclaration(decl.getLength(),
-                        decl.isSigned(), decl.getBase(), byteOrder,
-                        decl.getEncoding(), decl.getClock(),
-                        decl.getAlignment());
-                vd.getFields().put(s, newI);
-            }
-        }
+        TraceDeclarationParser.INSTANCE.parse(traceDecl, new TraceDeclarationParser.Param(fTrace, getCurrentScope()), null);
     }
 
     private void parseStream(CommonTree streamNode) throws ParseException {
@@ -594,7 +409,7 @@ public class IOStructGen {
                 throw new ParseException("stream id already defined"); //$NON-NLS-1$
             }
 
-            long streamID = (long) STREAM_ID_PARSER.parse(rightNode, null, null);
+            long streamID = (long) StreamIdParser.INSTANCE.parse(rightNode, null, null);
 
             stream.setId(streamID);
         } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
@@ -602,7 +417,7 @@ public class IOStructGen {
                 throw new ParseException("stream byte order already defined"); //$NON-NLS-1$
             }
 
-            ByteOrder byteOrder = (ByteOrder) BYTE_ORDER_PARSER.parse(rightNode, fTrace, null);
+            ByteOrder byteOrder = ByteOrderParser.INSTANCE.parse(rightNode, new ByteOrderParser.Param(fTrace), null);
 
             stream.setByteOrder(byteOrder);
         } else if (left.equals(MetadataStrings.EVENT_HEADER)) {
@@ -858,11 +673,11 @@ public class IOStructGen {
             final StructDeclaration fields = (StructDeclaration) fieldsDecl;
             event.setFields(fields);
         } else if (left.equals(MetadataStrings.LOGLEVEL2)) {
-            long logLevel = (Long) UNARY_INTEGER_PARSER.parse((CommonTree) rightNode.getChild(0), null, null);
+            long logLevel = UnaryIntegerParser.INSTANCE.parse((CommonTree) rightNode.getChild(0), null, null);
             event.setLogLevel(logLevel);
         } else {
             /* Custom event attribute, we'll add it to the attributes map */
-            String right = (String) fStringParser.parse((CommonTree) rightNode.getChild(0), null, null);
+            String right = UnaryStringParser.INSTANCE.parse((CommonTree) rightNode.getChild(0), null, null);
             event.setCustomAttribute(left, right);
         }
     }
@@ -931,7 +746,7 @@ public class IOStructGen {
             throw new ParseException("Typealias of untagged variant is not permitted"); //$NON-NLS-1$
         }
 
-        String aliasString = TypeAliasAliasParser.INSTANCE.parse(alias, null,null);
+        String aliasString = TypeAliasAliasParser.INSTANCE.parse(alias, null, null);
 
         getCurrentScope().registerType(aliasString, targetDeclaration);
     }
@@ -1000,7 +815,6 @@ public class IOStructGen {
 
         return targetDeclaration;
     }
-
 
     /**
      * Parses a typedef node. This creates and registers a new declaration for
@@ -1114,7 +928,7 @@ public class IOStructGen {
                 CommonTree first = lengthChildren.get(0);
                 if (isUnaryInteger(first)) {
                     /* Array */
-                    int arrayLength = ((Long) UNARY_INTEGER_PARSER.parse(first, null, null)).intValue();
+                    int arrayLength = UnaryIntegerParser.INSTANCE.parse(first, null, null).intValue();
 
                     if (arrayLength < 1) {
                         throw new ParseException("Array length is negative"); //$NON-NLS-1$
@@ -1199,7 +1013,7 @@ public class IOStructGen {
         CommonTree nextElem = (CommonTree) lengthChildren.get(1).getChild(0);
         String lengthName = null;
         if (isUnaryString(nextElem)) {
-            lengthName = (String) fStringParser.parse(nextElem, null, null);
+            lengthName = UnaryStringParser.INSTANCE.parse(nextElem, null, null);
         }
 
         int type = nextElem.getType();
@@ -1300,13 +1114,13 @@ public class IOStructGen {
 
         switch (firstChild.getType()) {
         case CTFParser.FLOATING_POINT:
-            declaration = (IDeclaration) FLOAT_DECLARATION_PARSER.parse(firstChild, fTrace, null);
+            declaration = (IDeclaration) FloatDeclarationParser.INSTANCE.parse(firstChild, new FloatDeclarationParser.Param(fTrace), null);
             break;
         case CTFParser.INTEGER:
-            declaration = (IntegerDeclaration) INTEGER_DECL_PARSER.parse(firstChild, fTrace, null);
+            declaration = IntegerDeclarationParser.INSTANCE.parse(firstChild, new IntegerDeclarationParser.Param(fTrace), null);
             break;
         case CTFParser.STRING:
-            declaration = (StringDeclaration) STRING_DECLARATION_PARSER.parse(firstChild, null, null);
+            declaration = StringDeclarationParser.INSTANCE.parse(firstChild, null, null);
             break;
         case CTFParser.STRUCT:
             declaration = parseStruct(firstChild, identifier);
@@ -1365,7 +1179,7 @@ public class IOStructGen {
     private IDeclaration parseTypeDeclaration(CommonTree typeSpecifierList,
             List<CommonTree> pointerList) throws ParseException {
         /* Create the string representation of the type declaration */
-        String typeStringRepresentation = TypeDeclarationStringParser.INSTANCE.parse(typeSpecifierList, pointerList, null);
+        String typeStringRepresentation = TypeDeclarationStringParser.INSTANCE.parse(typeSpecifierList, new TypeDeclarationStringParser.Param(pointerList), null);
 
         /*
          * Use the string representation to search the type in the current scope
@@ -1426,7 +1240,7 @@ public class IOStructGen {
             case CTFParser.ALIGN: {
                 CommonTree structAlignExpression = (CommonTree) child.getChild(0);
 
-                structAlign = (Long) ALIGNMENT_PARSER.parse(structAlignExpression, null, null);
+                structAlign = AlignmentParser.INSTANCE.parse(structAlignExpression, null, null);
                 break;
             }
             default:

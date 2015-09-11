@@ -1,4 +1,13 @@
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
+
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.concatenateUnaryStrings;
@@ -15,7 +24,14 @@ import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.Activator;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.EncodingParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.Messages;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.MetadataStrings;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.SignedParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.SizeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.AlignmentParser;
 
 /**
  * Signed integers are represented in two-complement. Integer alignment, size,
@@ -52,6 +68,14 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
  */
 public class IntegerDeclarationParser implements ICommonTreeParser {
 
+    public static final class Param implements ICommonTreeParserParameter {
+        public final CTFTrace fTrace;
+
+        public Param(CTFTrace trace) {
+            fTrace = trace;
+        }
+    }
+
     /**
      * Instance
      */
@@ -71,16 +95,16 @@ public class IntegerDeclarationParser implements ICommonTreeParser {
     /**
      * Parses an integer declaration node.
      *
-     * @param param
+     * @param parameter
      *            parent trace, for byte orders
      * @return The corresponding integer declaration.
      */
     @Override
-    public IntegerDeclaration parse(CommonTree integer, Object param, String errorMsg) throws ParseException {
-        if (!(param instanceof CTFTrace)) {
-            throw new IllegalArgumentException("Param must be a CTFTrace"); //$NON-NLS-1$
+    public IntegerDeclaration parse(CommonTree integer, ICommonTreeParserParameter parameter, String errorMsg) throws ParseException {
+        if (!(parameter instanceof Param)) {
+            throw new IllegalArgumentException("Parameter must be a Param"); //$NON-NLS-1$
         }
-        CTFTrace trace = (CTFTrace) param;
+        CTFTrace trace = ((Param)parameter).fTrace;
         List<CommonTree> children = integer.getChildren();
 
         /*
@@ -126,7 +150,7 @@ public class IntegerDeclarationParser implements ICommonTreeParser {
                     signed = SignedParser.INSTANCE.parse(rightNode, null, null);
                     break;
                 case MetadataStrings.BYTE_ORDER:
-                    byteOrder = ByteOrderParser.INSTANCE.parse(rightNode, trace, null);
+                    byteOrder = ByteOrderParser.INSTANCE.parse(rightNode, parameter, null);
                     break;
                 case SIZE:
                     size = SizeParser.INSTANCE.parse(rightNode, null, null);

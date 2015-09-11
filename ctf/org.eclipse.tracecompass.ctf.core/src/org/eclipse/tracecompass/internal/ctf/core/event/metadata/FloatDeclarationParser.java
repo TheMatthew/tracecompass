@@ -1,3 +1,12 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
+
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
@@ -11,7 +20,8 @@ import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.types.FloatDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.AlignmentParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.ByteOrderParser;
 
 /**
  * Float parser
@@ -20,6 +30,14 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.Pars
  *
  */
 public class FloatDeclarationParser implements ICommonTreeParser {
+
+    public static final class Param implements ICommonTreeParserParameter{
+        private final CTFTrace fTrace;
+
+        public Param(CTFTrace trace) {
+            fTrace = trace;
+        }
+    }
 
     /**
      * Instance
@@ -33,11 +51,11 @@ public class FloatDeclarationParser implements ICommonTreeParser {
     }
 
     @Override
-    public Object parse(CommonTree floatingPoint, Object param, String errorMsg) throws ParseException {
-        if (!(param instanceof CTFTrace)) {
+    public Object parse(CommonTree floatingPoint, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
+        if (!(param instanceof Param)) {
             throw new IllegalArgumentException();
         }
-        CTFTrace trace = (CTFTrace) param;
+        CTFTrace trace = ((Param) param).fTrace;
         List<CommonTree> children = floatingPoint.getChildren();
 
         /*
@@ -77,7 +95,7 @@ public class FloatDeclarationParser implements ICommonTreeParser {
                 if (left.equals(MetadataStrings.EXP_DIG)) {
                     exponent = UnaryIntegerParser.INSTANCE.parse((CommonTree) rightNode.getChild(0), null, null).intValue();
                 } else if (left.equals(MetadataStrings.BYTE_ORDER)) {
-                    byteOrder = ByteOrderParser.INSTANCE.parse(rightNode, trace, null);
+                    byteOrder = ByteOrderParser.INSTANCE.parse(rightNode, new ByteOrderParser.Param(trace), null);
                 } else if (left.equals(MetadataStrings.MANT_DIG)) {
                     mantissa = UnaryIntegerParser.INSTANCE.parse((CommonTree) rightNode.getChild(0), null, null).intValue();
                 } else if (left.equals(MetadataStrings.ALIGN)) {

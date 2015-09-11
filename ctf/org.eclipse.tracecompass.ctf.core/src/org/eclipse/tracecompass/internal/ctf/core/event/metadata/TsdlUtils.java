@@ -1,9 +1,17 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
+
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import java.util.List;
 
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryStringParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 

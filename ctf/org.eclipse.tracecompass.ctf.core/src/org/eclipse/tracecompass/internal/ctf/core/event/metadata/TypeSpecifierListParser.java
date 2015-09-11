@@ -1,10 +1,17 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 public class TypeSpecifierListParser implements ICommonTreeParser {
 
@@ -26,7 +33,7 @@ public class TypeSpecifierListParser implements ICommonTreeParser {
      * @throws ParseException invalid node
      */
     @Override
-    public StringBuilder parse(CommonTree typeSpecifier, Object param, String errorMsg) throws ParseException {
+    public StringBuilder parse(CommonTree typeSpecifier, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
         StringBuilder sb = new StringBuilder();
         switch (typeSpecifier.getType()) {
         case CTFParser.FLOATTOK:

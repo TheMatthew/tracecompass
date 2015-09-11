@@ -14,7 +14,6 @@ import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtil
 
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.types.Encoding;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 /**
  * Parse the encoding field. This can be "ascii", "utf8" or "none"
@@ -40,7 +39,7 @@ public class EncodingParser implements ICommonTreeParser {
      *             for unknown or malformed encoding
      */
     @Override
-    public Encoding parse(CommonTree tree, Object param, String errorMsg) throws ParseException {
+    public Encoding parse(CommonTree tree, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
         CommonTree firstChild = (CommonTree) tree.getChild(0);
 
         if (isUnaryString(firstChild)) {

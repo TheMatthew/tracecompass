@@ -1,3 +1,12 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
+
 package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
@@ -9,9 +18,16 @@ import java.util.List;
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.exceptions.ParseException;
 
 public final class EnumeratorParser implements ICommonTreeParser {
+
+    public static final class  Param implements ICommonTreeParserParameter{
+        private final EnumDeclaration fEnumDeclaration;
+
+        public Param(EnumDeclaration enumDeclaration){
+            fEnumDeclaration = enumDeclaration;
+        }
+    }
 
     /**
      * Instance
@@ -38,11 +54,11 @@ public final class EnumeratorParser implements ICommonTreeParser {
      *             if the element failed to add
      */
     @Override
-    public Long parse(CommonTree enumerator, Object declaration, String errorMsg) throws ParseException {
-        if (!(declaration instanceof EnumDeclaration)) {
+    public Long parse(CommonTree enumerator, ICommonTreeParserParameter declaration, String errorMsg) throws ParseException {
+        if (!(declaration instanceof Param)) {
             throw new IllegalArgumentException("enumDeclaration must be an EnumDeclaration"); //$NON-NLS-1$
         }
-        EnumDeclaration enumDeclaration = (EnumDeclaration) declaration;
+        EnumDeclaration enumDeclaration = ((Param) declaration).fEnumDeclaration;
 
         List<CommonTree> children = enumerator.getChildren();
 
