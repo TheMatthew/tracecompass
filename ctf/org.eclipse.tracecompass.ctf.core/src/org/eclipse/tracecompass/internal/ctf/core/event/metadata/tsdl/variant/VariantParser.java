@@ -19,6 +19,7 @@ import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
+import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
@@ -27,8 +28,10 @@ public class VariantParser extends AbstractScopedCommonTreeParser {
 
     public static final class Param implements ICommonTreeParserParameter {
         private final DeclarationScope fDeclarationScope;
+        private final CTFTrace fTrace;
 
-        public Param(DeclarationScope scope) {
+        public Param(CTFTrace trace , DeclarationScope scope) {
+            fTrace = trace;
             fDeclarationScope = scope;
         }
     }
@@ -103,8 +106,9 @@ public class VariantParser extends AbstractScopedCommonTreeParser {
             /* Create the declaration */
             variantDeclaration = new VariantDeclaration();
 
+            CTFTrace trace = ((Param)param).fTrace;
             /* Parse the body */
-            VariantBodyParser.INSTANCE.parse(variantBody, new VariantBodyParser.Param(variantDeclaration, variantName, getCurrentScope()), null);
+            VariantBodyParser.INSTANCE.parse(variantBody, new VariantBodyParser.Param(variantDeclaration, trace  , variantName, getCurrentScope()), null);
 
             /* If variant has name, add it to the current scope. */
             if (hasName) {

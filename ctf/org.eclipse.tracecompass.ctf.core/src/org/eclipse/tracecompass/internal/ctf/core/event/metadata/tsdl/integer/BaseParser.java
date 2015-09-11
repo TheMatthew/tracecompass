@@ -17,7 +17,7 @@ import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreeParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.MetadataStrings;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryIntegerParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.UnaryIntegerParser;
 
 /**
  * Parse the base of an integer, can return 16, 10, 8 or 2

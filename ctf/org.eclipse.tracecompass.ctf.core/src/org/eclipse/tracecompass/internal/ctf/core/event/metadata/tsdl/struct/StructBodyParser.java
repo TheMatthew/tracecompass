@@ -6,18 +6,16 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.variant;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.struct;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
-import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
-import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
+import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
@@ -26,60 +24,65 @@ import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.TypeAliasParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.TypedefParser;
 
-public class VariantBodyParser extends AbstractScopedCommonTreeParser {
+public class StructBodyParser extends AbstractScopedCommonTreeParser {
 
     public static final class Param implements ICommonTreeParserParameter {
         private final DeclarationScope fDeclarationScope;
         private final String fName;
-        private final VariantDeclaration fVariantDeclaration;
+        private final StructDeclaration fStructDeclaration;
         private final CTFTrace fTrace;
 
-        public Param(VariantDeclaration variantDeclaration, CTFTrace trace, String name, DeclarationScope scope) {
-            fVariantDeclaration = variantDeclaration;
+        public Param(StructDeclaration structDeclaration, CTFTrace trace, String name, DeclarationScope scope) {
+            fStructDeclaration = structDeclaration;
             fTrace = trace;
             fDeclarationScope = scope;
             fName = name;
         }
     }
 
-    public final static VariantBodyParser INSTANCE = new VariantBodyParser();
+    public final static StructBodyParser INSTANCE = new StructBodyParser();
 
-    private VariantBodyParser() {
+    private StructBodyParser() {
     }
 
     @Override
-    public VariantDeclaration parse(CommonTree variantBody, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
+    public StructDeclaration parse(CommonTree structBody, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
         if (!(param instanceof Param)) {
             throw new IllegalArgumentException("Param must be of the type Param"); //$NON-NLS-1$
         }
         setScope(((Param) param).fDeclarationScope);
-        String variantName = ((Param) param).fName;
-        VariantDeclaration variantDeclaration = ((Param) param).fVariantDeclaration;
-        List<CommonTree> variantDeclarations = variantBody.getChildren();
+        String structName = ((Param) param).fName;
+        StructDeclaration structDeclaration = ((Param) param).fStructDeclaration;
+        List<CommonTree> structDeclarations = structBody.getChildren();
+        if (structDeclarations == null) {
+            structDeclarations = Collections.emptyList();
+        }
 
-        pushNamedScope(variantName, MetadataStrings.VARIANT);
-        CTFTrace trace = ((Param) param).fTrace;
-        for (CommonTree declarationNode : variantDeclarations) {
+        /*
+         * If structDeclaration is null, structBody has no children and the
+         * struct body is empty.
+         */
+        pushNamedScope(structName, MetadataStrings.STRUCT);
+        CTFTrace trace = ((Param)param).fTrace;
+
+        for (CommonTree declarationNode : structDeclarations) {
             switch (declarationNode.getType()) {
             case CTFParser.TYPEALIAS:
-                TypeAliasParser.INSTANCE.parse(declarationNode, new TypeAliasParser.Param(trace, getCurrentScope()), null);
+                TypeAliasParser.INSTANCE.parse(declarationNode, new TypeAliasParser.Param(trace , getCurrentScope()), null);
                 break;
             case CTFParser.TYPEDEF:
-                Map<String, IDeclaration> decs = TypedefParser.INSTANCE.parse(declarationNode, new TypedefParser.Param(trace, getCurrentScope()), null);
-                for (Entry<String, IDeclaration> declarationEntry : decs.entrySet()) {
-                    variantDeclaration.addField(declarationEntry.getKey(), declarationEntry.getValue());
-                }
+                TypedefParser.INSTANCE.parse(declarationNode, new TypedefParser.Param(trace, getCurrentScope()), null);
+                StructDeclarationParser.INSTANCE.parse(declarationNode, new StructDeclarationParser.Param(structDeclaration, trace, getCurrentScope()), null);
                 break;
             case CTFParser.SV_DECLARATION:
-                VariantDeclarationParser.INSTANCE.parse(declarationNode, new VariantDeclarationParser.Param(variantDeclaration, trace, getCurrentScope()), null);
+                StructDeclarationParser.INSTANCE.parse(declarationNode, new StructDeclarationParser.Param(structDeclaration, trace, getCurrentScope()), null);
                 break;
             default:
                 throw childTypeError(declarationNode);
             }
         }
-
         popScope();
-        return variantDeclaration;
+        return structDeclaration;
     }
 
 }

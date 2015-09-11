@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.concatenateUnaryStrings;
@@ -21,8 +21,13 @@ import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
+import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.event.EventScopeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.stream.StreamScopeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.trace.TraceScopeParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.ArrayDeclaration;
 import org.eclipse.tracecompass.internal.ctf.core.event.types.SequenceDeclaration;
 
@@ -32,8 +37,10 @@ public class TypeDeclaratorParser extends AbstractScopedCommonTreeParser {
         private final DeclarationScope fDeclarationScope;
         private final CommonTree fListNode;
         private final StringBuilder fBuilder;
+        public final CTFTrace fTrace;
 
-        public Param(CommonTree listNode, DeclarationScope scope, StringBuilder builder) {
+        public Param(CTFTrace trace , CommonTree listNode, DeclarationScope scope, StringBuilder builder) {
+            fTrace = trace;
             fListNode = listNode;
             fDeclarationScope = scope;
             fBuilder = builder;
@@ -67,6 +74,7 @@ public class TypeDeclaratorParser extends AbstractScopedCommonTreeParser {
             throw new IllegalArgumentException("Param must be of the type Param"); //$NON-NLS-1$
         }
         setScope(((Param) param).fDeclarationScope);
+        CTFTrace trace = ((Param) param).fTrace;
         CommonTree typeSpecifierList = ((Param) param).fListNode;
 
         IDeclaration declaration = null;
@@ -101,7 +109,7 @@ public class TypeDeclaratorParser extends AbstractScopedCommonTreeParser {
          * Parse the type specifier list, which is the "base" type. For example,
          * it would be int in int a[3][len].
          */
-        declaration = parseTypeSpecifierList(typeSpecifierList, pointers, identifier);
+        declaration = TypeSpecifierListParser.INSTANCE.parse(typeSpecifierList, new TypeSpecifierListParser.Param(trace, pointers, identifier, getCurrentScope()),null);
 
         /*
          * Each length subscript means that we must create a nested array or

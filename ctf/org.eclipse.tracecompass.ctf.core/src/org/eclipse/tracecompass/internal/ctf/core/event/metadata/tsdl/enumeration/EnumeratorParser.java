@@ -20,8 +20,8 @@ import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreeParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryIntegerParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryStringParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.UnaryIntegerParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.UnaryStringParser;
 
 public final class EnumeratorParser implements ICommonTreeParser {
 

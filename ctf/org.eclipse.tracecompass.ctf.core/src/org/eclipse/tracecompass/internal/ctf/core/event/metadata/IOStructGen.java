@@ -20,8 +20,6 @@ import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtil
 
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,31 +27,24 @@ import org.antlr.runtime.tree.CommonTree;
 import org.antlr.runtime.tree.Tree;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.ctf.core.CTFStrings;
 import org.eclipse.tracecompass.ctf.core.event.CTFClock;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
-import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IEventHeaderDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.StructDeclaration;
-import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFStream;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.Activator;
 import org.eclipse.tracecompass.internal.ctf.core.event.EventDeclaration;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.AlignmentParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.ByteOrderParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.enumeration.EnumParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.event.EventIDParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.event.EventNameParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.floatingpoint.FloatDeclarationParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.IntegerDeclarationParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.variant.VariantParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.types.StructDeclarationFlattener;
-import org.eclipse.tracecompass.internal.ctf.core.event.types.composite.EventHeaderCompactDeclaration;
-import org.eclipse.tracecompass.internal.ctf.core.event.types.composite.EventHeaderLargeDeclaration;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.TypeAliasParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.TypeSpecifierListParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.TypedefParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.event.EventDeclarationParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.stream.StreamIdParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.trace.TraceDeclarationParser;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -308,6 +299,7 @@ public class IOStructGen {
 
     private void parseTrace(CommonTree traceNode) throws ParseException {
 
+        CTFTrace trace = fTrace;
         List<CommonTree> children = traceNode.getChildren();
         if (children == null) {
             throw new ParseException("Trace block is empty"); //$NON-NLS-1$
@@ -318,10 +310,10 @@ public class IOStructGen {
         for (CommonTree child : children) {
             switch (child.getType()) {
             case CTFParser.TYPEALIAS:
-                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(getCurrentScope()), null);
+                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(trace, getCurrentScope()), null);
                 break;
             case CTFParser.TYPEDEF:
-                parseTypedef(child);
+                TypedefParser.INSTANCE.parse(child, new TypedefParser.Param(trace, getCurrentScope()), null);
                 break;
             case CTFParser.CTF_EXPRESSION_TYPE:
             case CTFParser.CTF_EXPRESSION_VAL:
@@ -360,10 +352,10 @@ public class IOStructGen {
         for (CommonTree child : children) {
             switch (child.getType()) {
             case CTFParser.TYPEALIAS:
-                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(getCurrentScope()), null);
+                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(fTrace, getCurrentScope()), null);
                 break;
             case CTFParser.TYPEDEF:
-                parseTypedef(child);
+                TypedefParser.INSTANCE.parse(child, new TypedefParser.Param(fTrace, getCurrentScope()), null);
                 break;
             case CTFParser.CTF_EXPRESSION_TYPE:
             case CTFParser.CTF_EXPRESSION_VAL:
@@ -427,7 +419,7 @@ public class IOStructGen {
                 throw new ParseException("event.header expects a type specifier"); //$NON-NLS-1$
             }
 
-            IDeclaration eventHeaderDecl = parseTypeSpecifierList(typeSpecifier);
+            IDeclaration eventHeaderDecl = TypeSpecifierListParser.INSTANCE.parse(typeSpecifier, new TypeSpecifierListParser.Param(fTrace, null, null, getCurrentScope()), null);
             DeclarationScope scope = getCurrentScope();
             DeclarationScope eventHeaderScope = lookupStructName(typeSpecifier, scope);
             if (eventHeaderScope == null) {
@@ -456,7 +448,7 @@ public class IOStructGen {
                 throw new ParseException("event.context expects a type specifier"); //$NON-NLS-1$
             }
 
-            IDeclaration eventContextDecl = parseTypeSpecifierList(typeSpecifier);
+            IDeclaration eventContextDecl = TypeSpecifierListParser.INSTANCE.parse(typeSpecifier, new TypeSpecifierListParser.Param(fTrace, null, null, getCurrentScope()), null);
 
             if (!(eventContextDecl instanceof StructDeclaration)) {
                 throw new ParseException("event.context expects a struct"); //$NON-NLS-1$
@@ -474,7 +466,7 @@ public class IOStructGen {
                 throw new ParseException("packet.context expects a type specifier"); //$NON-NLS-1$
             }
 
-            IDeclaration packetContextDecl = parseTypeSpecifierList(typeSpecifier);
+            IDeclaration packetContextDecl = TypeSpecifierListParser.INSTANCE.parse(typeSpecifier, new TypeSpecifierListParser.Param(fTrace, null, null, getCurrentScope()), null);
 
             if (!(packetContextDecl instanceof StructDeclaration)) {
                 throw new ParseException("packet.context expects a struct"); //$NON-NLS-1$
@@ -526,14 +518,14 @@ public class IOStructGen {
         for (CommonTree child : children) {
             switch (child.getType()) {
             case CTFParser.TYPEALIAS:
-                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(getCurrentScope()), null);
+                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(fTrace, getCurrentScope()), null);
                 break;
             case CTFParser.TYPEDEF:
-                parseTypedef(child);
+                TypedefParser.INSTANCE.parse(child, new TypedefParser.Param(fTrace, getCurrentScope()), null);
                 break;
             case CTFParser.CTF_EXPRESSION_TYPE:
             case CTFParser.CTF_EXPRESSION_VAL:
-                parseEventDeclaration(child, event);
+                EventDeclarationParser.INSTANCE.parse(child, new EventDeclarationParser.Param(fTrace, event, getCurrentScope()), null);
                 break;
             default:
                 throw childTypeError(child);
@@ -576,108 +568,6 @@ public class IOStructGen {
         popScope();
     }
 
-    private void parseEventDeclaration(CommonTree eventDecl,
-            EventDeclaration event) throws ParseException {
-
-        /* There should be a left and right */
-
-        CommonTree leftNode = (CommonTree) eventDecl.getChild(0);
-        CommonTree rightNode = (CommonTree) eventDecl.getChild(1);
-
-        List<CommonTree> leftStrings = leftNode.getChildren();
-
-        if (!isAnyUnaryString(leftStrings.get(0))) {
-            throw new ParseException("Left side of CTF assignment must be a string"); //$NON-NLS-1$
-        }
-
-        String left = concatenateUnaryStrings(leftStrings);
-
-        if (left.equals(MetadataStrings.NAME2)) {
-            if (event.nameIsSet()) {
-                throw new ParseException("name already defined"); //$NON-NLS-1$
-            }
-
-            String name = EventNameParser.INSTANCE.parse(rightNode, null, null);
-
-            event.setName(name);
-        } else if (left.equals(MetadataStrings.ID)) {
-            if (event.idIsSet()) {
-                throw new ParseException("id already defined"); //$NON-NLS-1$
-            }
-
-            long id = EventIDParser.INSTANCE.parse(rightNode, null, null);
-            if (id > Integer.MAX_VALUE) {
-                throw new ParseException("id is greater than int.maxvalue, unsupported. id : " + id); //$NON-NLS-1$
-            }
-            if (id < 0) {
-                throw new ParseException("negative id, unsupported. id : " + id); //$NON-NLS-1$
-            }
-            event.setId((int) id);
-        } else if (left.equals(MetadataStrings.STREAM_ID)) {
-            if (event.streamIsSet()) {
-                throw new ParseException("stream id already defined"); //$NON-NLS-1$
-            }
-
-            long streamId = (long) StreamIdParser.INSTANCE.parse(rightNode, null, null);
-
-            CTFStream stream = fTrace.getStream(streamId);
-
-            if (stream == null) {
-                throw new ParseException("Stream " + streamId + " not found"); //$NON-NLS-1$ //$NON-NLS-2$
-            }
-
-            event.setStream(stream);
-        } else if (left.equals(MetadataStrings.CONTEXT)) {
-            if (event.contextIsSet()) {
-                throw new ParseException("context already defined"); //$NON-NLS-1$
-            }
-
-            CommonTree typeSpecifier = (CommonTree) rightNode.getChild(0);
-
-            if (typeSpecifier.getType() != CTFParser.TYPE_SPECIFIER_LIST) {
-                throw new ParseException("context expects a type specifier"); //$NON-NLS-1$
-            }
-
-            IDeclaration contextDecl = parseTypeSpecifierList(typeSpecifier);
-
-            if (!(contextDecl instanceof StructDeclaration)) {
-                throw new ParseException("context expects a struct"); //$NON-NLS-1$
-            }
-
-            event.setContext((StructDeclaration) contextDecl);
-        } else if (left.equals(MetadataStrings.FIELDS_STRING)) {
-            if (event.fieldsIsSet()) {
-                throw new ParseException("fields already defined"); //$NON-NLS-1$
-            }
-
-            CommonTree typeSpecifier = (CommonTree) rightNode.getChild(0);
-
-            if (typeSpecifier.getType() != CTFParser.TYPE_SPECIFIER_LIST) {
-                throw new ParseException("fields expects a type specifier"); //$NON-NLS-1$
-            }
-
-            IDeclaration fieldsDecl;
-            fieldsDecl = parseTypeSpecifierList(typeSpecifier);
-
-            if (!(fieldsDecl instanceof StructDeclaration)) {
-                throw new ParseException("fields expects a struct"); //$NON-NLS-1$
-            }
-            /*
-             * The underscores in the event names. These underscores were added
-             * by the LTTng tracer.
-             */
-            final StructDeclaration fields = (StructDeclaration) fieldsDecl;
-            event.setFields(fields);
-        } else if (left.equals(MetadataStrings.LOGLEVEL2)) {
-            long logLevel = UnaryIntegerParser.INSTANCE.parse((CommonTree) rightNode.getChild(0), null, null);
-            event.setLogLevel(logLevel);
-        } else {
-            /* Custom event attribute, we'll add it to the attributes map */
-            String right = UnaryStringParser.INSTANCE.parse((CommonTree) rightNode.getChild(0), null, null);
-            event.setCustomAttribute(left, right);
-        }
-    }
-
     /**
      * Parses a declaration at the root level.
      *
@@ -693,338 +583,17 @@ public class IOStructGen {
         for (CommonTree child : children) {
             switch (child.getType()) {
             case CTFParser.TYPEDEF:
-                parseTypedef(child);
+                TypedefParser.INSTANCE.parse(child, new TypedefParser.Param(fTrace, getCurrentScope()), null);
                 break;
             case CTFParser.TYPEALIAS:
-                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(getCurrentScope()), null);
+                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(fTrace, getCurrentScope()), null);
                 break;
             case CTFParser.TYPE_SPECIFIER_LIST:
-                parseTypeSpecifierList(child);
+                TypeSpecifierListParser.INSTANCE.parse(child, new TypeSpecifierListParser.Param(fTrace, null, null, getCurrentScope()), null);
                 break;
             default:
                 throw childTypeError(child);
             }
-        }
-    }
-
-    /**
-     * Parses a typedef node. This creates and registers a new declaration for
-     * each declarator found in the typedef.
-     *
-     * @param typedef
-     *            A TYPEDEF node.
-     * @return map of type name to type declaration
-     * @throws ParseException
-     *             If there is an error creating the declaration.
-     */
-    private Map<String, IDeclaration> parseTypedef(CommonTree typedef) throws ParseException {
-
-        CommonTree typeDeclaratorListNode = (CommonTree) typedef.getFirstChildWithType(CTFParser.TYPE_DECLARATOR_LIST);
-
-        CommonTree typeSpecifierListNode = (CommonTree) typedef.getFirstChildWithType(CTFParser.TYPE_SPECIFIER_LIST);
-
-        List<CommonTree> typeDeclaratorList = typeDeclaratorListNode.getChildren();
-
-        Map<String, IDeclaration> declarations = new HashMap<>();
-
-        for (CommonTree typeDeclaratorNode : typeDeclaratorList) {
-            StringBuilder identifierSB = new StringBuilder();
-
-            IDeclaration typeDeclaration = TypeDeclaratorParser.INSTANCE.parse(typeDeclaratorNode, new TypeDeclaratorParser.Param(typeSpecifierListNode, getCurrentScope(), identifierSB), null);
-
-            if ((typeDeclaration instanceof VariantDeclaration)
-                    && !((VariantDeclaration) typeDeclaration).isTagged()) {
-                throw new ParseException("Typealias of untagged variant is not permitted"); //$NON-NLS-1$
-            }
-
-            getCurrentScope().registerType(identifierSB.toString(),
-                    typeDeclaration);
-
-            declarations.put(identifierSB.toString(), typeDeclaration);
-        }
-        return declarations;
-    }
-
-    private IDeclaration parseTypeSpecifierList(CommonTree typeSpecifierList) throws ParseException {
-        return parseTypeSpecifierList(typeSpecifierList, null, null);
-    }
-
-    /**
-     * Parses a type specifier list and returns the corresponding declaration.
-     *
-     * @param typeSpecifierList
-     *            A TYPE_SPECIFIER_LIST node.
-     * @param pointerList
-     *            A list of POINTER nodes that apply to the specified type.
-     * @return The corresponding declaration.
-     * @throws ParseException
-     *             If the type has not been defined or if there is an error
-     *             creating the declaration.
-     */
-    private IDeclaration parseTypeSpecifierList(CommonTree typeSpecifierList,
-            List<CommonTree> pointerList, CommonTree identifier) throws ParseException {
-        IDeclaration declaration = null;
-
-        /*
-         * By looking at the first element of the type specifier list, we can
-         * determine which type it belongs to.
-         */
-        CommonTree firstChild = (CommonTree) typeSpecifierList.getChild(0);
-
-        switch (firstChild.getType()) {
-        case CTFParser.FLOATING_POINT:
-            declaration = (IDeclaration) FloatDeclarationParser.INSTANCE.parse(firstChild, new FloatDeclarationParser.Param(fTrace), null);
-            break;
-        case CTFParser.INTEGER:
-            declaration = IntegerDeclarationParser.INSTANCE.parse(firstChild, new IntegerDeclarationParser.Param(fTrace), null);
-            break;
-        case CTFParser.STRING:
-            declaration = StringDeclarationParser.INSTANCE.parse(firstChild, null, null);
-            break;
-        case CTFParser.STRUCT:
-            declaration = parseStruct(firstChild, identifier);
-            StructDeclaration structDeclaration = (StructDeclaration) declaration;
-            IDeclaration idEnumDecl = structDeclaration.getFields().get("id"); //$NON-NLS-1$
-            if (idEnumDecl instanceof EnumDeclaration) {
-                EnumDeclaration enumDeclaration = (EnumDeclaration) idEnumDecl;
-                ByteOrder bo = enumDeclaration.getContainerType().getByteOrder();
-                if (EventHeaderCompactDeclaration.getEventHeader(bo).isCompactEventHeader(structDeclaration)) {
-                    declaration = EventHeaderCompactDeclaration.getEventHeader(bo);
-                } else if (EventHeaderLargeDeclaration.getEventHeader(bo).isLargeEventHeader(structDeclaration)) {
-                    declaration = EventHeaderLargeDeclaration.getEventHeader(bo);
-                }
-            }
-            break;
-        case CTFParser.VARIANT:
-            declaration = VariantParser.INSTANCE.parse(firstChild, new VariantParser.Param(getCurrentScope()), null);
-            break;
-        case CTFParser.ENUM:
-            declaration = EnumParser.INSTANCE.parse(firstChild, new EnumParser.Param(getCurrentScope()), null);
-            break;
-        case CTFParser.IDENTIFIER:
-        case CTFParser.FLOATTOK:
-        case CTFParser.INTTOK:
-        case CTFParser.LONGTOK:
-        case CTFParser.SHORTTOK:
-        case CTFParser.SIGNEDTOK:
-        case CTFParser.UNSIGNEDTOK:
-        case CTFParser.CHARTOK:
-        case CTFParser.DOUBLETOK:
-        case CTFParser.VOIDTOK:
-        case CTFParser.BOOLTOK:
-        case CTFParser.COMPLEXTOK:
-        case CTFParser.IMAGINARYTOK:
-            declaration = TypeDeclarationParser.INSTANCE.parse(typeSpecifierList, new TypeDeclarationParser.Param(pointerList, getCurrentScope()), null);
-            break;
-        default:
-            throw childTypeError(firstChild);
-        }
-
-        return declaration;
-    }
-
-    /**
-     * Parses a struct declaration and returns the corresponding declaration.
-     *
-     * @param struct
-     *            An STRUCT node.
-     * @return The corresponding struct declaration.
-     * @throws ParseException
-     */
-    private StructDeclaration parseStruct(CommonTree struct, CommonTree identifier)
-            throws ParseException {
-
-        List<CommonTree> children = struct.getChildren();
-
-        /* The return value */
-        StructDeclaration structDeclaration = null;
-
-        /* Name */
-        String structName = null;
-        boolean hasName = false;
-
-        /* Body */
-        CommonTree structBody = null;
-        boolean hasBody = false;
-
-        /* Align */
-        long structAlign = 0;
-
-        /* Loop on all children and identify what we have to work with. */
-        for (CommonTree child : children) {
-            switch (child.getType()) {
-            case CTFParser.STRUCT_NAME: {
-                hasName = true;
-                CommonTree structNameIdentifier = (CommonTree) child.getChild(0);
-                structName = structNameIdentifier.getText();
-                break;
-            }
-            case CTFParser.STRUCT_BODY: {
-                hasBody = true;
-
-                structBody = child;
-                break;
-            }
-            case CTFParser.ALIGN: {
-                CommonTree structAlignExpression = (CommonTree) child.getChild(0);
-
-                structAlign = AlignmentParser.INSTANCE.parse(structAlignExpression, null, null);
-                break;
-            }
-            default:
-                throw childTypeError(child);
-            }
-        }
-
-        if (!hasName && identifier != null) {
-            structName = identifier.getText();
-            hasName = true;
-        }
-
-        /*
-         * If a struct has just a body and no name (just like the song,
-         * "A Struct With No Name" by America (sorry for that...)), it's a
-         * definition of a new type, so we create the type declaration and
-         * return it. We can't add it to the declaration scope since there is no
-         * name, but that's what we want because it won't be possible to use it
-         * again to declare another field.
-         *
-         * If it has just a name, we look it up in the declaration scope and
-         * return the associated declaration. If it is not found in the
-         * declaration scope, it means that a struct with that name has not been
-         * declared, which is an error.
-         *
-         * If it has both, then we create the type declaration and register it
-         * to the current scope.
-         *
-         * If it has none, then what are we doing here ?
-         */
-        if (hasBody) {
-            /*
-             * If struct has a name, check if already defined in the current
-             * scope.
-             */
-            if (hasName && (getCurrentScope().lookupStruct(structName) != null)) {
-                throw new ParseException("struct " + structName //$NON-NLS-1$
-                        + " already defined."); //$NON-NLS-1$
-            }
-            /* Create the declaration */
-            structDeclaration = new StructDeclaration(structAlign);
-
-            /* Parse the body */
-            parseStructBody(structBody, structDeclaration, structName);
-
-            /* If struct has name, add it to the current scope. */
-            if (hasName) {
-                getCurrentScope().registerStruct(structName, structDeclaration);
-            }
-        } else /* !hasBody */ {
-            if (hasName) {
-                /* Name and !body */
-
-                /* Lookup the name in the current scope. */
-                structDeclaration = getCurrentScope().lookupStructRecursive(structName);
-
-                /*
-                 * If not found, it means that a struct with such name has not
-                 * been defined
-                 */
-                if (structDeclaration == null) {
-                    throw new ParseException("struct " + structName //$NON-NLS-1$
-                            + " is not defined"); //$NON-NLS-1$
-                }
-            } else {
-                /* !Name and !body */
-
-                /* We can't do anything with that. */
-                throw new ParseException("struct with no name and no body"); //$NON-NLS-1$
-            }
-        }
-        return StructDeclarationFlattener.tryFlattenStruct(structDeclaration);
-    }
-
-    /**
-     * Parses a struct body, adding the fields to specified structure
-     * declaration.
-     *
-     * @param structBody
-     *            A STRUCT_BODY node.
-     * @param structDeclaration
-     *            The struct declaration.
-     * @throws ParseException
-     */
-    private void parseStructBody(CommonTree structBody,
-            StructDeclaration structDeclaration, @Nullable String structName) throws ParseException {
-        List<CommonTree> structDeclarations = structBody.getChildren();
-        if (structDeclarations == null) {
-            structDeclarations = Collections.emptyList();
-        }
-
-        /*
-         * If structDeclaration is null, structBody has no children and the
-         * struct body is empty.
-         */
-        pushNamedScope(structName, MetadataStrings.STRUCT);
-
-        for (CommonTree declarationNode : structDeclarations) {
-            switch (declarationNode.getType()) {
-            case CTFParser.TYPEALIAS:
-                TypeAliasParser.INSTANCE.parse(declarationNode, new TypeAliasParser.Param(getCurrentScope()), null);
-                break;
-            case CTFParser.TYPEDEF:
-                parseTypedef(declarationNode);
-                parseStructDeclaration(declarationNode, structDeclaration);
-                break;
-            case CTFParser.SV_DECLARATION:
-                parseStructDeclaration(declarationNode, structDeclaration);
-                break;
-            default:
-                throw childTypeError(declarationNode);
-            }
-        }
-        popScope();
-    }
-
-    /**
-     * Parses a declaration found in a struct.
-     *
-     * @param declaration
-     *            A SV_DECLARATION node.
-     * @param struct
-     *            A struct declaration. (I know, little name clash here...)
-     * @throws ParseException
-     */
-    private void parseStructDeclaration(CommonTree declaration,
-            StructDeclaration struct) throws ParseException {
-
-        /* Get the type specifier list node */
-        CommonTree typeSpecifierListNode = (CommonTree) declaration.getFirstChildWithType(CTFParser.TYPE_SPECIFIER_LIST);
-
-        /* Get the type declarator list node */
-        CommonTree typeDeclaratorListNode = (CommonTree) declaration.getFirstChildWithType(CTFParser.TYPE_DECLARATOR_LIST);
-
-        /* Get the type declarator list */
-        List<CommonTree> typeDeclaratorList = typeDeclaratorListNode.getChildren();
-
-        /*
-         * For each type declarator, parse the declaration and add a field to
-         * the struct
-         */
-        for (CommonTree typeDeclaratorNode : typeDeclaratorList) {
-
-            StringBuilder identifierSB = new StringBuilder();
-
-            IDeclaration decl = TypeDeclaratorParser.INSTANCE.parse(typeDeclaratorNode, new TypeDeclaratorParser.Param(typeSpecifierListNode, getCurrentScope(), identifierSB), null);
-            String fieldName = identifierSB.toString();
-            getCurrentScope().registerIdentifier(fieldName, decl);
-
-            if (struct.hasField(fieldName)) {
-                throw new ParseException("struct: duplicate field " //$NON-NLS-1$
-                        + fieldName);
-            }
-
-            struct.addField(fieldName, decl);
-
         }
     }
 
@@ -1044,10 +613,6 @@ public class IOStructGen {
      */
     private void popScope() {
         fScope = getCurrentScope().getParentScope();
-    }
-
-    private void pushNamedScope(@Nullable String name, String defaultName) {
-        pushScope(name == null ? defaultName : name);
     }
 
     /**

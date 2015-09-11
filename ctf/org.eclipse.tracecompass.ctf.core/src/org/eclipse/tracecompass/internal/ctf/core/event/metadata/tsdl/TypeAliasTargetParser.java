@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 
@@ -15,14 +15,19 @@ import java.util.List;
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
+import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
 
 public class TypeAliasTargetParser extends AbstractScopedCommonTreeParser {
 
     public static final class Param implements ICommonTreeParserParameter {
         private final DeclarationScope fDeclarationScope;
+        private final CTFTrace fTrace;
 
-        public Param(DeclarationScope scope) {
+        public Param(CTFTrace trace, DeclarationScope scope) {
+            fTrace = trace;
             fDeclarationScope = scope;
         }
     }
@@ -31,7 +36,6 @@ public class TypeAliasTargetParser extends AbstractScopedCommonTreeParser {
 
     private TypeAliasTargetParser() {
     }
-
 
     /**
      * Parses the target part of a typealias and gets the corresponding
@@ -83,10 +87,10 @@ public class TypeAliasTargetParser extends AbstractScopedCommonTreeParser {
 
             typeDeclarator = (CommonTree) typeDeclaratorList.getChild(0);
         }
-
+        CTFTrace trace = ((Param) param).fTrace;
         /* Parse the target type and get the declaration */
         IDeclaration targetDeclaration = TypeDeclaratorParser.INSTANCE.parse(typeDeclarator,
-                new TypeDeclaratorParser.Param(typeSpecifierList, getCurrentScope(),identifierSB),null);
+                new TypeDeclaratorParser.Param(trace, typeSpecifierList, getCurrentScope(), identifierSB), null);
 
         /*
          * We don't allow identifier in the target

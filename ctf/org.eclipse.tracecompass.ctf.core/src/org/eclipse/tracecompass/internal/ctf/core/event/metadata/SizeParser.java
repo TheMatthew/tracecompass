@@ -12,6 +12,7 @@ package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryInteger;
 
 import org.antlr.runtime.tree.CommonTree;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.UnaryIntegerParser;
 
 /**
  * Type size, in bits, for integers and floats is that returned by sizeof() in C

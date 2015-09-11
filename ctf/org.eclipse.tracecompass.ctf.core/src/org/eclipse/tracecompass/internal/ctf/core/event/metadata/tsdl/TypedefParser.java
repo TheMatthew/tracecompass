@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,14 +16,19 @@ import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
+import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
 
 public class TypedefParser extends AbstractScopedCommonTreeParser {
 
     public static final class Param implements ICommonTreeParserParameter {
         private final DeclarationScope fDeclarationScope;
+        private final CTFTrace fTrace;
 
-        public Param(DeclarationScope scope) {
+        public Param(CTFTrace trace , DeclarationScope scope) {
+            fTrace = trace;
             fDeclarationScope = scope;
         }
     }
@@ -34,16 +39,14 @@ public class TypedefParser extends AbstractScopedCommonTreeParser {
     }
 
     /**
-     * Parses a type specifier list as a user-declared type.
+     * Parses a typedef node. This creates and registers a new declaration for
+     * each declarator found in the typedef.
      *
-     * @param typeSpecifierList
-     *            A TYPE_SPECIFIER_LIST node containing a user-declared type.
-     * @param param
-     *            (pointerList, currentscope) A list of POINTER nodes that apply
-     *            to the type specified in typeSpecifierList.
-     * @return The corresponding declaration.
+     * @param typedef
+     *            A TYPEDEF node.
+     * @return map of type name to type declaration
      * @throws ParseException
-     *             If the type does not exist (has not been found).
+     *             If there is an error creating the declaration.
      */
     @Override
     public Map<String, IDeclaration> parse(CommonTree typedef, ICommonTreeParserParameter param, String errorMsg) throws ParseException {
@@ -62,8 +65,8 @@ public class TypedefParser extends AbstractScopedCommonTreeParser {
 
         for (CommonTree typeDeclaratorNode : typeDeclaratorList) {
             StringBuilder identifierSB = new StringBuilder();
-
-            IDeclaration typeDeclaration = TypeDeclarationParser.INSTANCE.parse(typeDeclaratorNode, new TypeDeclaratorParser.Param(typeSpecifierListNode, getCurrentScope(), identifierSB), null);
+            CTFTrace trace = ((Param)param).fTrace;
+            IDeclaration typeDeclaration = TypeDeclarationParser.INSTANCE.parse(typeDeclaratorNode, new TypeDeclaratorParser.Param(trace, typeSpecifierListNode, getCurrentScope(), identifierSB), null);
 
             if ((typeDeclaration instanceof VariantDeclaration)
                     && !((VariantDeclaration) typeDeclaration).isTagged()) {

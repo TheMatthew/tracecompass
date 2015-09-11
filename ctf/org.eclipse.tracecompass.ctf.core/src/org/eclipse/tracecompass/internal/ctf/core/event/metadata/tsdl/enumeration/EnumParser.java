@@ -18,6 +18,7 @@ import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
+import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
@@ -27,11 +28,13 @@ public class EnumParser extends AbstractScopedCommonTreeParser {
     public static final class Param implements ICommonTreeParserParameter {
 
         private final DeclarationScope fCurrentScope;
+        private final CTFTrace fTrace;
 
         /**
          * @param currentScope
          */
-        public Param(DeclarationScope currentScope) {
+        public Param(CTFTrace trace , DeclarationScope currentScope) {
+            fTrace = trace;
             fCurrentScope = currentScope;
         }
 
@@ -85,7 +88,8 @@ public class EnumParser extends AbstractScopedCommonTreeParser {
                 break;
             }
             case CTFParser.ENUM_CONTAINER_TYPE: {
-                containerTypeDeclaration = EnumContainerParser.INSTANCE.parse(child, new EnumContainerParser.Param(getCurrentScope()), null);
+                CTFTrace trace = ((Param)param).fTrace;
+                containerTypeDeclaration = EnumContainerParser.INSTANCE.parse(child, new EnumContainerParser.Param(trace, getCurrentScope()), null);
                 break;
             }
             default:

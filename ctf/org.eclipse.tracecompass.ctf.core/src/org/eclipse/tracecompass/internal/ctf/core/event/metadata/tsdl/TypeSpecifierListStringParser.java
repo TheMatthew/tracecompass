@@ -6,11 +6,13 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl;
 
 import java.util.List;
 
 import org.antlr.runtime.tree.CommonTree;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
 
 public class TypeSpecifierListStringParser implements ICommonTreeParser {
 
@@ -47,7 +49,7 @@ public class TypeSpecifierListStringParser implements ICommonTreeParser {
             firstItem = false;
 
             /* Append the string that represents this type specifier. */
-            sb.append(TypeSpecifierListParser.INSTANCE.parse(child, null, null));
+            sb.append(TypeSpecifierListNameParser.INSTANCE.parse(child, null, null));
         }
         return sb;
     }

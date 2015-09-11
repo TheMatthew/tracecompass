@@ -7,7 +7,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.trace;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.concatenateUnaryStrings;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isAnyUnaryString;
@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.EnumDeclaration.Pair;
@@ -30,12 +31,16 @@ import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
 import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.Activator;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.Messages;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.MetadataStrings;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.ByteOrderParser;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.IntegerDeclarationParser.Param;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.TypeSpecifierListParser;
 
 public class TraceDeclarationParser extends AbstractScopedCommonTreeParser {
 
-    public static final class Param implements ICommonTreeParserParameter{
+    public static final class Param implements ICommonTreeParserParameter {
 
         private final DeclarationScope fCurrentScope;
         private final CTFTrace fTrace;
@@ -61,7 +66,7 @@ public class TraceDeclarationParser extends AbstractScopedCommonTreeParser {
         if (!(param instanceof Param)) {
             throw new IllegalArgumentException("param must be a TraceParser.Param"); //$NON-NLS-1$
         }
-        CTFTrace trace = ((Param) param).fTrace;
+        CTFTrace trace = NonNullUtils.checkNotNull(((Param) param).fTrace);
         setScope(((Param) param).fCurrentScope);
 
         /* There should be a left and right */
@@ -146,7 +151,7 @@ public class TraceDeclarationParser extends AbstractScopedCommonTreeParser {
                 throw new ParseException("packet.header expects a type specifier"); //$NON-NLS-1$
             }
 
-            IDeclaration packetHeaderDecl = parseTypeSpecifierList(typeSpecifier);
+            IDeclaration packetHeaderDecl = TypeSpecifierListParser.INSTANCE.parse(typeSpecifier, new TypeSpecifierListParser.Param(trace, null, null, getCurrentScope()), null);
 
             if (!(packetHeaderDecl instanceof StructDeclaration)) {
                 throw new ParseException("packet.header expects a struct"); //$NON-NLS-1$
@@ -156,6 +161,7 @@ public class TraceDeclarationParser extends AbstractScopedCommonTreeParser {
         } else {
             Activator.log(IStatus.WARNING, Messages.IOStructGen_UnknownTraceAttributeWarning + " " + left); //$NON-NLS-1$
         }
+        return trace;
     }
 
     private static void addByteOrder(ByteOrder byteOrder,
@@ -237,5 +243,4 @@ public class TraceDeclarationParser extends AbstractScopedCommonTreeParser {
             }
         }
     }
-
 }

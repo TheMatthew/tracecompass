@@ -13,7 +13,7 @@ import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtil
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreeParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryIntegerParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.UnaryIntegerParser;
 
 public final class EventIDParser implements ICommonTreeParser {
 

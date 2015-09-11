@@ -13,19 +13,23 @@ import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.IntegerDeclaration;
+import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.TypeSpecifierListParser;
 
 public class EnumContainerParser extends AbstractScopedCommonTreeParser {
 
     public static final class Param implements ICommonTreeParserParameter {
 
         private final DeclarationScope fCurrentScope;
+        private final CTFTrace fTrace;
 
         /**
          * @param currentScope
          */
-        public Param(DeclarationScope currentScope) {
+        public Param(CTFTrace trace, DeclarationScope currentScope) {
+            fTrace = trace;
             fCurrentScope = currentScope;
         }
 
@@ -58,8 +62,9 @@ public class EnumContainerParser extends AbstractScopedCommonTreeParser {
         /* Get the child, which should be a type specifier list */
         CommonTree typeSpecifierList = (CommonTree) enumContainerType.getChild(0);
 
+        CTFTrace trace = ((Param)param).fTrace;
         /* Parse it and get the corresponding declaration */
-        IDeclaration decl = parseTypeSpecifierList(typeSpecifierList);
+        IDeclaration decl = TypeSpecifierListParser.INSTANCE.parse(typeSpecifierList, new TypeSpecifierListParser.Param(trace , null, null, getCurrentScope()),null);
 
         /* If is is an integer, return it, else throw an error */
         if (decl instanceof IntegerDeclaration) {

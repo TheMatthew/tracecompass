@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 
@@ -16,14 +16,19 @@ import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.core.event.metadata.DeclarationScope;
 import org.eclipse.tracecompass.ctf.core.event.types.IDeclaration;
 import org.eclipse.tracecompass.ctf.core.event.types.VariantDeclaration;
+import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.AbstractScopedCommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
 
 public class TypeAliasParser extends AbstractScopedCommonTreeParser {
 
     public static final class Param implements ICommonTreeParserParameter {
         private final DeclarationScope fDeclarationScope;
+        private final CTFTrace fTrace;
 
-        public Param(DeclarationScope scope) {
+        public Param(CTFTrace trace , DeclarationScope scope) {
+            fTrace = trace;
             fDeclarationScope = scope;
         }
     }
@@ -57,8 +62,8 @@ public class TypeAliasParser extends AbstractScopedCommonTreeParser {
                 throw childTypeError(child);
             }
         }
-
-        IDeclaration targetDeclaration = TypeAliasTargetParser.INSTANCE.parse(target, new TypeAliasTargetParser.Param(getCurrentScope()),null);
+        CTFTrace trace = ((Param)param).fTrace;
+        IDeclaration targetDeclaration = TypeAliasTargetParser.INSTANCE.parse(target, new TypeAliasTargetParser.Param(trace , getCurrentScope()),null);
 
         if ((targetDeclaration instanceof VariantDeclaration)
                 && ((VariantDeclaration) targetDeclaration).isTagged()) {

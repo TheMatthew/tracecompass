@@ -6,21 +6,23 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
+package org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl;
 
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.childTypeError;
 
 import org.antlr.runtime.tree.CommonTree;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ICommonTreeParser;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.ParseException;
 
-public class TypeSpecifierListParser implements ICommonTreeParser {
+public class TypeSpecifierListNameParser implements ICommonTreeParser {
 
     /**
      * Instance
      */
-    public static final TypeSpecifierListParser INSTANCE = new TypeSpecifierListParser();
+    public static final TypeSpecifierListNameParser INSTANCE = new TypeSpecifierListNameParser();
 
-    private TypeSpecifierListParser() {
+    private TypeSpecifierListNameParser() {
     }
 
     /**
