@@ -43,11 +43,9 @@ public class PointerListStringParser implements ICommonTreeParser {
 
             sb.append(" *"); //$NON-NLS-1$
             if (pointer.getChildCount() > 0) {
-
                 sb.append(" const"); //$NON-NLS-1$
             }
         }
         return sb;
     }
-
 }

@@ -11,8 +11,8 @@ package org.eclipse.tracecompass.internal.ctf.core.event.metadata;
 
 import java.util.List;
 
-import org.eclipse.tracecompass.internal.ctf.core.event.metadata.UnaryStringParser;
 import org.antlr.runtime.tree.CommonTree;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 
 /**
@@ -72,7 +72,7 @@ public final class TsdlUtils {
      *            elements being ARROW or DOT nodes with unary strings as child.
      * @return The string representation of the unary string chain.
      */
-    public static String concatenateUnaryStrings(List<CommonTree> strings) {
+    public static @NonNull String concatenateUnaryStrings(List<CommonTree> strings) {
 
         StringBuilder sb = new StringBuilder();
 

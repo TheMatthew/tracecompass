@@ -18,8 +18,8 @@ import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtil
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.concatenateUnaryStrings;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isAnyUnaryString;
 import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryInteger;
-import static org.eclipse.tracecompass.internal.ctf.core.event.metadata.TsdlUtils.isUnaryString;
 
+import java.io.ObjectInputStream.GetField;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,6 +50,7 @@ import org.eclipse.tracecompass.ctf.core.trace.CTFTrace;
 import org.eclipse.tracecompass.ctf.parser.CTFParser;
 import org.eclipse.tracecompass.internal.ctf.core.Activator;
 import org.eclipse.tracecompass.internal.ctf.core.event.EventDeclaration;
+import org.eclipse.tracecompass.internal.ctf.core.event.metadata.VariantDeclarationParser.Param;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.AlignmentParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.ByteOrderParser;
 import org.eclipse.tracecompass.internal.ctf.core.event.metadata.tsdl.integer.IntegerDeclarationParser;
@@ -322,7 +323,7 @@ public class IOStructGen {
         for (CommonTree child : children) {
             switch (child.getType()) {
             case CTFParser.TYPEALIAS:
-                parseTypealias(child);
+                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(getCurrentScope()), null);
                 break;
             case CTFParser.TYPEDEF:
                 parseTypedef(child);
@@ -364,7 +365,7 @@ public class IOStructGen {
         for (CommonTree child : children) {
             switch (child.getType()) {
             case CTFParser.TYPEALIAS:
-                parseTypealias(child);
+                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(getCurrentScope()), null);
                 break;
             case CTFParser.TYPEDEF:
                 parseTypedef(child);
@@ -530,7 +531,7 @@ public class IOStructGen {
         for (CommonTree child : children) {
             switch (child.getType()) {
             case CTFParser.TYPEALIAS:
-                parseTypealias(child);
+                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(getCurrentScope()), null);
                 break;
             case CTFParser.TYPEDEF:
                 parseTypedef(child);
@@ -700,7 +701,7 @@ public class IOStructGen {
                 parseTypedef(child);
                 break;
             case CTFParser.TYPEALIAS:
-                parseTypealias(child);
+                TypeAliasParser.INSTANCE.parse(child, new TypeAliasParser.Param(getCurrentScope()), null);
                 break;
             case CTFParser.TYPE_SPECIFIER_LIST:
                 parseTypeSpecifierList(child);
@@ -709,111 +710,6 @@ public class IOStructGen {
                 throw childTypeError(child);
             }
         }
-    }
-
-    /**
-     * Parses a typealias node. It parses the target, the alias, and registers
-     * the type in the current scope.
-     *
-     * @param typealias
-     *            A TYPEALIAS node.
-     * @throws ParseException
-     */
-    private void parseTypealias(CommonTree typealias) throws ParseException {
-
-        List<CommonTree> children = typealias.getChildren();
-
-        CommonTree target = null;
-        CommonTree alias = null;
-
-        for (CommonTree child : children) {
-            switch (child.getType()) {
-            case CTFParser.TYPEALIAS_TARGET:
-                target = child;
-                break;
-            case CTFParser.TYPEALIAS_ALIAS:
-                alias = child;
-                break;
-            default:
-                throw childTypeError(child);
-            }
-        }
-
-        IDeclaration targetDeclaration = parseTypealiasTarget(target);
-
-        if ((targetDeclaration instanceof VariantDeclaration)
-                && ((VariantDeclaration) targetDeclaration).isTagged()) {
-            throw new ParseException("Typealias of untagged variant is not permitted"); //$NON-NLS-1$
-        }
-
-        String aliasString = TypeAliasAliasParser.INSTANCE.parse(alias, null, null);
-
-        getCurrentScope().registerType(aliasString, targetDeclaration);
-    }
-
-    /**
-     * Parses the target part of a typealias and gets the corresponding
-     * declaration.
-     *
-     * @param target
-     *            A TYPEALIAS_TARGET node.
-     * @return The corresponding declaration.
-     * @throws ParseException
-     */
-    private IDeclaration parseTypealiasTarget(CommonTree target)
-            throws ParseException {
-
-        List<CommonTree> children = target.getChildren();
-
-        CommonTree typeSpecifierList = null;
-        CommonTree typeDeclaratorList = null;
-        CommonTree typeDeclarator = null;
-        StringBuilder identifierSB = new StringBuilder();
-
-        for (CommonTree child : children) {
-            switch (child.getType()) {
-            case CTFParser.TYPE_SPECIFIER_LIST:
-                typeSpecifierList = child;
-                break;
-            case CTFParser.TYPE_DECLARATOR_LIST:
-                typeDeclaratorList = child;
-                break;
-            default:
-                throw childTypeError(child);
-            }
-        }
-
-        if (typeDeclaratorList != null) {
-            /*
-             * Only allow one declarator
-             *
-             * eg: "typealias uint8_t *, ** := puint8_t;" is not permitted,
-             * otherwise the new type puint8_t would maps to two different
-             * types.
-             */
-            if (typeDeclaratorList.getChildCount() != 1) {
-                throw new ParseException("Only one type declarator is allowed in the typealias target"); //$NON-NLS-1$
-            }
-
-            typeDeclarator = (CommonTree) typeDeclaratorList.getChild(0);
-        }
-
-        /* Parse the target type and get the declaration */
-        IDeclaration targetDeclaration = parseTypeDeclarator(typeDeclarator,
-                typeSpecifierList, identifierSB);
-
-        /*
-         * We don't allow identifier in the target
-         *
-         * eg: "typealias uint8_t* hello := puint8_t;", the "hello" is not
-         * permitted
-         */
-        if (identifierSB.length() > 0) {
-            throw new ParseException("Identifier (" + identifierSB.toString() //$NON-NLS-1$
-                    + ") not expected in the typealias target"); //$NON-NLS-1$
-        }
-
-        return targetDeclaration;
     }
 
     /**
@@ -949,7 +845,7 @@ public class IOStructGen {
                             declaration);
                 } else if (isTrace(first)) {
                     /* Sequence */
-                    String lengthName = parseTraceScope(lengthChildren);
+                    String lengthName = TraceScopeParser.INSTANCE.parse(null, new TraceScopeParser.Param(lengthChildren), null);
 
                     /* check that lengthName was declared */
                     if (isSignedIntegerField(lengthName)) {
@@ -961,7 +857,7 @@ public class IOStructGen {
 
                 } else if (isStream(first)) {
                     /* Sequence */
-                    String lengthName = parseStreamScope(lengthChildren);
+                    String lengthName = StreamScopeParser.INSTANCE.parse(null, new StreamScopeParser.Param(lengthChildren), null);
 
                     /* check that lengthName was declared */
                     if (isSignedIntegerField(lengthName)) {
@@ -972,7 +868,7 @@ public class IOStructGen {
                             declaration);
                 } else if (isEvent(first)) {
                     /* Sequence */
-                    String lengthName = parseEventScope(lengthChildren);
+                    String lengthName = EventScopeParser.INSTANCE.parse(null, new EventScopeParser.Param(lengthChildren), null);
 
                     /* check that lengthName was declared */
                     if (isSignedIntegerField(lengthName)) {
@@ -1005,64 +901,6 @@ public class IOStructGen {
         } else if (declaration instanceof VariantDeclaration) {
             currentScope.registerVariant(identifier, (VariantDeclaration) declaration);
         }
-    }
-
-    private static String parseStreamScope(List<CommonTree> lengthChildren) throws ParseException {
-        List<CommonTree> sublist = lengthChildren.subList(1, lengthChildren.size());
-
-        CommonTree nextElem = (CommonTree) lengthChildren.get(1).getChild(0);
-        String lengthName = null;
-        if (isUnaryString(nextElem)) {
-            lengthName = UnaryStringParser.INSTANCE.parse(nextElem, null, null);
-        }
-
-        int type = nextElem.getType();
-        if ((CTFParser.tokenNames[CTFParser.EVENT]).equals(lengthName)) {
-            type = CTFParser.EVENT;
-        }
-        switch (type) {
-        case CTFParser.IDENTIFIER:
-            lengthName = concatenateUnaryStrings(sublist);
-            break;
-        case CTFParser.EVENT:
-            lengthName = parseEventScope(sublist);
-            break;
-        default:
-            if (lengthName == null) {
-                throw new ParseException("Unsupported scope stream." + nextElem); //$NON-NLS-1$
-            }
-        }
-        return MetadataStrings.STREAM + '.' + lengthName;
-    }
-
-    private static String parseEventScope(List<CommonTree> lengthChildren) throws ParseException {
-        CommonTree nextElem = (CommonTree) lengthChildren.get(1).getChild(0);
-        String lengthName;
-        switch (nextElem.getType()) {
-        case CTFParser.UNARY_EXPRESSION_STRING:
-        case CTFParser.IDENTIFIER:
-            List<CommonTree> sublist = lengthChildren.subList(1, lengthChildren.size());
-            lengthName = MetadataStrings.EVENT + '.' + concatenateUnaryStrings(sublist);
-            break;
-        default:
-            throw new ParseException("Unsupported scope event." + nextElem); //$NON-NLS-1$
-        }
-        return lengthName;
-    }
-
-    private static String parseTraceScope(List<CommonTree> lengthChildren) throws ParseException {
-        CommonTree nextElem = (CommonTree) lengthChildren.get(1).getChild(0);
-        String lengthName;
-        switch (nextElem.getType()) {
-        case CTFParser.IDENTIFIER:
-            lengthName = concatenateUnaryStrings(lengthChildren.subList(1, lengthChildren.size()));
-            break;
-        case CTFParser.STREAM:
-            return parseStreamScope(lengthChildren.subList(1, lengthChildren.size()));
-        default:
-            throw new ParseException("Unsupported scope trace." + nextElem); //$NON-NLS-1$
-        }
-        return lengthName;
     }
 
     private static boolean isEvent(CommonTree first) {
@@ -1341,7 +1179,7 @@ public class IOStructGen {
         for (CommonTree declarationNode : structDeclarations) {
             switch (declarationNode.getType()) {
             case CTFParser.TYPEALIAS:
-                parseTypealias(declarationNode);
+                TypeAliasParser.INSTANCE.parse(declarationNode, new TypeAliasParser.Param(getCurrentScope()), null);
                 break;
             case CTFParser.TYPEDEF:
                 parseTypedef(declarationNode);
@@ -1553,181 +1391,8 @@ public class IOStructGen {
 
     private VariantDeclaration parseVariant(CommonTree variant)
             throws ParseException {
+        return VariantParser.INSTANCE.parse(variant, new VariantParser.Param(getCurrentScope()), null);
 
-        List<CommonTree> children = variant.getChildren();
-        VariantDeclaration variantDeclaration = null;
-
-        boolean hasName = false;
-        String variantName = null;
-
-        boolean hasBody = false;
-        CommonTree variantBody = null;
-
-        boolean hasTag = false;
-        String variantTag = null;
-
-        for (CommonTree child : children) {
-            switch (child.getType()) {
-            case CTFParser.VARIANT_NAME:
-
-                hasName = true;
-
-                CommonTree variantNameIdentifier = (CommonTree) child.getChild(0);
-
-                variantName = variantNameIdentifier.getText();
-
-                break;
-            case CTFParser.VARIANT_TAG:
-
-                hasTag = true;
-
-                CommonTree variantTagIdentifier = (CommonTree) child.getChild(0);
-
-                variantTag = variantTagIdentifier.getText();
-
-                break;
-            case CTFParser.VARIANT_BODY:
-
-                hasBody = true;
-
-                variantBody = child;
-
-                break;
-            default:
-                throw childTypeError(child);
-            }
-        }
-
-        if (hasBody) {
-            /*
-             * If variant has a name, check if already defined in the current
-             * scope.
-             */
-            if (hasName
-                    && (getCurrentScope().lookupVariant(variantName) != null)) {
-                throw new ParseException("variant " + variantName //$NON-NLS-1$
-                        + " already defined."); //$NON-NLS-1$
-            }
-
-            /* Create the declaration */
-            variantDeclaration = new VariantDeclaration();
-
-            /* Parse the body */
-            parseVariantBody(variantBody, variantDeclaration, variantName);
-
-            /* If variant has name, add it to the current scope. */
-            if (hasName) {
-                getCurrentScope().registerVariant(variantName,
-                        variantDeclaration);
-            }
-        } else /* !hasBody */ {
-            if (hasName) {
-                /* Name and !body */
-
-                /* Lookup the name in the current scope. */
-                variantDeclaration = getCurrentScope().lookupVariantRecursive(
-                        variantName);
-
-                /*
-                 * If not found, it means that a struct with such name has not
-                 * been defined
-                 */
-                if (variantDeclaration == null) {
-                    throw new ParseException("variant " + variantName //$NON-NLS-1$
-                            + " is not defined"); //$NON-NLS-1$
-                }
-            } else {
-                /* !Name and !body */
-
-                /* We can't do anything with that. */
-                throw new ParseException("variant with no name and no body"); //$NON-NLS-1$
-            }
-        }
-
-        if (hasTag) {
-            variantDeclaration.setTag(variantTag);
-
-            IDeclaration decl = getCurrentScope().lookupIdentifierRecursive(variantTag);
-            if (decl == null) {
-                throw new ParseException("Variant tag not found: " + variantTag); //$NON-NLS-1$
-            }
-            if (!(decl instanceof EnumDeclaration)) {
-                throw new ParseException("Variant tag must be an enum: " + variantTag); //$NON-NLS-1$
-            }
-            EnumDeclaration tagDecl = (EnumDeclaration) decl;
-            Set<String> intersection = new HashSet<>(tagDecl.getLabels());
-            intersection.retainAll(variantDeclaration.getFields().keySet());
-            if (intersection.isEmpty()) {
-                throw new ParseException("Variant contains no values of the tag, impossible to use: " + variantName); //$NON-NLS-1$
-            }
-        }
-
-        return variantDeclaration;
-    }
-
-    private void parseVariantBody(CommonTree variantBody,
-            VariantDeclaration variantDeclaration, @Nullable String variantName) throws ParseException {
-
-        List<CommonTree> variantDeclarations = variantBody.getChildren();
-
-        pushNamedScope(variantName, MetadataStrings.VARIANT);
-
-        for (CommonTree declarationNode : variantDeclarations) {
-            switch (declarationNode.getType()) {
-            case CTFParser.TYPEALIAS:
-                parseTypealias(declarationNode);
-                break;
-            case CTFParser.TYPEDEF:
-                Map<String, IDeclaration> decs = parseTypedef(declarationNode);
-                for (Entry<String, IDeclaration> declarationEntry : decs.entrySet()) {
-                    variantDeclaration.addField(declarationEntry.getKey(), declarationEntry.getValue());
-                }
-                break;
-            case CTFParser.SV_DECLARATION:
-                parseVariantDeclaration(declarationNode, variantDeclaration);
-                break;
-            default:
-                throw childTypeError(declarationNode);
-            }
-        }
-
-        popScope();
-    }
-
-    private void parseVariantDeclaration(CommonTree declaration,
-            VariantDeclaration variant) throws ParseException {
-
-        /* Get the type specifier list node */
-        CommonTree typeSpecifierListNode = (CommonTree) declaration.getFirstChildWithType(CTFParser.TYPE_SPECIFIER_LIST);
-
-        /* Get the type declarator list node */
-        CommonTree typeDeclaratorListNode = (CommonTree) declaration.getFirstChildWithType(CTFParser.TYPE_DECLARATOR_LIST);
-
-        /* Get the type declarator list */
-        List<CommonTree> typeDeclaratorList = typeDeclaratorListNode.getChildren();
-
-        /*
-         * For each type declarator, parse the declaration and add a field to
-         * the variant
-         */
-        for (CommonTree typeDeclaratorNode : typeDeclaratorList) {
-
-            StringBuilder identifierSB = new StringBuilder();
-
-            IDeclaration decl = parseTypeDeclarator(typeDeclaratorNode,
-                    typeSpecifierListNode, identifierSB);
-
-            String name = identifierSB.toString();
-
-            if (variant.hasField(name)) {
-                throw new ParseException("variant: duplicate field " //$NON-NLS-1$
-                        + name);
-            }
-
-            getCurrentScope().registerIdentifier(name, decl);
-
-            variant.addField(name, decl);
-        }
     }
 
     // ------------------------------------------------------------------------
