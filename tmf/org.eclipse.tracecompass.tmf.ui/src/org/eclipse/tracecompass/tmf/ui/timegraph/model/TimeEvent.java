@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Ericsson
+ * Copyright (c) 2012, 2013 Ericsson
  *
  * All rights reserved. This program and the accompanying materials are
  * made available under the terms of the Eclipse Public License v1.0 which
@@ -11,7 +11,9 @@
  *   Geneviève Bastien - Added the fValue parameter to avoid subclassing
  *******************************************************************************/
 
-package org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model;
+package org.eclipse.linuxtools.tmf.ui.widgets.timegraph.model;
+
+import org.eclipse.linuxtools.tmf.core.util.Pair;
 
 /**
  * Generic TimeEvent implementation
@@ -19,7 +21,7 @@ package org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model;
  * @version 1.0
  * @author Patrick Tasse
  */
-public class TimeEvent implements ITimeEvent {
+public class TimeEvent implements ITimeEvent2 {
 
     /** TimeGraphEntry matching this time event */
     protected ITimeGraphEntry fEntry;
@@ -30,7 +32,10 @@ public class TimeEvent implements ITimeEvent {
     /** Duration of this time event */
     protected long fDuration;
 
-    private final int fValue;
+    /**
+     * Value
+     */
+    protected int fValue;
 
     /**
      * Default value when no other value present
@@ -63,6 +68,7 @@ public class TimeEvent implements ITimeEvent {
      *            The duration of this event
      * @param value
      *            The status assigned to the event
+     * @since 2.1
      */
     public TimeEvent(ITimeGraphEntry entry, long time, long duration,
             int value) {
@@ -76,6 +82,7 @@ public class TimeEvent implements ITimeEvent {
      * Get this event's status
      *
      * @return The integer matching this status
+     * @since 2.1
      */
     public int getValue() {
         return fValue;
@@ -85,6 +92,7 @@ public class TimeEvent implements ITimeEvent {
      * Return whether an event has a value
      *
      * @return true if the event has a value
+     * @since 2.1
      */
     public boolean hasValue() {
         return (fValue != NOVALUE);
@@ -105,23 +113,29 @@ public class TimeEvent implements ITimeEvent {
         return fDuration;
     }
 
+    /**
+     * Split an event in two at the specified time. If the time is smaller or
+     * equal to the event's start, the first split event is null. If the time is
+     * greater or equal to the event's end, the second split event is null.
+     * <p>
+     * Subclasses should re-implement this method
+     *
+     * @since 2.1
+     */
     @Override
-    public ITimeEvent splitBefore(long splitTime) {
-        return (splitTime > fTime ?
-                new TimeEvent(fEntry, fTime, Math.min(fDuration, splitTime - fTime), getValue()) :
-                null);
-    }
-
-    @Override
-    public ITimeEvent splitAfter(long splitTime) {
-        return (splitTime < fTime + fDuration ?
-                new TimeEvent(fEntry, Math.max(fTime, splitTime), fDuration - Math.max(0, splitTime - fTime),
-                        fValue) :
-                null);
+    public Pair<ITimeEvent, ITimeEvent> split(long time) {
+        Pair<ITimeEvent, ITimeEvent> pair = new Pair<>();
+        if (time > fTime) {
+            pair.setFirst(new TimeEvent(fEntry, fTime, Math.min(fDuration, time - fTime), fValue));
+        }
+        if (time < fTime + fDuration) {
+            pair.setSecond(new TimeEvent(fEntry, Math.max(fTime, time), fDuration - Math.max(0, time - fTime), fValue));
+        }
+        return pair;
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " start=" + fTime + " end=" + (fTime + fDuration) + " duration=" + fDuration + (hasValue() ? (" value=" + getValue()) : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+        return getClass().getSimpleName() + " start=" + fTime + " end=" + (fTime + fDuration) + " duration=" + fDuration + (hasValue() ? (" value=" + fValue) : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
     }
 }

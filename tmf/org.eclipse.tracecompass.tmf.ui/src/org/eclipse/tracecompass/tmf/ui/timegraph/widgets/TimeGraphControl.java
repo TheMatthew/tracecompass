@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2007, 2015 Intel Corporation and others
+ * Copyright (c) 2007, 2014 Intel Corporation and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,10 @@
  *   Generoso Pagano, Inria - Support for drag selection listeners
  *****************************************************************************/
 
-package org.eclipse.tracecompass.tmf.ui.widgets.timegraph.widgets;
+package org.eclipse.linuxtools.tmf.ui.widgets.timegraph.widgets;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,8 +35,23 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.ViewerFilter;
-import org.eclipse.osgi.util.NLS;
+import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
+import org.eclipse.linuxtools.tmf.core.timestamp.TmfNanoTimestamp;
+import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestampDelta;
+import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.ITimeGraphColorListener;
+import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.ITimeGraphPresentationProvider;
+import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.ITimeGraphPresentationProvider2;
+import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.ITimeGraphTimeListener;
+import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.ITimeGraphTreeListener;
+import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.StateItem;
+import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.TimeGraphTimeEvent;
+import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.TimeGraphTreeExpansionEvent;
+import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.model.ILinkEvent;
+import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.model.ITimeEvent;
+import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.model.ITimeGraphEntry;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ControlEvent;
+import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.KeyEvent;
@@ -50,6 +64,7 @@ import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseTrackListener;
 import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.TraverseEvent;
 import org.eclipse.swt.events.TraverseListener;
@@ -64,41 +79,25 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.tracecompass.tmf.core.signal.TmfSignalManager;
-import org.eclipse.tracecompass.tmf.ui.signal.TmfTimeViewAlignmentInfo;
-import org.eclipse.tracecompass.tmf.ui.signal.TmfTimeViewAlignmentSignal;
-import org.eclipse.tracecompass.tmf.ui.views.ITmfTimeAligned;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.ITimeGraphColorListener;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.ITimeGraphPresentationProvider;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.ITimeGraphPresentationProvider2;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.ITimeGraphTimeListener;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.ITimeGraphTreeListener;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.StateItem;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.TimeGraphTimeEvent;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.TimeGraphTreeExpansionEvent;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ILinkEvent;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.IMarkerEvent;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeEvent;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeGraphEntry;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.widgets.Utils.Resolution;
-import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.widgets.Utils.TimeFormat;
-
-import com.google.common.collect.Iterables;
+import org.eclipse.swt.widgets.ScrollBar;
 
 /**
  * Time graph control implementation
  *
+ * @version 1.0
  * @author Alvaro Sanchez-Leon
  * @author Patrick Tasse
  */
 public class TimeGraphControl extends TimeGraphBaseControl
-        implements FocusListener, KeyListener, MouseMoveListener, MouseListener,
-        MouseWheelListener, MouseTrackListener, TraverseListener, ISelectionProvider,
-        MenuDetectListener, ITmfTimeGraphDrawingHelper, ITimeGraphColorListener, Listener {
+        implements FocusListener, KeyListener, MouseMoveListener, MouseListener, MouseWheelListener,
+        ControlListener, SelectionListener, MouseTrackListener, TraverseListener, ISelectionProvider,
+        MenuDetectListener, ITmfTimeGraphDrawingHelper, ITimeGraphColorListener {
 
-    /**
-     * Constant indicating that all levels of the time graph should be expanded
-     */
+    /** Max scrollbar size */
+    public static final int H_SCROLLBAR_MAX = Integer.MAX_VALUE - 1;
+
+    /** Constant indicating that all levels of the time graph should be expanded
+     * @since 3.1 */
     public static final int ALL_LEVELS = AbstractTreeViewer.ALL_LEVELS;
 
     private static final int DRAG_NONE = 0;
@@ -107,20 +106,15 @@ public class TimeGraphControl extends TimeGraphBaseControl
     private static final int DRAG_ZOOM = 3;
     private static final int DRAG_SELECTION = 4;
 
-    private static final int CUSTOM_ITEM_HEIGHT = -1; // get item height from
-                                                      // provider
+    private static final int CUSTOM_ITEM_HEIGHT = -1; // get item height from provider
 
     private static final double ZOOM_FACTOR = 1.5;
     private static final double ZOOM_IN_FACTOR = 0.8;
     private static final double ZOOM_OUT_FACTOR = 1.25;
 
     private static final int SNAP_WIDTH = 2;
-    private static final int ARROW_HOVER_MAX_DIST = 5;
 
     private static final int NO_STATUS = -1;
-    private static final int STATUS_WITHOUT_CURSOR_TIME = -2;
-
-    private static final int MAX_LABEL_LENGTH = 256;
 
     /** Resource manager */
     private LocalResourceManager fResourceManager = new LocalResourceManager(JFaceResources.getResources());
@@ -135,24 +129,18 @@ public class TimeGraphControl extends TimeGraphBaseControl
     private boolean fIsInFocus = false;
     private boolean fMouseOverSplitLine = false;
     private int fGlobalItemHeight = CUSTOM_ITEM_HEIGHT;
-    private boolean fBlendSubPixelEvents = false;
     private int fMinimumItemWidth = 0;
     private int fTopIndex = 0;
     private int fDragState = DRAG_NONE;
-    private boolean fDragBeginMarker = false;
     private int fDragButton;
     private int fDragX0 = 0;
     private int fDragX = 0;
-    private long fDragTime0 = 0; // used to preserve accuracy of modified
-                                 // selection
+    private long fDragTime0 = 0; // used to preserve accuracy of modified selection
     private int fIdealNameSpace = 0;
     private long fTime0bak;
     private long fTime1bak;
     private ITimeGraphPresentationProvider fTimeGraphProvider = null;
     private ItemData fItemData = null;
-    private List<IMarkerEvent> fBookmarks = null;
-    private List<IMarkerEvent> fMarkers = null;
-    private boolean fMarkersVisible = true;
     private List<SelectionListener> fSelectionListeners;
     private List<ITimeGraphTimeListener> fDragSelectionListeners;
     private final List<ISelectionChangedListener> fSelectionChangedListeners = new ArrayList<>();
@@ -165,13 +153,51 @@ public class TimeGraphControl extends TimeGraphBaseControl
     private final Cursor fZoomCursor = Display.getDefault().getSystemCursor(SWT.CURSOR_SIZEWE);
     private final List<ViewerFilter> fFilters = new ArrayList<>();
     private MenuDetectEvent fPendingMenuDetectEvent = null;
-    private boolean fGridLinesVisible = true;
-    private Color fGridLineColor = Display.getDefault().getSystemColor(SWT.COLOR_GRAY);
     private boolean fHideArrows = false;
     private int fAutoExpandLevel = ALL_LEVELS;
 
     private int fBorderWidth = 0;
     private int fHeaderHeight = 0;
+
+    private Listener fMouseScrollFilterListener;
+
+    private MouseScrollNotifier fMouseScrollNotifier;
+    private final Object fMouseScrollNotifierLock = new Object();
+
+    private class MouseScrollNotifier extends Thread {
+        private static final long DELAY = 400L;
+        private static final long POLLING_INTERVAL = 10L;
+        private long fLastScrollTime = Long.MAX_VALUE;
+
+        @Override
+        public void run() {
+            while ((System.currentTimeMillis() - fLastScrollTime) < DELAY) {
+                try {
+                    Thread.sleep(POLLING_INTERVAL);
+                } catch (Exception e) {
+                    return;
+                }
+            }
+            if (!isInterrupted()) {
+                Display.getDefault().asyncExec(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (isDisposed()) {
+                            return;
+                        }
+                        fTimeProvider.notifyStartFinishTime();
+                    }
+                });
+            }
+            synchronized (fMouseScrollNotifierLock) {
+                fMouseScrollNotifier = null;
+            }
+        }
+
+        public void mouseScrolled() {
+            fLastScrollTime = System.currentTimeMillis();
+        }
+    }
 
     /**
      * Standard constructor
@@ -183,7 +209,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      */
     public TimeGraphControl(Composite parent, TimeGraphColorScheme colors) {
 
-        super(parent, colors, SWT.NO_BACKGROUND | SWT.DOUBLE_BUFFERED);
+        super(parent, colors, SWT.NO_BACKGROUND | SWT.H_SCROLL | SWT.DOUBLE_BUFFERED);
 
         fItemData = new ItemData();
 
@@ -194,8 +220,13 @@ public class TimeGraphControl extends TimeGraphBaseControl
         addMouseWheelListener(this);
         addTraverseListener(this);
         addKeyListener(this);
+        addControlListener(this);
         addMenuDetectListener(this);
-        addListener(SWT.MouseWheel, this);
+        ScrollBar scrollHor = getHorizontalBar();
+
+        if (scrollHor != null) {
+            scrollHor.addSelectionListener(this);
+        }
     }
 
     @Override
@@ -207,8 +238,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
     /**
      * Sets the timegraph provider used by this timegraph viewer.
      *
-     * @param timeGraphProvider
-     *            the timegraph provider
+     * @param timeGraphProvider the timegraph provider
      */
     public void setTimeGraphProvider(ITimeGraphPresentationProvider timeGraphProvider) {
         fTimeGraphProvider = timeGraphProvider;
@@ -226,15 +256,27 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * Gets the timegraph provider used by this timegraph viewer.
      *
      * @return the timegraph provider, or <code>null</code> if not set.
+     * @since 3.0
      */
     public ITimeGraphPresentationProvider getTimeGraphProvider() {
         return fTimeGraphProvider;
     }
 
     /**
+     * Gets the time provider used by this timegraph viewer.
+     *
+     * @return the time provider, or <code>null</code> if not set.
+     * @since 3.0
+     */
+    protected ITimeDataProvider getTimeProvider() {
+        return fTimeProvider;
+    }
+
+    /**
      * Gets the color map used by this timegraph viewer.
      *
      * @return a color map, or <code>null</code> if not set.
+     * @since 3.0
      */
     public Color[] getEventColorMap() {
         return fEventColorMap;
@@ -248,6 +290,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      */
     public void setTimeProvider(ITimeDataProvider timeProvider) {
         fTimeProvider = timeProvider;
+        adjustScrolls();
         redraw();
     }
 
@@ -255,8 +298,8 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * Assign the status line manager
      *
      * @param statusLineManager
-     *            The status line manager, or null to disable status line
-     *            messages
+     *            The status line manager, or null to disable status line messages
+     * @since 2.1
      */
     public void setStatusLineManager(IStatusLineManager statusLineManager) {
         if (fStatusLineManager != null && statusLineManager == null) {
@@ -270,6 +313,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      *
      * @param timeGraphScale
      *            The time graph scale
+     * @since 2.1
      */
     public void setTimeGraphScale(TimeGraphScale timeGraphScale) {
         fTimeGraphScale = timeGraphScale;
@@ -317,16 +361,6 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     /**
-     * Gets the time provider used by this timegraph viewer.
-     *
-     * @return the time provider, or <code>null</code> if not set.
-     * @since 2.0
-     */
-    protected ITimeDataProvider getTimeProvider() {
-        return fTimeProvider;
-    }
-
-    /**
      * Default selection callback
      */
     public void fireDefaultSelection() {
@@ -344,6 +378,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      *
      * @param listener
      *            The listener to add
+     * @since 3.1
      */
     public void addDragSelectionListener(ITimeGraphTimeListener listener) {
         if (listener == null) {
@@ -360,6 +395,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      *
      * @param listener
      *            The listener to remove
+     * @since 3.1
      */
     public void removeDragSelectionListener(ITimeGraphTimeListener listener) {
         if (null != fDragSelectionListeners) {
@@ -374,6 +410,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      *            Time interval start
      * @param end
      *            Time interval end
+     * @since 3.1
      */
     public void fireDragSelectionChanged(long start, long end) {
         // check for backward intervals
@@ -405,10 +442,20 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     /**
+     * Get the on/off trace filters
+     *
+     * @return The array of filters
+     */
+    public boolean[] getTraceFilter() {
+        return fItemData.getEntryFilter();
+    }
+
+    /**
      * Refresh the data for the thing
      */
     public void refreshData() {
         fItemData.refreshData();
+        adjustScrolls();
         redraw();
     }
 
@@ -420,28 +467,52 @@ public class TimeGraphControl extends TimeGraphBaseControl
      */
     public void refreshData(ITimeGraphEntry[] traces) {
         fItemData.refreshData(traces);
+        adjustScrolls();
         redraw();
     }
 
     /**
      * Refresh the links (arrows) of this widget
      *
-     * @param events
-     *            The link event list
+     * @param events The link events to refresh
+     * @since 2.1
      */
     public void refreshArrows(List<ILinkEvent> events) {
         fItemData.refreshArrows(events);
     }
 
     /**
-     * Get the links (arrows) of this widget
-     *
-     * @return The unmodifiable link event list
-     *
-     * @since 2.0
+     * Adjust the scoll bars
      */
-    public List<ILinkEvent> getArrows() {
-        return Collections.unmodifiableList(fItemData.fLinks);
+    public void adjustScrolls() {
+        if (null == fTimeProvider) {
+            getHorizontalBar().setValues(0, 1, 1, 1, 1, 1);
+            return;
+        }
+
+        // HORIZONTAL BAR
+        // Visible window
+        long time0 = fTimeProvider.getTime0();
+        long time1 = fTimeProvider.getTime1();
+        // Time boundaries
+        long timeMin = fTimeProvider.getMinTime();
+        long timeMax = fTimeProvider.getMaxTime();
+
+        long delta = timeMax - timeMin;
+
+        int timePos = 0;
+        int thumb = H_SCROLLBAR_MAX;
+
+        if (delta != 0) {
+            // Thumb size (page size)
+            thumb = Math.max(1, (int) (H_SCROLLBAR_MAX * ((double) (time1 - time0) / delta)));
+            // At the beginning of visible window
+            timePos = (int) (H_SCROLLBAR_MAX * ((double) (time0 - timeMin) / delta));
+        }
+
+        // position, minimum, maximum, thumb size, increment (half page)t, page
+        // increment size (full page)
+        getHorizontalBar().setValues(timePos, 0, H_SCROLLBAR_MAX, thumb, Math.max(1, thumb / 2), Math.max(2, thumb));
     }
 
     boolean ensureVisibleItem(int idx, boolean redraw) {
@@ -484,25 +555,25 @@ public class TimeGraphControl extends TimeGraphBaseControl
      */
     public void setTopIndex(int idx) {
         int index = Math.min(idx, fItemData.fExpandedItems.length - countPerPage());
-        index = Math.max(0, index);
+        index = Math.max(0,  index);
         fTopIndex = index;
         redraw();
     }
 
     /**
-     * Sets the auto-expand level to be used for new entries discovered when
-     * calling {@link #refreshData()} or {@link #refreshData(ITimeGraphEntry[])}
-     * . The value 0 means that there is no auto-expand; 1 means that top-level
+     * Sets the auto-expand level to be used when the entries are refreshed
+     * using {@link #refreshData()} or {@link #refreshData(ITimeGraphEntry[])}.
+     * The value 0 means that there is no auto-expand; 1 means that top-level
      * entries are expanded, but not their children; 2 means that top-level
      * entries are expanded, and their children, but not grand-children; and so
      * on.
      * <p>
      * The value {@link #ALL_LEVELS} means that all subtrees should be expanded.
      * </p>
-     *
      * @param level
      *            non-negative level, or <code>ALL_LEVELS</code> to expand all
      *            levels of the tree
+     * @since 3.1
      */
     public void setAutoExpandLevel(int level) {
         fAutoExpandLevel = level;
@@ -514,22 +585,10 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * @return non-negative level, or <code>ALL_LEVELS</code> if all levels of
      *         the tree are expanded automatically
      * @see #setAutoExpandLevel
+     * @since 3.1
      */
     public int getAutoExpandLevel() {
         return fAutoExpandLevel;
-    }
-
-    /**
-     * Get the expanded state of a given entry.
-     *
-     * @param entry
-     *            The entry
-     * @return true if the entry is expanded, false if collapsed
-     * @since 2.0
-     */
-    public boolean getExpandedState(ITimeGraphEntry entry) {
-        Item item = fItemData.fItemMap.get(entry);
-        return (item != null ? item.fExpanded : false);
     }
 
     /**
@@ -551,6 +610,8 @@ public class TimeGraphControl extends TimeGraphBaseControl
 
     /**
      * Collapses all nodes of the viewer's tree, starting with the root.
+     *
+     * @since 2.0
      */
     public void collapseAll() {
         for (Item item : fItemData.fItems) {
@@ -562,6 +623,8 @@ public class TimeGraphControl extends TimeGraphBaseControl
 
     /**
      * Expands all nodes of the viewer's tree, starting with the root.
+     *
+     * @since 2.0
      */
     public void expandAll() {
         for (Item item : fItemData.fItems) {
@@ -616,9 +679,9 @@ public class TimeGraphControl extends TimeGraphBaseControl
 
     /**
      * Add a menu listener on {@link ITimeGraphEntry}s
-     *
      * @param listener
      *            The listener to add
+     * @since 1.2
      */
     public void addTimeGraphEntryMenuListener(MenuDetectListener listener) {
         if (!fTimeGraphEntryMenuListeners.contains(listener)) {
@@ -631,6 +694,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      *
      * @param listener
      *            The listener to remove
+     * @since 1.2
      */
     public void removeTimeGraphEntryMenuListener(MenuDetectListener listener) {
         if (fTimeGraphEntryMenuListeners.contains(listener)) {
@@ -642,8 +706,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * Menu event callback on {@link ITimeGraphEntry}s
      *
      * @param event
-     *            The MenuDetectEvent, with field {@link TypedEvent#data} set to
-     *            the selected {@link ITimeGraphEntry}
+     *            The MenuDetectEvent, with field {@link TypedEvent#data} set to the selected {@link ITimeGraphEntry}
      */
     private void fireMenuEventOnTimeGraphEntry(MenuDetectEvent event) {
         for (MenuDetectListener listener : fTimeGraphEntryMenuListeners) {
@@ -656,6 +719,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      *
      * @param listener
      *            The listener to add
+     * @since 1.2
      */
     public void addTimeEventMenuListener(MenuDetectListener listener) {
         if (!fTimeEventMenuListeners.contains(listener)) {
@@ -668,6 +732,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      *
      * @param listener
      *            The listener to remove
+     * @since 1.2
      */
     public void removeTimeEventMenuListener(MenuDetectListener listener) {
         if (fTimeEventMenuListeners.contains(listener)) {
@@ -679,8 +744,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * Menu event callback on {@link ITimeEvent}s
      *
      * @param event
-     *            The MenuDetectEvent, with field {@link TypedEvent#data} set to
-     *            the selected {@link ITimeEvent}
+     *            The MenuDetectEvent, with field {@link TypedEvent#data} set to the selected {@link ITimeEvent}
      */
     private void fireMenuEventOnTimeEvent(MenuDetectEvent event) {
         for (MenuDetectListener listener : fTimeEventMenuListeners) {
@@ -769,11 +833,8 @@ public class TimeGraphControl extends TimeGraphBaseControl
      *
      * @param n
      *            1 for next event, -1 for previous event
-     * @param extend
-     *            true to extend selection range, false for single selection
-     * @since 1.0
      */
-    public void selectEvent(int n, boolean extend) {
+    public void selectEvent(int n) {
         if (null == fTimeProvider) {
             return;
         }
@@ -781,15 +842,15 @@ public class TimeGraphControl extends TimeGraphBaseControl
         if (trace == null) {
             return;
         }
-        long selectedTime = fTimeProvider.getSelectionEnd();
-        long endTime = fTimeProvider.getMaxTime();
+        long selectedTime = fTimeProvider.getSelectionBegin();
+        long endTime = fTimeProvider.getEndTime();
         ITimeEvent nextEvent;
-        if (n == -1 && selectedTime > endTime) {
+        if (-1 == n && selectedTime > endTime) {
             nextEvent = Utils.findEvent(trace, selectedTime, 0);
         } else {
             nextEvent = Utils.findEvent(trace, selectedTime, n);
         }
-        if (null == nextEvent && n == -1) {
+        if (null == nextEvent && -1 == n) {
             nextEvent = Utils.getFirstEvent(trace);
         }
         if (null != nextEvent) {
@@ -804,49 +865,31 @@ public class TimeGraphControl extends TimeGraphBaseControl
                     nextTime = endTime;
                 }
             } else if (n == -1 && nextEvent.getTime() + nextEvent.getDuration() < selectedTime) {
-                // for previous event go to its end time unless we were already
-                // there
+                // for previous event go to its end time unless we were already there
                 nextTime = nextEvent.getTime() + nextEvent.getDuration();
             }
-            if (extend) {
-                fTimeProvider.setSelectionRangeNotify(fTimeProvider.getSelectionBegin(), nextTime);
-            } else {
-                fTimeProvider.setSelectedTimeNotify(nextTime, true);
-            }
+            fTimeProvider.setSelectedTimeNotify(nextTime, true);
             fireSelectionChanged();
-        } else if (n == 1) {
-            if (extend) {
-                fTimeProvider.setSelectionRangeNotify(fTimeProvider.getSelectionBegin(), endTime);
-            } else {
-                fTimeProvider.setSelectedTimeNotify(endTime, true);
-            }
+        } else if (1 == n) {
+            fTimeProvider.setSelectedTimeNotify(endTime, true);
             fireSelectionChanged();
         }
-        updateStatusLine(STATUS_WITHOUT_CURSOR_TIME);
     }
 
     /**
      * Select the next event
-     *
-     * @param extend
-     *            true to extend selection range, false for single selection
-     * @since 1.0
      */
-    public void selectNextEvent(boolean extend) {
-        selectEvent(1, extend);
+    public void selectNextEvent() {
+        selectEvent(1);
         // Notify if visible time window has been adjusted
         fTimeProvider.setStartFinishTimeNotify(fTimeProvider.getTime0(), fTimeProvider.getTime1());
     }
 
     /**
      * Select the previous event
-     *
-     * @param extend
-     *            true to extend selection range, false for single selection
-     * @since 1.0
      */
-    public void selectPrevEvent(boolean extend) {
-        selectEvent(-1, extend);
+    public void selectPrevEvent() {
+        selectEvent(-1);
         // Notify if visible time window has been adjusted
         fTimeProvider.setStartFinishTimeNotify(fTimeProvider.getTime0(), fTimeProvider.getTime1());
     }
@@ -866,36 +909,9 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     /**
-     * Scroll left or right by one half window size
-     *
-     * @param left
-     *            true to scroll left, false to scroll right
-     */
-    public void horizontalScroll(boolean left) {
-        long time0 = fTimeProvider.getTime0();
-        long time1 = fTimeProvider.getTime1();
-        long timeMin = fTimeProvider.getMinTime();
-        long timeMax = fTimeProvider.getMaxTime();
-        long range = time1 - time0;
-        if (range <= 0) {
-            return;
-        }
-        long increment = Math.max(1, range / 2);
-        if (left) {
-            time0 = Math.max(time0 - increment, timeMin);
-            time1 = time0 + range;
-        } else {
-            time1 = Math.min(time1 + increment, timeMax);
-            time0 = time1 - range;
-        }
-        fTimeProvider.setStartFinishTimeNotify(time0, time1);
-    }
-
-    /**
      * Zoom based on mouse cursor location with mouse scrolling
      *
-     * @param zoomIn
-     *            true to zoom in, false to zoom out
+     * @param zoomIn true to zoom in, false to zoom out
      */
     public void zoom(boolean zoomIn) {
         int globalX = getDisplay().getCursorLocation().x;
@@ -918,7 +934,14 @@ public class TimeGraphControl extends TimeGraphBaseControl
         long center = time0 + Math.round(((double) (xPos - nameSpace) / timeSpace * interval));
         long newTime0 = center - Math.round((double) newInterval * (center - time0) / interval);
         long newTime1 = newTime0 + newInterval;
-        fTimeProvider.setStartFinishTimeNotify(newTime0, newTime1);
+        fTimeProvider.setStartFinishTime(newTime0, newTime1);
+        synchronized (fMouseScrollNotifierLock) {
+            if (fMouseScrollNotifier == null) {
+                fMouseScrollNotifier = new MouseScrollNotifier();
+                fMouseScrollNotifier.start();
+            }
+            fMouseScrollNotifier.mouseScrolled();
+        }
     }
 
     /**
@@ -979,108 +1002,11 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     /**
-     * Set the grid lines visibility. The default is true.
-     *
-     * @param visible
-     *            true to show the grid lines, false otherwise
-     * @since 2.0
-     */
-    public void setGridLinesVisible(boolean visible) {
-        fGridLinesVisible = visible;
-    }
-
-    /**
-     * Get the grid lines visibility.
-     *
-     * @return true if the grid lines are visible, false otherwise
-     * @since 2.0
-     */
-    public boolean getGridLinesVisible() {
-        return fGridLinesVisible;
-    }
-
-    /**
-     * Set the grid line color. The default is SWT.COLOR_GRAY.
-     *
-     * @param color
-     *            the grid line color
-     * @since 2.0
-     */
-    public void setGridLineColor(Color color) {
-        fGridLineColor = color;
-    }
-
-    /**
-     * Get the grid line color.
-     *
-     * @return the grid line color
-     * @since 2.0
-     */
-    public Color getGridLineColor() {
-        return fGridLineColor;
-    }
-
-    /**
-     * Set the bookmarks list.
-     *
-     * @param bookmarks
-     *            The bookmarks list, or null
-     * @since 2.0
-     */
-    public void setBookmarks(List<IMarkerEvent> bookmarks) {
-        fBookmarks = bookmarks;
-        fTimeGraphScale.setBookmarks(bookmarks);
-    }
-
-    /**
-     * Set the markers list.
-     *
-     * @param markers
-     *            The markers list, or null
-     * @since 2.0
-     */
-    public void setMarkers(List<IMarkerEvent> markers) {
-        fMarkers = markers;
-        fTimeGraphScale.setMarkers(markers);
-    }
-
-    /**
-     * Get the markers list.
-     *
-     * @return The markers list, or null
-     * @since 2.0
-     */
-    public List<IMarkerEvent> getMarkers() {
-        return fMarkers;
-    }
-
-    /**
-     * Set the markers visibility. The default is true.
-     *
-     * @param visible
-     *            true to show the markers, false otherwise
-     * @since 2.0
-     */
-    public void setMarkersVisible(boolean visible) {
-        fMarkersVisible = visible;
-        fTimeGraphScale.setMarkersVisible(visible);
-    }
-
-    /**
-     * Get the markers visibility.
-     *
-     * @return true if the markers are visible, false otherwise
-     * @since 2.0
-     */
-    public boolean getMarkersVisible() {
-        return fMarkersVisible;
-    }
-
-    /**
      * Hide arrows
      *
-     * @param hideArrows
-     *            true to hide arrows
+     * @param hideArrows true to hide arrows
+     *
+     * @since 2.1
      */
     public void hideArrows(boolean hideArrows) {
         fHideArrows = hideArrows;
@@ -1089,67 +1015,53 @@ public class TimeGraphControl extends TimeGraphBaseControl
     /**
      * Follow the arrow forward
      *
-     * @param extend
-     *            true to extend selection range, false for single selection
-     * @since 1.0
+     * @since 2.1
      */
-    public void followArrowFwd(boolean extend) {
+    public void followArrowFwd() {
         ITimeGraphEntry trace = getSelectedTrace();
         if (trace == null) {
             return;
         }
-        long selectedTime = fTimeProvider.getSelectionEnd();
+        long selectedTime = fTimeProvider.getSelectionBegin();
         for (ILinkEvent link : fItemData.fLinks) {
             if (link.getEntry() == trace && link.getTime() == selectedTime) {
                 selectItem(link.getDestinationEntry(), false);
                 if (link.getDuration() != 0) {
-                    if (extend) {
-                        fTimeProvider.setSelectionRangeNotify(fTimeProvider.getSelectionBegin(), link.getTime() + link.getDuration());
-                    } else {
-                        fTimeProvider.setSelectedTimeNotify(link.getTime() + link.getDuration(), true);
-                    }
+                    fTimeProvider.setSelectedTimeNotify(link.getTime() + link.getDuration(), true);
                     // Notify if visible time window has been adjusted
                     fTimeProvider.setStartFinishTimeNotify(fTimeProvider.getTime0(), fTimeProvider.getTime1());
                 }
                 fireSelectionChanged();
-                updateStatusLine(STATUS_WITHOUT_CURSOR_TIME);
                 return;
             }
         }
-        selectNextEvent(extend);
+        selectNextEvent();
     }
 
     /**
      * Follow the arrow backward
      *
-     * @param extend
-     *            true to extend selection range, false for single selection
-     * @since 1.0
+     * @since 2.1
      */
-    public void followArrowBwd(boolean extend) {
+    public void followArrowBwd() {
         ITimeGraphEntry trace = getSelectedTrace();
         if (trace == null) {
             return;
         }
-        long selectedTime = fTimeProvider.getSelectionEnd();
+        long selectedTime = fTimeProvider.getSelectionBegin();
         for (ILinkEvent link : fItemData.fLinks) {
             if (link.getDestinationEntry() == trace && link.getTime() + link.getDuration() == selectedTime) {
                 selectItem(link.getEntry(), false);
                 if (link.getDuration() != 0) {
-                    if (extend) {
-                        fTimeProvider.setSelectionRangeNotify(fTimeProvider.getSelectionBegin(), link.getTime());
-                    } else {
-                        fTimeProvider.setSelectedTimeNotify(link.getTime(), true);
-                    }
+                    fTimeProvider.setSelectedTimeNotify(link.getTime(), true);
                     // Notify if visible time window has been adjusted
                     fTimeProvider.setStartFinishTimeNotify(fTimeProvider.getTime0(), fTimeProvider.getTime1());
                 }
                 fireSelectionChanged();
-                updateStatusLine(STATUS_WITHOUT_CURSOR_TIME);
                 return;
             }
         }
-        selectPrevEvent(extend);
+        selectPrevEvent();
     }
 
     /**
@@ -1190,6 +1102,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
             if (item.fHasChildren) {
                 item.fExpanded = !item.fExpanded;
                 fItemData.updateExpandedItems();
+                adjustScrolls();
                 redraw();
                 toggled = true;
                 fireTreeEvent(item.fEntry, item.fExpanded);
@@ -1204,6 +1117,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * @param y
      *            the y coordinate
      * @return the index of the item at the given location, of -1 if none.
+     * @since 3.0
      */
     protected int getItemIndexAtY(int y) {
         if (y < 0) {
@@ -1234,6 +1148,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      *            a point in the widget
      * @return the {@link ITimeGraphEntry} at this point, or <code>null</code>
      *         if none.
+     * @since 3.0
      */
     protected ITimeGraphEntry getEntry(Point pt) {
         int idx = getItemIndexAtY(pt.y);
@@ -1241,39 +1156,8 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     /**
-     * Return the arrow event closest to the given point that is no further than
-     * a maximum distance.
-     *
-     * @param pt
-     *            a point in the widget
-     * @return The closest arrow event, or null if there is none close enough.
+     * @since 2.0
      */
-    protected ILinkEvent getArrow(Point pt) {
-        if (fHideArrows) {
-            return null;
-        }
-        ILinkEvent linkEvent = null;
-        double minDistance = Double.MAX_VALUE;
-        for (ILinkEvent event : fItemData.fLinks) {
-            Rectangle rect = getArrowRectangle(new Rectangle(0, 0, 0, 0), event);
-            if (rect != null) {
-                int x1 = rect.x;
-                int y1 = rect.y;
-                int x2 = x1 + rect.width;
-                int y2 = y1 + rect.height;
-                double d = Utils.distance(pt.x, pt.y, x1, y1, x2, y2);
-                if (minDistance > d) {
-                    minDistance = d;
-                    linkEvent = event;
-                }
-            }
-        }
-        if (minDistance <= ARROW_HOVER_MAX_DIST) {
-            return linkEvent;
-        }
-        return null;
-    }
-
     @Override
     public int getXForTime(long time) {
         if (null == fTimeProvider) {
@@ -1281,20 +1165,23 @@ public class TimeGraphControl extends TimeGraphBaseControl
         }
         long time0 = fTimeProvider.getTime0();
         long time1 = fTimeProvider.getTime1();
-        int width = getSize().x;
+        int width = getCtrlSize().x;
         int nameSpace = fTimeProvider.getNameSpace();
         double pixelsPerNanoSec = (width - nameSpace <= RIGHT_MARGIN) ? 0 : (double) (width - nameSpace - RIGHT_MARGIN) / (time1 - time0);
         int x = getBounds().x + nameSpace + (int) ((time - time0) * pixelsPerNanoSec);
         return x;
     }
 
+    /**
+     * @since 2.0
+     */
     @Override
     public long getTimeAtX(int coord) {
         if (null == fTimeProvider) {
             return -1;
         }
         long hitTime = -1;
-        Point size = getSize();
+        Point size = getCtrlSize();
         long time0 = fTimeProvider.getTime0();
         long time1 = fTimeProvider.getTime1();
         int nameWidth = fTimeProvider.getNameSpace();
@@ -1302,12 +1189,10 @@ public class TimeGraphControl extends TimeGraphBaseControl
         int timeWidth = size.x - nameWidth - RIGHT_MARGIN;
         if (x >= 0 && size.x >= nameWidth) {
             if (time1 - time0 > timeWidth) {
-                // nanosecond smaller than one pixel: use the first integer
-                // nanosecond of this pixel's time range
+                // nanosecond smaller than one pixel: use the first integer nanosecond of this pixel's time range
                 hitTime = time0 + (long) Math.ceil((time1 - time0) * ((double) x / timeWidth));
             } else {
-                // nanosecond greater than one pixel: use the nanosecond that
-                // covers this pixel start position
+                // nanosecond greater than one pixel: use the nanosecond that covers this pixel start position
                 hitTime = time0 + (long) Math.floor((time1 - time0) * ((double) x / timeWidth));
             }
         }
@@ -1356,7 +1241,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * @return The count
      */
     public int countPerPage() {
-        int height = getSize().y;
+        int height = getCtrlSize().y;
         int count = 0;
         int ySum = 0;
         for (int idx = fTopIndex; idx < fItemData.fExpandedItems.length; idx++) {
@@ -1386,18 +1271,18 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     /**
-     * Get the number of expanded (visible) items
+     * Get the number of expanded items
      *
-     * @return The count of expanded (visible) items
+     * @return The count of expanded items
      */
     public int getExpandedElementCount() {
         return fItemData.fExpandedItems.length;
     }
 
     /**
-     * Get an array of all expanded (visible) elements
+     * Get an array of all expanded elements
      *
-     * @return The expanded (visible) elements
+     * @return The expanded elements
      */
     public ITimeGraphEntry[] getExpandedElements() {
         ArrayList<ITimeGraphEntry> elements = new ArrayList<>();
@@ -1407,20 +1292,24 @@ public class TimeGraphControl extends TimeGraphBaseControl
         return elements.toArray(new ITimeGraphEntry[0]);
     }
 
-    Rectangle getNameRect(Rectangle bounds, int idx, int nameWidth) {
-        Rectangle rect = getItemRect(bounds, idx);
+    Point getCtrlSize() {
+        Point size = getSize();
+        if (getHorizontalBar().isVisible()) {
+            size.y -= getHorizontalBar().getSize().y;
+        }
+        return size;
+    }
+
+    Rectangle getNameRect(Rectangle bound, int idx, int nameWidth) {
+        Rectangle rect = getStatesRect(bound, idx, nameWidth);
+        rect.x = bound.x;
         rect.width = nameWidth;
         return rect;
     }
 
-    Rectangle getStatesRect(Rectangle bounds, int idx, int nameWidth) {
-        Rectangle rect = getItemRect(bounds, idx);
-        rect.x += nameWidth;
-        rect.width -= nameWidth;
-        return rect;
-    }
-
-    Rectangle getItemRect(Rectangle bounds, int idx) {
+    Rectangle getStatesRect(Rectangle bound, int idx, int nameWidth) {
+        int x = bound.x + nameWidth;
+        int width = bound.width - x;
         int ySum = 0;
         if (idx >= fTopIndex) {
             for (int i = fTopIndex; i < idx; i++) {
@@ -1431,9 +1320,9 @@ public class TimeGraphControl extends TimeGraphBaseControl
                 ySum -= fItemData.fExpandedItems[i].fItemHeight;
             }
         }
-        int y = bounds.y + ySum;
+        int y = bound.y + ySum;
         int height = fItemData.fExpandedItems[idx].fItemHeight;
-        return new Rectangle(bounds.x, y, bounds.width, height);
+        return new Rectangle(x, y, width, height);
     }
 
     /**
@@ -1442,7 +1331,6 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * @param pixelsPerNanoSec
      * @param time0
      * @param nameSpace
-     * @since 2.0
      */
     public void postPaintAction(GC gc, Rectangle bounds, double pixelsPerNanoSec, long time0, int nameSpace) {
     }
@@ -1450,6 +1338,8 @@ public class TimeGraphControl extends TimeGraphBaseControl
     @Override
     void paint(Rectangle bounds, PaintEvent e) {
         GC gc = e.gc;
+        gc.setBackground(getColorScheme().getColor(TimeGraphColorScheme.BACKGROUND));
+        drawBackground(gc, bounds.x, bounds.y, bounds.width, bounds.height);
 
         if (bounds.width < 2 || bounds.height < 2 || null == fTimeProvider) {
             return;
@@ -1458,30 +1348,13 @@ public class TimeGraphControl extends TimeGraphBaseControl
         fIdealNameSpace = 0;
         int nameSpace = fTimeProvider.getNameSpace();
 
-        // draw the background layer
-        drawBackground(bounds, nameSpace, gc);
+        // draw empty name space background
+        gc.setBackground(getColorScheme().getBkColor(false, false, true));
+        drawBackground(gc, bounds.x, bounds.y, nameSpace, bounds.height);
 
-        // draw the grid lines
-        drawGridLines(bounds, gc);
-
-        // draw the background markers
-        drawMarkers(bounds, fTimeProvider, fMarkers, false, nameSpace, gc);
-
-        // draw the background bookmarks
-        drawMarkers(bounds, fTimeProvider, fBookmarks, false, nameSpace, gc);
-
-        // draw the items
+        // draw items
         drawItems(bounds, fTimeProvider, fItemData.fExpandedItems, fTopIndex, nameSpace, gc);
-
-        // draw the foreground markers
-        drawMarkers(bounds, fTimeProvider, fMarkers, true, nameSpace, gc);
-
-        // draw the foreground bookmarks
-        drawMarkers(bounds, fTimeProvider, fBookmarks, true, nameSpace, gc);
-
-        // draw the links (arrows)
         drawLinks(bounds, fTimeProvider, fItemData.fLinks, nameSpace, gc);
-
         fTimeGraphProvider.postDrawControl(bounds, gc);
 
         int alpha = gc.getAlpha();
@@ -1556,161 +1429,10 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     /**
-     * Draw the background layer. Fills the background of the control's name
-     * space and states space, updates the background of items if necessary, and
-     * draws the item's name text and middle line.
-     *
-     * @param bounds
-     *            The bounds of the control
-     * @param nameSpace
-     *            The name space width
-     * @param gc
-     *            Graphics context
-     * @since 2.0
-     */
-    protected void drawBackground(Rectangle bounds, int nameSpace, GC gc) {
-        // draw empty name space background
-        gc.setBackground(getColorScheme().getBkColor(false, false, true));
-        drawBackground(gc, bounds.x, bounds.y, nameSpace, bounds.height);
-
-        // draw empty states space background
-        gc.setBackground(getColorScheme().getColor(TimeGraphColorScheme.BACKGROUND));
-        drawBackground(gc, bounds.x + nameSpace, bounds.y, bounds.width - nameSpace, bounds.height);
-
-        for (int i = fTopIndex; i < fItemData.fExpandedItems.length; i++) {
-            Rectangle itemRect = getItemRect(bounds, i);
-            if (itemRect.y >= bounds.y + bounds.height) {
-                break;
-            }
-            Item item = fItemData.fExpandedItems[i];
-            // draw the background of selected item and items with no time
-            // events
-            if (!item.fEntry.hasTimeEvents()) {
-                gc.setBackground(getColorScheme().getBkColorGroup(item.fSelected, fIsInFocus));
-                gc.fillRectangle(itemRect);
-            } else if (item.fSelected) {
-                gc.setBackground(getColorScheme().getBkColor(true, fIsInFocus, true));
-                gc.fillRectangle(itemRect.x, itemRect.y, nameSpace, itemRect.height);
-                gc.setBackground(getColorScheme().getBkColor(true, fIsInFocus, false));
-                gc.fillRectangle(nameSpace, itemRect.y, itemRect.width - nameSpace, itemRect.height);
-            }
-            // draw the name and middle line
-            if (!item.fEntry.hasTimeEvents()) {
-                drawName(item, itemRect, gc);
-            } else {
-                Rectangle nameRect = new Rectangle(itemRect.x, itemRect.y, nameSpace, itemRect.height);
-                drawName(item, nameRect, gc);
-                Rectangle rect = new Rectangle(nameSpace, itemRect.y, itemRect.width - nameSpace, itemRect.height);
-                drawMidLine(rect, gc);
-            }
-        }
-    }
-
-    /**
-     * Draw the grid lines
-     *
-     * @param bounds
-     *            The bounds of the control
-     * @param gc
-     *            Graphics context
-     * @since 2.0
-     */
-    public void drawGridLines(Rectangle bounds, GC gc) {
-        if (!fGridLinesVisible) {
-            return;
-        }
-        gc.setForeground(fGridLineColor);
-        gc.setAlpha(fGridLineColor.getAlpha());
-        for (int x : fTimeGraphScale.getTickList()) {
-            gc.drawLine(x, bounds.y, x, bounds.y + bounds.height);
-        }
-        gc.setAlpha(255);
-    }
-
-    /**
-     * Draw the markers
-     *
-     * @param bounds
-     *            The rectangle of the area
-     * @param timeProvider
-     *            The time provider
-     * @param markers
-     *            The list of markers
-     * @param foreground
-     *            true to draw the foreground markers, false otherwise
-     * @param nameSpace
-     *            The width reserved for the names
-     * @param gc
-     *            Reference to the SWT GC object
-     * @since 2.0
-     */
-    protected void drawMarkers(Rectangle bounds, ITimeDataProvider timeProvider, List<IMarkerEvent> markers, boolean foreground, int nameSpace, GC gc) {
-        if (!fMarkersVisible || markers == null || markers.isEmpty()) {
-            return;
-        }
-        gc.setClipping(new Rectangle(nameSpace, 0, bounds.width - nameSpace, bounds.height));
-        /* the list can grow concurrently but cannot shrink */
-        for (int i = 0; i < markers.size(); i++) {
-            IMarkerEvent marker = markers.get(i);
-            if (marker.isForeground() == foreground) {
-                drawMarker(marker, bounds, timeProvider, nameSpace, gc);
-            }
-        }
-        gc.setClipping((Rectangle) null);
-    }
-
-    /**
-     * Draw a single marker
-     *
-     * @param marker
-     *            The marker event
-     * @param bounds
-     *            The bounds of the control
-     * @param timeProvider
-     *            The time provider
-     * @param nameSpace
-     *            The width reserved for the name
-     * @param gc
-     *            Reference to the SWT GC object
-     * @since 2.0
-     */
-    protected void drawMarker(IMarkerEvent marker, Rectangle bounds, ITimeDataProvider timeProvider, int nameSpace, GC gc) {
-        Rectangle rect = Utils.clone(bounds);
-        if (marker.getEntry() != null) {
-            int index = fItemData.findItemIndex(marker.getEntry());
-            if (index == -1) {
-                return;
-            }
-            rect = getStatesRect(bounds, index, nameSpace);
-            if (rect.y < 0 || rect.y > bounds.height) {
-                return;
-            }
-        }
-        int x0 = getXForTime(marker.getTime());
-        int x1 = getXForTime(marker.getTime() + marker.getDuration());
-        if (x0 > bounds.width || x1 < nameSpace) {
-            return;
-        }
-        rect.x = Math.max(nameSpace, Math.min(bounds.width, x0));
-        rect.width = Math.max(1, Math.min(bounds.width, x1) - rect.x);
-
-        gc.setBackground(marker.getColor());
-        gc.setAlpha(marker.getColor().getAlpha());
-        gc.fillRectangle(rect);
-        gc.setAlpha(255);
-        String label = marker.getLabel();
-        if (label != null && marker.getEntry() != null) {
-            label = label.substring(0, Math.min(label.indexOf('\n') != -1 ? label.indexOf('\n') : label.length(), MAX_LABEL_LENGTH));
-            gc.setForeground(marker.getColor());
-            Utils.drawText(gc, label, rect.x - gc.textExtent(label).x, rect.y, true);
-        }
-    }
-
-    /**
      * Draw many items at once
      *
      * @param bounds
-     *            The bounds of the control
+     *            The rectangle of the area
      * @param timeProvider
      *            The time provider
      * @param items
@@ -1718,13 +1440,14 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * @param topIndex
      *            The index of the first element to draw
      * @param nameSpace
-     *            The name space width
+     *            The width reserved for the names
      * @param gc
-     *            Graphics context
+     *            Reference to the SWT GC object
      */
     public void drawItems(Rectangle bounds, ITimeDataProvider timeProvider,
             Item[] items, int topIndex, int nameSpace, GC gc) {
-        for (int i = topIndex; i < items.length; i++) {
+        int length = Math.min(topIndex + 50, items.length);
+        for (int i = topIndex; i < length; i++) {
             Item item = items[i];
             drawItem(item, bounds, timeProvider, i, nameSpace, gc);
         }
@@ -1733,36 +1456,45 @@ public class TimeGraphControl extends TimeGraphBaseControl
     /**
      * Draws the item
      *
-     * @param item
-     *            The item to draw
-     * @param bounds
-     *            The bounds of the control
-     * @param timeProvider
-     *            The time provider
-     * @param i
-     *            The expanded item index
-     * @param nameSpace
-     *            The name space width
-     * @param gc
-     *            Graphics context
+     * @param item the item to draw
+     * @param bounds the container rectangle
+     * @param timeProvider Time provider
+     * @param i the item index
+     * @param nameSpace the name space
+     * @param gc Graphics context
      */
     protected void drawItem(Item item, Rectangle bounds, ITimeDataProvider timeProvider, int i, int nameSpace, GC gc) {
-        Rectangle itemRect = getItemRect(bounds, i);
-        if (itemRect.y >= bounds.y + bounds.height) {
-            return;
-        }
-
         ITimeGraphEntry entry = item.fEntry;
         long time0 = timeProvider.getTime0();
         long time1 = timeProvider.getTime1();
-        long selectedTime = fTimeProvider.getSelectionEnd();
+        long selectedTime = fTimeProvider.getSelectionBegin();
 
-        Rectangle rect = new Rectangle(nameSpace, itemRect.y, itemRect.width - nameSpace, itemRect.height);
-        if (rect.isEmpty() || (time1 <= time0)) {
+        Rectangle nameRect = getNameRect(bounds, i, nameSpace);
+        if (nameRect.y >= bounds.y + bounds.height) {
+            return;
+        }
+
+        if (! item.fEntry.hasTimeEvents()) {
+            Rectangle statesRect = getStatesRect(bounds, i, nameSpace);
+            nameRect.width += statesRect.width;
+            drawName(item, nameRect, gc);
+        } else {
+            drawName(item, nameRect, gc);
+        }
+        Rectangle rect = getStatesRect(bounds, i, nameSpace);
+        if (rect.isEmpty()) {
+            fTimeGraphProvider.postDrawEntry(entry, rect, gc);
+            return;
+        }
+        if (time1 <= time0) {
+            gc.setBackground(getColorScheme().getBkColor(false, false, false));
+            gc.fillRectangle(rect);
             fTimeGraphProvider.postDrawEntry(entry, rect, gc);
             return;
         }
 
+        // Initialize _rect1 to same values as enclosing rectangle rect
+        Rectangle stateRect = Utils.clone(rect);
         boolean selected = item.fSelected;
         // K pixels per second
         double pixelsPerNanoSec = (rect.width <= RIGHT_MARGIN) ? 0 : (double) (rect.width - RIGHT_MARGIN) / (time1 - time0);
@@ -1770,14 +1502,9 @@ public class TimeGraphControl extends TimeGraphBaseControl
         if (item.fEntry.hasTimeEvents()) {
             gc.setClipping(new Rectangle(nameSpace, 0, bounds.width - nameSpace, bounds.height));
             fillSpace(rect, gc, selected);
-            /*
-             * State rectangle is smaller than item bounds. Use a margin height
-             * of 3 pixels, keep at least 3 pixels for the state, but not more
-             * than the item height. Favor the top margin for the remainder.
-             */
-            int height = Math.min(rect.height, Math.max(3, rect.height - 6));
-            int margin = (rect.height - height + 1) / 2;
-            Rectangle stateRect = new Rectangle(rect.x, rect.y + margin, rect.width, height);
+            // Drawing rectangle is smaller than reserved space
+            stateRect.y += 3;
+            stateRect.height -= 6;
 
             long maxDuration = (timeProvider.getTimeSpace() == 0) ? Long.MAX_VALUE : 1 * (time1 - time0) / timeProvider.getTimeSpace();
             Iterator<ITimeEvent> iterator = entry.getTimeEventsIterator(time0, time1, maxDuration);
@@ -1804,7 +1531,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
                 }
                 boolean timeSelected = selectedTime >= event.getTime() && selectedTime < event.getTime() + event.getDuration();
                 if (drawState(getColorScheme(), event, stateRect, gc, selected, timeSelected)) {
-                    lastX = stateRect.x;
+                    lastX = x;
                 }
             }
             gc.setClipping((Rectangle) null);
@@ -1816,15 +1543,16 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * Draw the links
      *
      * @param bounds
-     *            The bounds of the control
+     *            The rectangle of the area
      * @param timeProvider
      *            The time provider
      * @param links
-     *            The list of link events
+     *            The array items to draw
      * @param nameSpace
-     *            The name space width
+     *            The width reserved for the names
      * @param gc
-     *            Graphics context
+     *            Reference to the SWT GC object
+     * @since 2.1
      */
     public void drawLinks(Rectangle bounds, ITimeDataProvider timeProvider,
             List<ILinkEvent> links, int nameSpace, GC gc) {
@@ -1832,41 +1560,37 @@ public class TimeGraphControl extends TimeGraphBaseControl
             return;
         }
         gc.setClipping(new Rectangle(nameSpace, 0, bounds.width - nameSpace, bounds.height));
-        /* the list can grow concurrently but cannot shrink */
-        for (int i = 0; i < links.size(); i++) {
-            drawLink(links.get(i), bounds, timeProvider, nameSpace, gc);
+        for (ILinkEvent event : links) {
+            drawLink(event, bounds, timeProvider, nameSpace, gc);
         }
         gc.setClipping((Rectangle) null);
     }
 
     /**
-     * Draws a link type event
+     * Draws the link type events of this item
      *
      * @param event
-     *            The link event to draw
+     *            the item to draw
      * @param bounds
-     *            The bounds of the control
+     *            the container rectangle
      * @param timeProvider
-     *            The time provider
+     *            Time provider
      * @param nameSpace
-     *            The name space width
+     *            the name space
      * @param gc
      *            Graphics context
+     * @since 2.1
      */
     protected void drawLink(ILinkEvent event, Rectangle bounds, ITimeDataProvider timeProvider, int nameSpace, GC gc) {
-        drawArrow(getColorScheme(), event, getArrowRectangle(bounds, event), gc);
-    }
-
-    private Rectangle getArrowRectangle(Rectangle bounds, ILinkEvent event) {
         int srcIndex = fItemData.findItemIndex(event.getEntry());
         int destIndex = fItemData.findItemIndex(event.getDestinationEntry());
 
         if ((srcIndex == -1) || (destIndex == -1)) {
-            return null;
+            return;
         }
 
-        Rectangle src = getStatesRect(bounds, srcIndex, fTimeProvider.getNameSpace());
-        Rectangle dst = getStatesRect(bounds, destIndex, fTimeProvider.getNameSpace());
+        Rectangle src = getStatesRect(bounds, srcIndex, nameSpace);
+        Rectangle dst = getStatesRect(bounds, destIndex, nameSpace);
 
         int x0 = getXForTime(event.getTime());
         int x1 = getXForTime(event.getTime() + event.getDuration());
@@ -1879,28 +1603,26 @@ public class TimeGraphControl extends TimeGraphBaseControl
 
         int y0 = src.y + src.height / 2;
         int y1 = dst.y + dst.height / 2;
-        return new Rectangle(x0, y0, x1 - x0, y1 - y0);
+        drawArrow(getColorScheme(), event, new Rectangle(x0, y0, x1 - x0, y1 - y0), gc);
     }
 
     /**
-     * Draw an arrow
+     * Draw the state (color fill)
      *
      * @param colors
      *            Color scheme
      * @param event
-     *            Time event for which we're drawing the arrow
+     *            Time event for which we're drawing the state
      * @param rect
-     *            The arrow rectangle
+     *            Where to draw
      * @param gc
      *            Graphics context
-     * @return true if the arrow was drawn
+     * @return true if the state was drawn
+     * @since 2.1
      */
     protected boolean drawArrow(TimeGraphColorScheme colors, ITimeEvent event,
             Rectangle rect, GC gc) {
 
-        if (rect == null) {
-            return false;
-        }
         int colorIdx = fTimeGraphProvider.getStateTableIndex(event);
         if (colorIdx < 0) {
             return false;
@@ -1935,7 +1657,8 @@ public class TimeGraphControl extends TimeGraphBaseControl
      *
      * The algorithm was taken from this site, not the code itself
      */
-    private static void drawArrowHead(int x0, int y0, int x1, int y1, GC gc) {
+    private static void drawArrowHead(int x0, int y0, int x1, int y1, GC gc)
+    {
         int factor = 10;
         double cos = 0.9510;
         double sin = 0.3090;
@@ -1959,12 +1682,24 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * @param item
      *            Item object
      * @param bounds
-     *            The bounds of the item's name space
+     *            Where to draw the name
      * @param gc
      *            Graphics context
      */
     protected void drawName(Item item, Rectangle bounds, GC gc) {
         boolean hasTimeEvents = item.fEntry.hasTimeEvents();
+        if (! hasTimeEvents) {
+            gc.setBackground(getColorScheme().getBkColorGroup(item.fSelected, fIsInFocus));
+            gc.fillRectangle(bounds);
+            if (item.fSelected && fIsInFocus) {
+                gc.setForeground(getColorScheme().getBkColor(item.fSelected, fIsInFocus, false));
+                gc.drawRectangle(bounds.x, bounds.y, bounds.width - 1, bounds.height - 1);
+            }
+        } else {
+            gc.setBackground(getColorScheme().getBkColor(item.fSelected, fIsInFocus, true));
+            gc.setForeground(getColorScheme().getFgColor(item.fSelected, fIsInFocus));
+            gc.fillRectangle(bounds);
+        }
 
         // No name to be drawn
         if (fTimeProvider.getNameSpace() == 0) {
@@ -2028,13 +1763,15 @@ public class TimeGraphControl extends TimeGraphBaseControl
             gc.setForeground(getColorScheme().getFgColor(item.fSelected, fIsInFocus));
             int textWidth = Utils.drawText(gc, name, rect, true);
             leftMargin += textWidth + MARGIN;
+            rect.y -= 2;
 
             if (hasTimeEvents) {
                 // draw middle line
-                rect.x = bounds.x + leftMargin;
-                rect.y = bounds.y;
-                rect.width = bounds.width - rect.x;
-                drawMidLine(rect, gc);
+                int x = bounds.x + leftMargin;
+                int width = bounds.width - x;
+                int midy = bounds.y + bounds.height / 2;
+                gc.setForeground(getColorScheme().getColor(TimeGraphColorScheme.MID_LINE));
+                gc.drawLine(x, midy, x + width, midy);
             }
         }
     }
@@ -2047,7 +1784,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * @param event
      *            Time event for which we're drawing the state
      * @param rect
-     *            The state rectangle
+     *            Where to draw
      * @param gc
      *            Graphics context
      * @param selected
@@ -2056,6 +1793,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * @param timeSelected
      *            Is the timestamp currently selected
      * @return true if the state was drawn
+     * @since 2.0
      */
     protected boolean drawState(TimeGraphColorScheme colors, ITimeEvent event,
             Rectangle rect, GC gc, boolean selected, boolean timeSelected) {
@@ -2065,45 +1803,36 @@ public class TimeGraphControl extends TimeGraphBaseControl
             return false;
         }
         boolean visible = rect.width == 0 ? false : true;
-        rect.width = Math.max(1, rect.width);
-        Color black = Display.getDefault().getSystemColor(SWT.COLOR_BLACK);
+        Color black =  Display.getDefault().getSystemColor(SWT.COLOR_BLACK);
         gc.setForeground(black);
 
-        if (colorIdx == ITimeGraphPresentationProvider.TRANSPARENT) {
-            if (visible) {
+        if (visible) {
+            if (colorIdx == ITimeGraphPresentationProvider.TRANSPARENT) {
                 // Only draw the top and bottom borders
                 gc.drawLine(rect.x, rect.y, rect.x + rect.width - 1, rect.y);
                 gc.drawLine(rect.x, rect.y + rect.height - 1, rect.x + rect.width - 1, rect.y + rect.height - 1);
                 if (rect.width == 1) {
                     gc.drawPoint(rect.x, rect.y - 2);
                 }
+                return false;
             }
-            fTimeGraphProvider.postDrawEvent(event, rect, gc);
-            return false;
-        }
-        Color stateColor = null;
-        if (colorIdx < fEventColorMap.length) {
-            stateColor = fEventColorMap[colorIdx];
+            Color stateColor = null;
+            if (colorIdx < fEventColorMap.length) {
+                stateColor = fEventColorMap[colorIdx];
+            } else {
+                stateColor = black;
+            }
+
+            boolean reallySelected = timeSelected && selected;
+            // fill all rect area
+            gc.setBackground(stateColor);
+            gc.fillRectangle(rect);
+
+            if (reallySelected) {
+                gc.drawLine(rect.x, rect.y - 1, rect.x + rect.width - 1, rect.y - 1);
+                gc.drawLine(rect.x, rect.y + rect.height, rect.x + rect.width - 1, rect.y + rect.height);
+            }
         } else {
-            stateColor = black;
-        }
-
-        boolean reallySelected = timeSelected && selected;
-        // fill all rect area
-        gc.setBackground(stateColor);
-        if (visible) {
-            gc.fillRectangle(rect);
-        } else if (fBlendSubPixelEvents) {
-            gc.setAlpha(128);
-            gc.fillRectangle(rect);
-            gc.setAlpha(255);
-        }
-
-        if (reallySelected) {
-            gc.drawLine(rect.x, rect.y - 1, rect.x + rect.width - 1, rect.y - 1);
-            gc.drawLine(rect.x, rect.y + rect.height, rect.x + rect.width - 1, rect.y + rect.height);
-        }
-        if (!visible) {
             gc.drawPoint(rect.x, rect.y - 2);
         }
         fTimeGraphProvider.postDrawEvent(event, rect, gc);
@@ -2111,28 +1840,27 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     /**
-     * Fill an item's states rectangle
+     * Fill the space between two contiguous time events
      *
      * @param rect
-     *            The states rectangle
+     *            Rectangle to fill
      * @param gc
      *            Graphics context
      * @param selected
-     *            true if the item is selected
+     *            Is this time event selected or not
      */
     protected void fillSpace(Rectangle rect, GC gc, boolean selected) {
-        /* Nothing to draw */
-    }
-
-    /**
-     * Draw a line at the middle height of a rectangle
-     *
-     * @param rect
-     *            The rectangle
-     * @param gc
-     *            Graphics context
-     */
-    private void drawMidLine(Rectangle rect, GC gc) {
+        gc.setBackground(getColorScheme().getBkColor(selected, fIsInFocus, false));
+        gc.fillRectangle(rect);
+        if (fDragState == DRAG_ZOOM) {
+            gc.setBackground(getColorScheme().getBkColor(selected, fIsInFocus, true));
+            if (fDragX0 < fDragX) {
+                gc.fillRectangle(new Rectangle(fDragX0, rect.y, fDragX - fDragX0, rect.height));
+            } else if (fDragX0 > fDragX) {
+                gc.fillRectangle(new Rectangle(fDragX, rect.y, fDragX0 - fDragX, rect.height));
+            }
+        }
+        // draw middle line
         gc.setForeground(getColorScheme().getColor(TimeGraphColorScheme.MID_LINE));
         int midy = rect.y + rect.height / 2;
         gc.drawLine(rect.x, midy, rect.x + rect.width, midy);
@@ -2169,12 +1897,10 @@ public class TimeGraphControl extends TimeGraphBaseControl
             } else if (idx > 0) {
                 idx--;
             }
-        } else if (SWT.ARROW_LEFT == e.keyCode && fDragState == DRAG_NONE) {
-            boolean extend = (e.stateMask & SWT.SHIFT) != 0;
-            selectPrevEvent(extend);
-        } else if (SWT.ARROW_RIGHT == e.keyCode && fDragState == DRAG_NONE) {
-            boolean extend = (e.stateMask & SWT.SHIFT) != 0;
-            selectNextEvent(extend);
+        } else if (SWT.ARROW_LEFT == e.keyCode) {
+            selectPrevEvent();
+        } else if (SWT.ARROW_RIGHT == e.keyCode) {
+            selectNextEvent();
         } else if (SWT.PAGE_DOWN == e.keyCode) {
             int page = countPerPage();
             idx = getSelectedIndex();
@@ -2223,13 +1949,28 @@ public class TimeGraphControl extends TimeGraphBaseControl
     @Override
     public void focusGained(FocusEvent e) {
         fIsInFocus = true;
+        if (fMouseScrollFilterListener == null) {
+            fMouseScrollFilterListener = new Listener() {
+                // This filter is used to prevent horizontal scrolling of the view
+                // when the mouse wheel is used to zoom
+                @Override
+                public void handleEvent(Event event) {
+                    event.doit = false;
+                }
+            };
+            getDisplay().addFilter(SWT.MouseWheel, fMouseScrollFilterListener);
+        }
         redraw();
-        updateStatusLine(STATUS_WITHOUT_CURSOR_TIME);
+        updateStatusLine(NO_STATUS);
     }
 
     @Override
     public void focusLost(FocusEvent e) {
         fIsInFocus = false;
+        if (fMouseScrollFilterListener != null) {
+            getDisplay().removeFilter(SWT.MouseWheel, fMouseScrollFilterListener);
+            fMouseScrollFilterListener = null;
+        }
         if (DRAG_NONE != fDragState) {
             setCapture(false);
             fDragState = DRAG_NONE;
@@ -2249,8 +1990,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * Provide the possibility to control the wait cursor externally e.g. data
      * requests in progress
      *
-     * @param waitInd
-     *            Should we wait indefinitely?
+     * @param waitInd Should we wait indefinitely?
      */
     public void waitCursor(boolean waitInd) {
         // Update cursor as indicated
@@ -2293,59 +2033,38 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     private void updateStatusLine(int x) {
-        // use the time provider of the time graph scale for the status line
-        ITimeDataProvider tdp = fTimeGraphScale.getTimeProvider();
-        if (fStatusLineManager == null || null == tdp ||
-                tdp.getTime0() == tdp.getTime1()) {
+        if (fStatusLineManager == null || null == fTimeProvider ||
+                fTimeProvider.getTime0() == fTimeProvider.getTime1()) {
             return;
         }
-        TimeFormat tf = tdp.getTimeFormat();
-        Resolution res = Resolution.NANOSEC;
         StringBuilder message = new StringBuilder();
-        if ((x >= 0 || x == STATUS_WITHOUT_CURSOR_TIME) && fDragState == DRAG_NONE) {
-            if (x != STATUS_WITHOUT_CURSOR_TIME) {
-                long time = getTimeAtX(x);
-                if (time >= 0) {
-                    if (tdp instanceof ITimeDataProviderConverter) {
-                        time = ((ITimeDataProviderConverter) tdp).convertTime(time);
-                    }
-                    message.append(NLS.bind("T: {0}{1}     ", //$NON-NLS-1$
-                            new Object[] {
-                                    tf == TimeFormat.CALENDAR ? Utils.formatDate(time) + ' ' : "", //$NON-NLS-1$
-                                    Utils.formatTime(time, tf, res)
-                            }));
+        if (x >= 0 && fDragState == DRAG_NONE) {
+            long time = getTimeAtX(x);
+            if (time >= 0) {
+                message.append("T: "); //$NON-NLS-1$
+                message.append(new TmfNanoTimestamp(time).toString());
+                message.append("     T1: "); //$NON-NLS-1$
+                long selectionBegin = fTimeProvider.getSelectionBegin();
+                long selectionEnd = fTimeProvider.getSelectionEnd();
+                message.append(new TmfNanoTimestamp(Math.min(selectionBegin, selectionEnd)).toString());
+                if (selectionBegin != selectionEnd) {
+                    message.append("     T2: "); //$NON-NLS-1$
+                    message.append(new TmfNanoTimestamp(Math.max(selectionBegin, selectionEnd)).toString());
+                    message.append("     \u0394: "); //$NON-NLS-1$
+                    message.append(new TmfTimestampDelta(Math.abs(selectionBegin - selectionEnd), ITmfTimestamp.NANOSECOND_SCALE));
                 }
             }
-            long selectionBegin = tdp.getSelectionBegin();
-            long selectionEnd = tdp.getSelectionEnd();
-            message.append(NLS.bind("T1: {0}{1}", //$NON-NLS-1$
-                    new Object[] {
-                            tf == TimeFormat.CALENDAR ? Utils.formatDate(selectionBegin) + ' ' : "", //$NON-NLS-1$
-                            Utils.formatTime(selectionBegin, tf, res)
-                    }));
-            if (selectionBegin != selectionEnd) {
-                message.append(NLS.bind("     T2: {0}{1}     \u0394: {2}", //$NON-NLS-1$
-                        new Object[] {
-                                tf == TimeFormat.CALENDAR ? Utils.formatDate(selectionEnd) + ' ' : "", //$NON-NLS-1$
-                                Utils.formatTime(selectionEnd, tf, res),
-                                Utils.formatDelta(selectionEnd - selectionBegin, tf, res)
-                        }));
-            }
         } else if (fDragState == DRAG_SELECTION || fDragState == DRAG_ZOOM) {
-            long time0 = fDragBeginMarker ? getTimeAtX(fDragX0) : fDragTime0;
-            long time = fDragBeginMarker ? fDragTime0 : getTimeAtX(fDragX);
-            if (tdp instanceof ITimeDataProviderConverter) {
-                time0 = ((ITimeDataProviderConverter) tdp).convertTime(time0);
-                time = ((ITimeDataProviderConverter) tdp).convertTime(time);
+            long time0 = fDragTime0;
+            long time = getTimeAtX(fDragX);
+            message.append("T1: "); //$NON-NLS-1$
+            message.append(new TmfNanoTimestamp(Math.min(time, time0)).toString());
+            if (time != time0) {
+                message.append("     T2: "); //$NON-NLS-1$
+                message.append(new TmfNanoTimestamp(Math.max(time, time0)).toString());
+                message.append("     \u0394: "); //$NON-NLS-1$
+                message.append(new TmfTimestampDelta(Math.abs(time - time0), ITmfTimestamp.NANOSECOND_SCALE));
             }
-            message.append(NLS.bind("T1: {0}{1}     T2: {2}{3}     \u0394: {4}", //$NON-NLS-1$
-                    new Object[] {
-                            tf == TimeFormat.CALENDAR ? Utils.formatDate(time0) + ' ' : "", //$NON-NLS-1$
-                            Utils.formatTime(time0, tf, res),
-                            tf == TimeFormat.CALENDAR ? Utils.formatDate(time) + ' ' : "", //$NON-NLS-1$
-                            Utils.formatTime(time, tf, res),
-                            Utils.formatDelta(time - time0, tf, res)
-                    }));
         }
         fStatusLineManager.setMessage(message.toString());
     }
@@ -2355,7 +2074,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
         if (null == fTimeProvider) {
             return;
         }
-        Point size = getSize();
+        Point size = getCtrlSize();
         if (DRAG_TRACE_ITEM == fDragState) {
             int nameWidth = fTimeProvider.getNameSpace();
             if (e.x > nameWidth && size.x > nameWidth && fDragX != e.x) {
@@ -2372,18 +2091,13 @@ public class TimeGraphControl extends TimeGraphBaseControl
                     time0 = fTimeProvider.getMinTime();
                     time1 = time0 + (fTime1bak - fTime0bak);
                 }
-                fTimeProvider.setStartFinishTimeNotify(time0, time1);
+                fTimeProvider.setStartFinishTime(time0, time1);
             }
         } else if (DRAG_SPLIT_LINE == fDragState) {
             fDragX = e.x;
             fTimeProvider.setNameSpace(e.x);
-            TmfSignalManager.dispatchSignal(new TmfTimeViewAlignmentSignal(this, getTimeViewAlignmentInfo()));
         } else if (DRAG_SELECTION == fDragState) {
-            if (fDragBeginMarker) {
-                fDragX0 = Math.min(Math.max(e.x, fTimeProvider.getNameSpace()), size.x - RIGHT_MARGIN);
-            } else {
-                fDragX = Math.min(Math.max(e.x, fTimeProvider.getNameSpace()), size.x - RIGHT_MARGIN);
-            }
+            fDragX = Math.min(Math.max(e.x, fTimeProvider.getNameSpace()), size.x - RIGHT_MARGIN);
             redraw();
             fTimeGraphScale.setDragRange(fDragX0, fDragX);
             fireDragSelectionChanged(getTimeAtX(fDragX0), getTimeAtX(fDragX));
@@ -2415,7 +2129,6 @@ public class TimeGraphControl extends TimeGraphBaseControl
                     redraw();
                 }
                 fMouseOverSplitLine = mouseOverSplitLine;
-                TmfSignalManager.dispatchSignal(new TmfTimeViewAlignmentSignal(this, getTimeViewAlignmentInfo()));
                 return;
             }
             int idx = getItemIndexAtY(e.y);
@@ -2428,9 +2141,10 @@ public class TimeGraphControl extends TimeGraphBaseControl
 
     @Override
     public void mouseDown(MouseEvent e) {
+
         if (fDragState != DRAG_NONE || null == fTimeProvider ||
                 fTimeProvider.getTime0() == fTimeProvider.getTime1() ||
-                getSize().x - fTimeProvider.getNameSpace() <= 0) {
+                getCtrlSize().x - fTimeProvider.getNameSpace() <= 0) {
             return;
         }
         int idx;
@@ -2468,7 +2182,6 @@ public class TimeGraphControl extends TimeGraphBaseControl
                 setCapture(true);
 
                 fDragState = DRAG_SELECTION;
-                fDragBeginMarker = false;
                 fDragButton = e.button;
                 fDragX = e.x;
                 fDragX0 = fDragX;
@@ -2480,9 +2193,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
                 if ((e.stateMask & SWT.MODIFIER_MASK) == SWT.SHIFT) {
                     long time = getTimeAtX(e.x);
                     if (Math.abs(time - selectionBegin) < Math.abs(time - selectionEnd)) {
-                        fDragBeginMarker = true;
-                        fDragX = xEnd;
-                        fDragX0 = e.x;
+                        fDragX0 = xEnd;
                         fDragTime0 = selectionEnd;
                     } else {
                         fDragX0 = xBegin;
@@ -2491,9 +2202,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
                 } else {
                     long time = getTimeAtX(e.x);
                     if (Math.abs(e.x - xBegin) < SNAP_WIDTH && Math.abs(time - selectionBegin) <= Math.abs(time - selectionEnd)) {
-                        fDragBeginMarker = true;
-                        fDragX = xEnd;
-                        fDragX0 = e.x;
+                        fDragX0 = xEnd;
                         fDragTime0 = selectionEnd;
                     } else if (Math.abs(e.x - xEnd) < SNAP_WIDTH && Math.abs(time - selectionEnd) <= Math.abs(time - selectionBegin)) {
                         fDragX0 = xBegin;
@@ -2520,15 +2229,40 @@ public class TimeGraphControl extends TimeGraphBaseControl
             }
         } else if (3 == e.button) {
             setCapture(true);
-            fDragX = Math.min(Math.max(e.x, fTimeProvider.getNameSpace()), getSize().x - RIGHT_MARGIN);
+            fDragX = Math.min(Math.max(e.x, fTimeProvider.getNameSpace()), getCtrlSize().x - RIGHT_MARGIN);
             fDragX0 = fDragX;
-            fDragTime0 = getTimeAtX(fDragX0);
             fDragState = DRAG_ZOOM;
             fDragButton = e.button;
             redraw();
             updateCursor(e.x, e.stateMask);
             fTimeGraphScale.setDragRange(fDragX0, fDragX);
         }
+
+    }
+
+    protected void setSelectedTime(MouseEvent e)
+    {
+        long time = getTimeAtX(e.x);
+        fTimeProvider.setSelectedTimeNotify(time, false);
+    }
+
+    protected void setSelectedRange()
+    {
+        long time0 = fDragTime0;
+        long time1 = getTimeAtX(fDragX);
+        if (time0 <= time1) {
+            fTimeProvider.setSelectionRangeNotify(time0, time1);
+        } else {
+            fTimeProvider.setSelectionRangeNotify(time1, time0);
+        }
+    }
+
+    /**
+     * @param iTimeGraphEntry
+     */
+    public void treeViewerSelection(ITimeGraphEntry iTimeGraphEntry)
+    {
+        //Do nothing
     }
 
     @Override
@@ -2546,7 +2280,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
             } else if (e.button == fDragButton && DRAG_SPLIT_LINE == fDragState) {
                 fDragState = DRAG_NONE;
                 redraw();
-            } else if (e.button == fDragButton && DRAG_SELECTION == fDragState) {
+            }  else if (e.button == fDragButton && DRAG_SELECTION == fDragState) {
                 if (fDragX == fDragX0) { // click without selecting anything
                     setSelectedTime(e);
                 } else {
@@ -2586,7 +2320,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
             fMouseOverSplitLine = false;
             redraw();
         }
-        updateStatusLine(STATUS_WITHOUT_CURSOR_TIME);
+        updateStatusLine(NO_STATUS);
     }
 
     @Override
@@ -2595,42 +2329,22 @@ public class TimeGraphControl extends TimeGraphBaseControl
 
     @Override
     public void mouseScrolled(MouseEvent e) {
-        if (fDragState != DRAG_NONE) {
+        if ((fMouseScrollFilterListener == null) || fDragState != DRAG_NONE) {
             return;
         }
         boolean zoomScroll = false;
-        boolean horizontalScroll = false;
         Point p = getParent().toControl(getDisplay().getCursorLocation());
         Point parentSize = getParent().getSize();
         if (p.x >= 0 && p.x < parentSize.x && p.y >= 0 && p.y < parentSize.y) {
             // over the parent control
-            if (e.x > getSize().x) {
-                // over the vertical scroll bar
-                zoomScroll = false;
-            } else if (e.y < 0) {
-                // over the time scale
-                zoomScroll = true;
-            } else if (e.y >= getSize().y) {
+            if (e.x > getCtrlSize().x) {
                 // over the horizontal scroll bar
-                if ((e.stateMask & SWT.MODIFIER_MASK) == SWT.CTRL) {
-                    zoomScroll = true;
-                } else {
-                    horizontalScroll = true;
-                }
+                zoomScroll = false;
+            } else if (e.y >= 0 && e.y < getCtrlSize().y && e.x < fTimeProvider.getNameSpace()) {
+                // over the name space
+                zoomScroll = false;
             } else {
-                if (e.x < fTimeProvider.getNameSpace()) {
-                    // over the name space
-                    zoomScroll = false;
-                } else {
-                    // over the state area
-                    if ((e.stateMask & SWT.MODIFIER_MASK) == SWT.CTRL) {
-                        // over the state area, CTRL pressed
-                        zoomScroll = true;
-                    } else {
-                        // over the state area, CTRL not pressed
-                        zoomScroll = false;
-                    }
-                }
+                zoomScroll = true;
             }
         }
         if (zoomScroll && fTimeProvider.getTime0() != fTimeProvider.getTime1()) {
@@ -2639,19 +2353,48 @@ public class TimeGraphControl extends TimeGraphBaseControl
             } else if (e.count < 0) {
                 zoom(false);
             }
-        } else if (horizontalScroll) {
-            horizontalScroll(e.count > 0);
         } else {
             setTopIndex(getTopIndex() - e.count);
         }
     }
 
     @Override
-    public void handleEvent(Event event) {
-        if (event.type == SWT.MouseWheel) {
-            // prevent horizontal scrolling when the mouse wheel is used to
-            // scroll vertically or zoom
-            event.doit = false;
+    public void controlMoved(ControlEvent e) {
+    }
+
+    @Override
+    public void controlResized(ControlEvent e) {
+        adjustScrolls();
+    }
+
+    @Override
+    public void widgetDefaultSelected(SelectionEvent e) {
+    }
+
+    @Override
+    public void widgetSelected(SelectionEvent e) {
+        if (e.widget == getVerticalBar()) {
+            setTopIndex(getVerticalBar().getSelection());
+        } else if (e.widget == getHorizontalBar() && null != fTimeProvider) {
+            int start = getHorizontalBar().getSelection();
+            long time0 = fTimeProvider.getTime0();
+            long time1 = fTimeProvider.getTime1();
+            long timeMin = fTimeProvider.getMinTime();
+            long timeMax = fTimeProvider.getMaxTime();
+            long delta = timeMax - timeMin;
+
+            long range = time1 - time0;
+            time0 = timeMin + Math.round(delta * ((double) start / H_SCROLLBAR_MAX));
+            time1 = time0 + range;
+
+            // TODO: Follow-up with Bug 310310
+            // In Linux SWT.DRAG is the only value received
+            // https://bugs.eclipse.org/bugs/show_bug.cgi?id=310310
+            if (e.detail == SWT.DRAG) {
+                fTimeProvider.setStartFinishTime(time0, time1);
+            } else {
+                fTimeProvider.setStartFinishTimeNotify(time0, time1);
+            }
         }
     }
 
@@ -2702,9 +2445,6 @@ public class TimeGraphControl extends TimeGraphBaseControl
      */
     public void setItemHeight(int rowHeight) {
         this.fGlobalItemHeight = rowHeight;
-        for (Item item : fItemData.fItems) {
-            item.fItemHeight = rowHeight;
-        }
     }
 
     /**
@@ -2715,6 +2455,8 @@ public class TimeGraphControl extends TimeGraphBaseControl
      * @param rowHeight
      *            The height
      * @return true if the height is successfully stored, false otherwise
+     *
+     * @since 2.1
      */
     public boolean setItemHeight(ITimeGraphEntry entry, int rowHeight) {
         Item item = fItemData.findItem(entry);
@@ -2728,8 +2470,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
     /**
      * Set the minimum item width
      *
-     * @param width
-     *            The minimum width
+     * @param width The minimum width
      */
     public void setMinimumItemWidth(int width) {
         this.fMinimumItemWidth = width;
@@ -2743,17 +2484,12 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     /**
-     * Set whether all time events with a duration shorter than one pixel should
-     * be blended in. If false, only the first such time event will be drawn and
-     * the subsequent time events in the same pixel will be discarded. The
-     * default value is false.
+     * @return The entries that are currently filtered out
      *
-     * @param blend
-     *            true if sub-pixel events should be blended, false otherwise.
      * @since 2.0
      */
-    public void setBlendSubPixelEvents(boolean blend) {
-        fBlendSubPixelEvents = blend;
+    public List<ITimeGraphEntry> getFilteredOut() {
+        return fItemData.getFilteredOut();
     }
 
     @Override
@@ -2784,8 +2520,8 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     /**
-     * @param filter
-     *            The filter object to be attached to the view
+     * @param filter The filter object to be attached to the view
+     * @since 2.0
      */
     public void addFilter(ViewerFilter filter) {
         if (!fFilters.contains(filter)) {
@@ -2794,37 +2530,16 @@ public class TimeGraphControl extends TimeGraphBaseControl
     }
 
     /**
-     * @param filter
-     *            The filter object to be attached to the view
+     * @param filter The filter object to be attached to the view
+     * @since 2.0
      */
     public void removeFilter(ViewerFilter filter) {
         fFilters.remove(filter);
     }
 
     /**
-     * Returns this control's filters.
-     *
-     * @return an array of viewer filters
-     * @since 2.0
+     * @since 3.0
      */
-    public ViewerFilter[] getFilters() {
-        return Iterables.toArray(fFilters, ViewerFilter.class);
-    }
-
-    /**
-     * Sets the filters, replacing any previous filters.
-     *
-     * @param filters
-     *            an array of viewer filters, or null
-     * @since 2.0
-     */
-    public void setFilters(ViewerFilter[] filters) {
-        fFilters.clear();
-        if (filters != null) {
-            fFilters.addAll(Arrays.asList(filters));
-        }
-    }
-
     @Override
     public void colorSettingsChanged(StateItem[] stateItems) {
         /* Destroy previous colors from the resource manager */
@@ -2839,17 +2554,19 @@ public class TimeGraphControl extends TimeGraphBaseControl
                 fEventColorMap[i] = fResourceManager.createColor(stateItems[i].getStateColor());
             }
         } else {
-            fEventColorMap = new Color[] {};
+            fEventColorMap = new Color[] { };
         }
         redraw();
     }
 
     private class ItemData {
-        private Map<ITimeGraphEntry, Item> fItemMap = new LinkedHashMap<>();
+        private final Map<ITimeGraphEntry, Item> fItemMap = new LinkedHashMap<>();
         private Item[] fExpandedItems = new Item[0];
         private Item[] fItems = new Item[0];
         private ITimeGraphEntry fRootEntries[] = new ITimeGraphEntry[0];
         private List<ILinkEvent> fLinks = new ArrayList<>();
+        private boolean fEntryFilter[] = new boolean[0];
+        private final ArrayList<ITimeGraphEntry> fFilteredOut = new ArrayList<>();
 
         public ItemData() {
         }
@@ -2867,13 +2584,13 @@ public class TimeGraphControl extends TimeGraphBaseControl
         }
 
         public void refreshData() {
+            fItemMap.clear();
+            fFilteredOut.clear();
             ITimeGraphEntry selection = getSelectedTrace();
-            Map<ITimeGraphEntry, Item> itemMap = new LinkedHashMap<>();
             for (int i = 0; i < fRootEntries.length; i++) {
                 ITimeGraphEntry entry = fRootEntries[i];
-                refreshData(itemMap, null, 0, entry);
+                refreshData(fItemMap, null, 0, entry);
             }
-            fItemMap = itemMap;
             fItems = fItemMap.values().toArray(new Item[0]);
             updateExpandedItems();
             if (selection != null) {
@@ -2898,17 +2615,7 @@ public class TimeGraphControl extends TimeGraphBaseControl
             }
             itemMap.put(entry, item);
             if (entry.hasChildren()) {
-                Item oldItem = fItemMap.get(entry);
-                if (oldItem != null && oldItem.fHasChildren && level == oldItem.fLevel && entry.getParent() == oldItem.fEntry.getParent()) {
-                    /* existing items keep their old expanded state */
-                    item.fExpanded = oldItem.fExpanded;
-                } else {
-                    /*
-                     * new items set the expanded state according to auto-expand
-                     * level
-                     */
-                    item.fExpanded = fAutoExpandLevel == ALL_LEVELS || level < fAutoExpandLevel;
-                }
+                item.fExpanded = fAutoExpandLevel == ALL_LEVELS || level < fAutoExpandLevel;
                 item.fHasChildren = true;
                 for (ITimeGraphEntry child : entry.getChildren()) {
                     refreshData(itemMap, item, level + 1, child);
@@ -2952,8 +2659,15 @@ public class TimeGraphControl extends TimeGraphBaseControl
 
         public void refreshData(ITimeGraphEntry[] entries) {
             if (entries == null) {
+                fEntryFilter = null;
                 fRootEntries = null;
             } else {
+                if (entries.length == 0) {
+                    fEntryFilter = null;
+                } else if (fEntryFilter == null || entries.length != fEntryFilter.length) {
+                    fEntryFilter = new boolean[entries.length];
+                    java.util.Arrays.fill(fEntryFilter, true);
+                }
                 fRootEntries = Arrays.copyOf(entries, entries.length);
             }
 
@@ -2971,6 +2685,14 @@ public class TimeGraphControl extends TimeGraphBaseControl
 
         public ITimeGraphEntry[] getEntries() {
             return fRootEntries;
+        }
+
+        public boolean[] getEntryFilter() {
+            return fEntryFilter;
+        }
+
+        public List<ITimeGraphEntry> getFilteredOut() {
+            return fFilteredOut;
         }
     }
 
@@ -2998,6 +2720,9 @@ public class TimeGraphControl extends TimeGraphBaseControl
         }
     }
 
+    /**
+     * @since 1.2
+     */
     @Override
     public void menuDetected(MenuDetectEvent e) {
         if (null == fTimeProvider) {
@@ -3005,11 +2730,9 @@ public class TimeGraphControl extends TimeGraphBaseControl
         }
         if (e.detail == SWT.MENU_MOUSE) {
             if (fPendingMenuDetectEvent == null) {
-                /*
-                 * Feature in Linux. The MenuDetectEvent is received before
-                 * mouseDown. Store the event and trigger it later just before
-                 * handling mouseUp. This allows for the method to detect if
-                 * mouse is used to drag zoom.
+                /* Feature in Linux. The MenuDetectEvent is received before mouseDown.
+                 * Store the event and trigger it later just before handling mouseUp.
+                 * This allows for the method to detect if mouse is used to drag zoom.
                  */
                 fPendingMenuDetectEvent = e;
                 return;
@@ -3041,54 +2764,6 @@ public class TimeGraphControl extends TimeGraphBaseControl
         }
     }
 
-    /**
-     * Perform the alignment operation.
-     *
-     * @param offset
-     *            the alignment offset
-     *
-     * @see ITmfTimeAligned
-     *
-     * @since 1.0
-     */
-    public void performAlign(int offset) {
-        fTimeProvider.setNameSpace(offset);
-    }
-
-    /**
-     * Return the time alignment information
-     *
-     * @return the time alignment information
-     *
-     * @see ITmfTimeAligned
-     *
-     */
-    public TmfTimeViewAlignmentInfo getTimeViewAlignmentInfo() {
-        return new TmfTimeViewAlignmentInfo(getShell(), toDisplay(0, 0), fTimeProvider.getNameSpace());
-    }
-
-    /**
-     * @since 2.0
-     */
-    protected void setSelectedTime(MouseEvent e) {
-        long time = getTimeAtX(e.x);
-        fTimeProvider.setSelectedTimeNotify(time, false);
-    }
-
-    /**
-     * @since 2.0
-     */
-    protected void setSelectedRange() {
-        long time0 = fDragBeginMarker ? getTimeAtX(fDragX0) : fDragTime0;
-        long time1 = fDragBeginMarker ? fDragTime0 : getTimeAtX(fDragX);
-        fTimeProvider.setSelectionRangeNotify(time0, time1);
-    }
-
-    /**
-     * @param iTimeGraphEntry
-     * @since 2.0
-     */
-    public void treeViewerSelection(ITimeGraphEntry iTimeGraphEntry) {
-        // Do nothing
-    }
 }
+
+
