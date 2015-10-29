@@ -18,6 +18,7 @@ import java.util.Collection;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.analysis.os.linux.core.trace.IKernelAnalysisEventLayout;
+import org.eclipse.tracecompass.common.core.NonNullUtils;
 
 import com.google.common.collect.ImmutableList;
 
@@ -345,6 +346,17 @@ public class LttngEventLayout implements IKernelAnalysisEventLayout {
     @Override
     public String fieldHRtimerNow() {
         return HRTIMER_NOW;
+    }
+
+    /**
+     * Event called when waking a task; this event is guaranteed to be called
+     * from the waking context.
+     *
+     * @return The name of the event
+     * @since 2.0
+     */
+    public String eventSchedProcessWaking() {
+        return NonNullUtils.nullToEmptyString(null);
     }
 
 }

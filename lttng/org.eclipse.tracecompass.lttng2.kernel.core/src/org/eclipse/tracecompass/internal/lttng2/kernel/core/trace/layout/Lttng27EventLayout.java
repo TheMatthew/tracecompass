@@ -26,7 +26,11 @@ public class Lttng27EventLayout extends Lttng26EventLayout {
      */
     protected Lttng27EventLayout() {}
 
-    public static final Lttng27EventLayout INSTANCE = new Lttng27EventLayout();
+    private static final Lttng27EventLayout INSTANCE = new Lttng27EventLayout();
+
+    public static Lttng27EventLayout getInstance() {
+        return INSTANCE;
+    }
 
     // ------------------------------------------------------------------------
     // New event definition in LTTng 2.7
@@ -83,5 +87,16 @@ public class Lttng27EventLayout extends Lttng26EventLayout {
     public String fieldNSLevel() {
         return "ns_level"; //$NON-NLS-1$
     }
+
+    @Override
+    public String eventSoftIrqEntry() {
+        return "irq_softirq_entry"; //$NON-NLS-1$
+    }
+
+    @Override
+    public String eventSoftIrqExit() {
+        return "irq_softirq_exit"; //$NON-NLS-1$
+    }
+
 
 }
