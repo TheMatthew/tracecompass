@@ -43,4 +43,6 @@ public interface ISegment extends Serializable, Comparable<ISegment> {
      * @return The duration
      */
     long getLength();
+
+    String getName();
 }

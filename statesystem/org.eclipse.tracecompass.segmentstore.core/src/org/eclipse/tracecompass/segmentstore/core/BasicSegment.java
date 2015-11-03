@@ -13,6 +13,7 @@ import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
 import java.util.Comparator;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import com.google.common.collect.Ordering;
@@ -33,7 +34,7 @@ public class BasicSegment implements ISegment {
     private final long fStart;
     private final long fEnd;
 
-    private String fName;
+    private final @NonNull String fName;
 
     /**
      * Create a new segment.
@@ -77,8 +78,15 @@ public class BasicSegment implements ISegment {
         return COMPARATOR.compare(this, o);
     }
 
+
+    @Override
+    public @NonNull String getName() {
+        return fName;
+    }
+
     @Override
     public String toString() {
         return fName;
     }
+
 }
