@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
@@ -38,10 +37,9 @@ public class SegmentMarkerSource implements IMarkerEventSource {
         if (fColorMap.isEmpty()) {
             ISegmentStore<@NonNull ISegment> results = fModule.getResults();
             if (results != null) {
-                Set<String> keys = results.stream().map(ISegment::getName).collect(Collectors.toSet());
+                Set<String> keys = Collections.singleton("chain");//results.stream().map(ISegment::getName).collect(Collectors.toSet());
                 Display display = Display.getDefault();
-                for (@NonNull
-                String key : keys) {
+                for (String key : keys) {
                     int hashCode = key.hashCode();
                     int r = hashCode & 255;
                     hashCode >>= 8;
@@ -63,7 +61,7 @@ public class SegmentMarkerSource implements IMarkerEventSource {
             Builder<IMarkerEvent> builder = ImmutableList.<IMarkerEvent> builder();
             results.stream().filter(t -> (t.getEnd() > startTime))
             .filter(t -> (t.getStart() < endTime))
-            .filter(t -> (t.getName().equals(category)))
+            //.filter(t -> (t.getName().equals(category)))
             .forEach(c -> builder.add(createMarker(category, c)));
             return builder.build();
         }

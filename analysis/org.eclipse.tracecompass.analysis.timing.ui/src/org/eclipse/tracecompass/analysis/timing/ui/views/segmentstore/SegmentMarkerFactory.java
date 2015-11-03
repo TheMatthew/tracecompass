@@ -2,7 +2,7 @@ package org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.tracecompass.analysis.os.linux.core.latency.SystemCallLatencyAnalysis;
+import org.eclipse.tracecompass.analysis.os.linux.core.latency.EventChainLatencyAnalysis;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.AbstractSegmentStoreAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.trace.AbstractTmfTraceAdapterFactory;
@@ -23,7 +23,7 @@ public class SegmentMarkerFactory extends AbstractTmfTraceAdapterFactory {
     protected <T> @Nullable T getTraceAdapter(@NonNull ITmfTrace trace, @Nullable Class<T> adapterType) {
         if (adapterType != null && IMarkerEventSource.class.equals(adapterType)) {
             @Nullable
-            IAnalysisModule analysisModule = trace.getAnalysisModule(SystemCallLatencyAnalysis.ID);
+            IAnalysisModule analysisModule = trace.getAnalysisModule(EventChainLatencyAnalysis.ID);
             if (analysisModule instanceof AbstractSegmentStoreAnalysisModule) {
                 AbstractSegmentStoreAnalysisModule segmentStoreAnalysisModule = (AbstractSegmentStoreAnalysisModule) analysisModule;
                 return adapterType.cast(new SegmentMarkerSource(segmentStoreAnalysisModule));
