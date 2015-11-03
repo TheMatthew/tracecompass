@@ -13,6 +13,9 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.tracecompass.analysis.os.linux.core.trace.IKernelTrace;
+import org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.SegmentMarkerFactory;
+import org.eclipse.tracecompass.tmf.core.trace.TmfTraceAdapterManager;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -26,6 +29,7 @@ public class Activator extends AbstractUIPlugin {
 
     // The shared instance
     private static Activator plugin;
+    private static final SegmentMarkerFactory SYSCALL_MARKER_FACTORY = new SegmentMarkerFactory();
 
     /**
      * The constructor
@@ -37,11 +41,14 @@ public class Activator extends AbstractUIPlugin {
     public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
+        TmfTraceAdapterManager.registerFactory(SYSCALL_MARKER_FACTORY, IKernelTrace.class);
     }
+
 
     @Override
     public void stop(BundleContext context) throws Exception {
         plugin = null;
+        TmfTraceAdapterManager.unregisterFactory(SYSCALL_MARKER_FACTORY);
         super.stop(context);
     }
 
