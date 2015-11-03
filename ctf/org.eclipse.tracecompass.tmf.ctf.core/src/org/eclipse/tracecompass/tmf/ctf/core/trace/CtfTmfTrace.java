@@ -100,8 +100,8 @@ public class CtfTmfTrace extends TmfTrace
     protected static final @NonNull Collection<ITmfEventAspect> CTF_ASPECTS =
             checkNotNull(ImmutableList.of(
                     ITmfEventAspect.BaseAspects.TIMESTAMP,
-                    new CtfChannelAspect(),
-                    new CtfCpuAspect(),
+                    CtfChannelAspect.INSTANCE,
+                    CtfCpuAspect.INSTANCE,
                     ITmfEventAspect.BaseAspects.EVENT_TYPE,
                     ITmfEventAspect.BaseAspects.CONTENTS
                     ));

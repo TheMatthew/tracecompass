@@ -94,8 +94,8 @@ public class EventChainLatencyStatisticsViewer extends AbstractSegmentStoreStati
             }
         }
         SegmentStoreStatistics max = new SegmentStoreStatistics();
-        max.update(new BasicSegment(0, minimum));
-        max.update(new BasicSegment(0, maximum));
+        max.update(new BasicSegment(0, minimum,""));
+        max.update(new BasicSegment(0, maximum,""));
 
         TmfTreeViewerEntry maximumEntry = new SegmentStoreStatisticsEntry(checkNotNull("Sum"), checkNotNull(max)); //$NON-NLS-1$
         entryList.add(maximumEntry);

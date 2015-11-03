@@ -38,11 +38,11 @@ public class TreeMapStoreTest {
 
     private TreeMapStore<@NonNull ISegment> fSegmentStore;
 
-    private static final ISegment SEGMENT_2_6 = new BasicSegment(2, 6);
-    private static final ISegment SEGMENT_4_6 = new BasicSegment(4, 6);
-    private static final ISegment SEGMENT_4_8 = new BasicSegment(4, 8);
-    private static final ISegment SEGMENT_6_8 = new BasicSegment(6, 8);
-    private static final ISegment SEGMENT_10_14 = new BasicSegment(10, 14);
+    private static final ISegment SEGMENT_2_6 = new BasicSegment(2, 6,"");
+    private static final ISegment SEGMENT_4_6 = new BasicSegment(4, 6,"");
+    private static final ISegment SEGMENT_4_8 = new BasicSegment(4, 8,"");
+    private static final ISegment SEGMENT_6_8 = new BasicSegment(6, 8,"");
+    private static final ISegment SEGMENT_10_14 = new BasicSegment(10, 14,"");
 
     private static final List<ISegment> SEGMENTS = ImmutableList.of(SEGMENT_2_6, SEGMENT_4_6, SEGMENT_4_8, SEGMENT_6_8, SEGMENT_10_14);
     private static final List<ISegment> REVERSE_SEGMENTS = Lists.reverse(SEGMENTS);
@@ -79,7 +79,7 @@ public class TreeMapStoreTest {
      */
     @Test
     public void testContains() {
-        ISegment otherSegment = new BasicSegment(0, 20);
+        ISegment otherSegment = new BasicSegment(0, 20,"");
 
         assertTrue(fSegmentStore.contains(SEGMENT_2_6));
         assertTrue(fSegmentStore.contains(SEGMENT_4_8));
@@ -114,7 +114,7 @@ public class TreeMapStoreTest {
     @Test
     public void testToSpecifyArraySubtype() {
         TreeMapStore<@NonNull BasicSegment> tms2 = new TreeMapStore<>();
-        BasicSegment otherSegment = new BasicSegment(2, 6);
+        BasicSegment otherSegment = new BasicSegment(2, 6,"");
         tms2.add(otherSegment);
         BasicSegment[] array = tms2.toArray(new BasicSegment[0]);
 
@@ -130,7 +130,10 @@ public class TreeMapStoreTest {
     @Test
     public void testNoDuplicateElements() {
         for (ISegment segment : SEGMENTS) {
-            boolean ret = fSegmentStore.add(new BasicSegment(segment.getStart(), segment.getEnd()));
+            boolean ret= false;
+            if( segment instanceof BasicSegment) {
+                ret = fSegmentStore.add(segment);
+            }
             assertFalse(ret);
         }
         assertEquals(SEGMENTS.size(), fSegmentStore.size());

@@ -41,7 +41,7 @@ public class EventChainSegments extends BasicSegment implements ISegementChain {
      *            List of sub segments
      */
     public EventChainSegments(long start, long end, List<ISegment> segments) {
-        super(start, end);
+        super(start, end,"chain");
         fSubSegments = checkNotNull(ImmutableList.copyOf(segments));
     }
 

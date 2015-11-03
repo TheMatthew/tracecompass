@@ -33,6 +33,8 @@ public class BasicSegment implements ISegment {
     private final long fStart;
     private final long fEnd;
 
+    private String fName;
+
     /**
      * Create a new segment.
      *
@@ -43,7 +45,8 @@ public class BasicSegment implements ISegment {
      * @param end
      *            End position of the segment
      */
-    public BasicSegment(long start, long end) {
+    public BasicSegment(long start, long end, String name) {
+        fName = name;
         if (end < start) {
             throw new IllegalArgumentException();
         }
@@ -76,6 +79,6 @@ public class BasicSegment implements ISegment {
 
     @Override
     public String toString() {
-        return new String('[' + String.valueOf(fStart) + ", " + String.valueOf(fEnd) + ']'); //$NON-NLS-1$
+        return fName;
     }
 }

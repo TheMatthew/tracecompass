@@ -71,7 +71,7 @@ public class EventChainLatencyAnalysis extends AbstractSegmentStoreAnalysisModul
 
     private static String PROCESS_NAME = "cyclictest"; //$NON-NLS-1$
 
-    private static final CtfCpuAspect CPU_ASPECT = new CtfCpuAspect();
+    private static final CtfCpuAspect CPU_ASPECT = CtfCpuAspect.INSTANCE;
 
     private static final NumberFormat FORMATTER = checkNotNull(NumberFormat.getNumberInstance(Locale.getDefault()));
 
@@ -266,9 +266,9 @@ public class EventChainLatencyAnalysis extends AbstractSegmentStoreAnalysisModul
 
                     EventChainSegments seg = new EventChainSegments(current.t1, current.t5,
                             checkNotNull(new ImmutableList.Builder<ISegment>()
-                                    .add(new BasicSegment(current.t1, current.t3))
-                                    .add(new BasicSegment(current.t3, current.t4))
-                                    .add(new BasicSegment(current.t4, current.t5))
+                                    .add(new BasicSegment(current.t1, current.t3, "seg1"))
+                                    .add(new BasicSegment(current.t3, current.t4, "seg2"))
+                                    .add(new BasicSegment(current.t4, current.t5, "seg3"))
                                     .build()));
 
                     getSegmentStore().add(seg);
