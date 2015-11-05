@@ -149,14 +149,14 @@ public class TmfStatisticsEventTypesModule extends TmfStateSystemAnalysisModule 
                     ITmfStateValue value = TmfStateValue.newValueInt((int) (curVal + le.getNbLostEvents()));
                     ss.modifyAttribute(ts, value, quark);
 
-                    long startTime = le.getTimeRange().getStartTime().normalize(0, ITmfTimestamp.NANOSECOND_SCALE).getValue();
-                    long endTime = le.getTimeRange().getEndTime().normalize(0, ITmfTimestamp.NANOSECOND_SCALE).getValue();
+                    long lostEventsStartTime = le.getTimeRange().getStartTime().normalize(0, ITmfTimestamp.NANOSECOND_SCALE).getValue();
+                    long lostEventsEndTime = le.getTimeRange().getEndTime().normalize(0, ITmfTimestamp.NANOSECOND_SCALE).getValue();
                     int lostEventsQuark = ss.getQuarkAbsoluteAndAdd(Attributes.LOST_EVENTS);
-                    value = ss.queryOngoingState(lostEventsQuark);
-                    if (value.isNull() || value.unboxLong() < startTime) {
-                        ss.modifyAttribute(startTime, TmfStateValue.newValueLong(endTime), lostEventsQuark);
-                    } else if (value.unboxLong() < endTime) {
-                        ss.updateOngoingState(TmfStateValue.newValueLong(endTime), lostEventsQuark);
+                    ITmfStateValue currentLostEventsEndTime = ss.queryOngoingState(lostEventsQuark);
+                    if (currentLostEventsEndTime.isNull() || currentLostEventsEndTime.unboxLong() < lostEventsStartTime) {
+                        ss.modifyAttribute(lostEventsStartTime, TmfStateValue.newValueLong(lostEventsEndTime), lostEventsQuark);
+                    } else if (currentLostEventsEndTime.unboxLong() < lostEventsEndTime) {
+                        ss.updateOngoingState(TmfStateValue.newValueLong(lostEventsEndTime), lostEventsQuark);
                     }
                     return;
                 }
