@@ -3,6 +3,7 @@ package org.eclipse.tracecompass.analysis.os.linux.core.latency.irq;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.analysis.os.linux.core.latency.irq.XmlIrqUtils.TYPE;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
@@ -94,6 +95,11 @@ public class IRQ implements ISegment {
             return Long.parseLong(NonNullUtils.nullToEmptyString(entryAspect.resolve(synIrq))) - NonNullUtils.checkNotNull(synIrq).getTimestamp().getValue();
         }
         return -1;
+    }
+
+    @Override
+    public @NonNull String getName() {
+        return label;
     }
 
     /**
