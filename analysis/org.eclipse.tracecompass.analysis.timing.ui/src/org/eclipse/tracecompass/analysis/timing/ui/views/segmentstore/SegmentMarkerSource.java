@@ -1,3 +1,12 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
+
 package org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore;
 
 import java.util.ArrayList;
@@ -22,12 +31,30 @@ import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.MarkerEvent;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 
+/**
+ * A converter for segments to make them into markers.
+ *
+ * @author Matthew Khouzam
+ *
+ */
 public class SegmentMarkerSource implements IMarkerEventSource {
+
+    /** key so no internalization is needed */
+    private static final String EVEN = "even"; //$NON-NLS-1$
+
+    /** key so no internalization is needed */
+    private static final String ODD = "odd"; //$NON-NLS-1$
 
     private final AbstractSegmentStoreAnalysisModule fModule;
 
     private final Map<String, Color> fColorMap = new LinkedHashMap<>();
 
+    /**
+     * Constructor
+     *
+     * @param module
+     *            the segment store module
+     */
     public SegmentMarkerSource(AbstractSegmentStoreAnalysisModule module) {
         fModule = module;
     }
@@ -36,19 +63,21 @@ public class SegmentMarkerSource implements IMarkerEventSource {
     public List<@NonNull String> getMarkerCategories() {
         if (fColorMap.isEmpty()) {
             ISegmentStore<@NonNull ISegment> results = fModule.getResults();
+            Display display = Display.getDefault();
             if (results != null) {
-                Set<String> keys = Collections.singleton("chain");//results.stream().map(ISegment::getName).collect(Collectors.toSet());
-                Display display = Display.getDefault();
+                Set<String> keys = Collections.singleton("chain");// results.stream().map(ISegment::getName).collect(Collectors.toSet()); //$NON-NLS-1$
                 for (String key : keys) {
                     int hashCode = key.hashCode();
-                    int r = hashCode & 255;
-                    hashCode >>= 8;
                     int g = hashCode & 255;
                     hashCode >>= 8;
+                    int r = hashCode & 255;
+                    hashCode >>= 8;
                     int b = hashCode & 255;
-                    fColorMap.put(key, new Color(display, r, g, b, 64));
+                    fColorMap.put(key, new Color(display, r, g, b, 128));
                 }
             }
+            fColorMap.put(ODD, new Color(display, 100, 100, 100, 64));
+            fColorMap.put(EVEN, new Color(display, 200, 200, 200, 64));
         }
         return new ArrayList<>(fColorMap.keySet());
     }
@@ -58,11 +87,20 @@ public class SegmentMarkerSource implements IMarkerEventSource {
         @Nullable
         ISegmentStore<@NonNull ISegment> results = fModule.getResults();
         if (results != null) {
+            List<ISegment> intervalList = new ArrayList<>();
             Builder<IMarkerEvent> builder = ImmutableList.<IMarkerEvent> builder();
-            results.stream().filter(t -> (t.getEnd() > startTime))
-            .filter(t -> (t.getStart() < endTime))
-            //.filter(t -> (t.getName().equals(category)))
-            .forEach(c -> builder.add(createMarker(category, c)));
+            results.stream().filter(t -> (t.getEnd() > startTime)).filter(t -> (t.getStart() < endTime)).forEach(c -> builder.add(createMarker(category, c)));
+            results.stream().filter(t -> (t.getEnd() > startTime)).filter(t -> (t.getStart() < endTime)).forEach(c -> intervalList.add(c));
+
+            for (int i = 0; i < intervalList.size() - 1; i += 2) {
+                long start1 = intervalList.get(i).getStart();
+                long start2 = intervalList.get(i + 1).getStart();
+                builder.add(new MarkerEvent(null, start1, start2 - start1, ODD, fColorMap.get(ODD), "", true)); //$NON-NLS-1$
+                if (intervalList.size() > i + 2) {
+                    long start3 = intervalList.get(i + 2).getStart();
+                    builder.add(new MarkerEvent(null, start2, start3 - start2, EVEN, fColorMap.get(EVEN), "", true)); //$NON-NLS-1$
+                }
+            }
             return builder.build();
         }
         return Collections.EMPTY_LIST;

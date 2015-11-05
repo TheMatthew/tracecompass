@@ -1,3 +1,12 @@
+/*******************************************************************************
+ * Copyright (c) 2015 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
+
 package org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -9,9 +18,14 @@ import org.eclipse.tracecompass.tmf.core.trace.AbstractTmfTraceAdapterFactory;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.IMarkerEventSource;
 
+/**
+ * Segment Marker factory, generates a segment marker source
+ * @author Matthew Khouzam
+ *
+ */
 public class SegmentMarkerFactory extends AbstractTmfTraceAdapterFactory {
 
-    private static final Class[] ADAPTER_LIST = { IMarkerEventSource.class };
+    private static final Class<?>[] ADAPTER_LIST = { IMarkerEventSource.class };
 
     @Override
     public Class<?>[] getAdapterList() {

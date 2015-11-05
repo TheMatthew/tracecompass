@@ -41,7 +41,7 @@ public class EventChainSegments extends BasicSegment implements ISegementChain {
      *            List of sub segments
      */
     public EventChainSegments(long start, long end, List<ISegment> segments) {
-        super(start, end,"chain");
+        super(start, end, "chain"); //$NON-NLS-1$
         fSubSegments = checkNotNull(ImmutableList.copyOf(segments));
     }
 
@@ -54,11 +54,11 @@ public class EventChainSegments extends BasicSegment implements ISegementChain {
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append(super.toString());
-        builder.append(", sub-segments[");  //$NON-NLS-1$
+        builder.append(", sub-segments["); //$NON-NLS-1$
         for (ISegment segment : fSubSegments) {
             builder.append(segment.toString());
         }
-        builder.append("]");  //$NON-NLS-1$
+        builder.append("]"); //$NON-NLS-1$
         return checkNotNull(builder.toString());
     }
 }
