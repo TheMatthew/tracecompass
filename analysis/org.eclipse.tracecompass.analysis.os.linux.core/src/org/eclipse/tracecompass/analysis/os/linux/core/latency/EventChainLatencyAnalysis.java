@@ -62,7 +62,7 @@ public class EventChainLatencyAnalysis extends AbstractSegmentStoreAnalysisModul
     private static final String COMM_FIELD_NAME = "comm"; //$NON-NLS-1$
 
     // TODO Replace hardcoded values
-    private static int TID_VALUE = 18395;
+    private static int TID_VALUE = 27950;
     /* TODO Hard-code value, only works for specific trace,
        it would be good to determine this value or
        LTTng will provide the function name (hrtimer_wakeup)instead of the address
@@ -173,7 +173,7 @@ public class EventChainLatencyAnalysis extends AbstractSegmentStoreAnalysisModul
                         break;
                     }
                     hrTimerInst = new HrTimer();
-                    hrTimerInst.expires = (Long) content.getField(HRTIMER_EXPIRES_FIELD_NAME).getValue();
+                    hrTimerInst.setExpires((Long) content.getField(HRTIMER_EXPIRES_FIELD_NAME).getValue());
                     fOngoingHrTimers.put(hrTimer, hrTimerInst);
                 }
                 break;
@@ -189,8 +189,8 @@ public class EventChainLatencyAnalysis extends AbstractSegmentStoreAnalysisModul
                     if (hrTimerInst == null) {
                         break;
                     }
-                    hrTimerInst.now =  (Long) content.getField(HRTIMER_NOW_FIELD_NAME).getValue();
-                    hrTimerInst.t1 = event.getTimestamp().getValue() - (hrTimerInst.now - hrTimerInst.expires);
+                    hrTimerInst.setNow((Long) content.getField(HRTIMER_NOW_FIELD_NAME).getValue());
+                    hrTimerInst.setT1(event.getTimestamp().getValue() - (hrTimerInst.getNow() - hrTimerInst.getExpires()));
 
                     fOngoingHrTimers.remove(hrTimer);
 
@@ -225,7 +225,7 @@ public class EventChainLatencyAnalysis extends AbstractSegmentStoreAnalysisModul
                     if (other == null) {
                         return;
                     }
-                    other.t3 = event.getTimestamp().getValue();
+                    other.setT3(event.getTimestamp().getValue());
                 }
                 break;
             }
@@ -243,7 +243,7 @@ public class EventChainLatencyAnalysis extends AbstractSegmentStoreAnalysisModul
                     if (other == null) {
                         return;
                     }
-                    other.t4 = event.getTimestamp().getValue();
+                    other.setT4(event.getTimestamp().getValue());
                     fOngoingTimerTasks.remove(cpu);
                     fCurrentHrTimer = other;
                 }
@@ -262,13 +262,13 @@ public class EventChainLatencyAnalysis extends AbstractSegmentStoreAnalysisModul
                 }
                 HrTimer current = fCurrentHrTimer;
                 if (current != null) {
-                    current.t5 = event.getTimestamp().getValue();
+                    current.setT5(event.getTimestamp().getValue());
 
-                    EventChainSegments seg = new EventChainSegments(current.t1, current.t5,
+                    EventChainSegments seg = new EventChainSegments(current.getT1(), current.getT5(),
                             checkNotNull(new ImmutableList.Builder<ISegment>()
-                                    .add(new BasicSegment(current.t1, current.t3, "seg1")) //$NON-NLS-1$
-                                    .add(new BasicSegment(current.t3, current.t4, "seg2")) //$NON-NLS-1$
-                                    .add(new BasicSegment(current.t4, current.t5, "seg3")) //$NON-NLS-1$
+                                    .add(new BasicSegment(current.getT1(), current.getT3(), "seg1")) //$NON-NLS-1$
+                                    .add(new BasicSegment(current.getT3(), current.getT4(), "seg2")) //$NON-NLS-1$
+                                    .add(new BasicSegment(current.getT4(), current.getT5(), "seg3")) //$NON-NLS-1$
                                     .build()));
 
                     getSegmentStore().add(seg);
@@ -362,12 +362,48 @@ public class EventChainLatencyAnalysis extends AbstractSegmentStoreAnalysisModul
     }
 
     private static class HrTimer {
-        public long expires;
-        public long now;
-        public long t1;
-        public long t3;
-        public long t4;
-        public long t5;
+        private long expires;
+        private long now;
+        private long t1;
+        private long t3;
+        private long t4;
+        private long t5;
+        public long getT3() {
+            return t3;
+        }
+        public void setT3(long t3) {
+            this.t3 = t3;
+        }
+        public long getT1() {
+            return t1;
+        }
+        public void setT1(long t1) {
+            this.t1 = t1;
+        }
+        public long getT4() {
+            return t4;
+        }
+        public void setT4(long t4) {
+            this.t4 = t4;
+        }
+        public long getT5() {
+            return t5;
+        }
+        public void setT5(long t5) {
+            this.t5 = t5;
+        }
+        public long getExpires() {
+            return expires;
+        }
+        public void setExpires(long expires) {
+            this.expires = expires;
+        }
+        public long getNow() {
+            return now;
+        }
+        public void setNow(long now) {
+            this.now = now;
+        }
     }
 
 }

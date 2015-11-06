@@ -1,5 +1,6 @@
 package org.eclipse.tracecompass.tmf.analysis.xml.core.stateprovider;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,8 +33,12 @@ import org.w3c.dom.NodeList;
 /**
  * @since 2.0
  */
-public class XmlFilterStateProvider extends AbstractTmfStateProvider implements IXmlStateSystemContainer {
+public class XmlFilterStateProvider extends AbstractTmfStateProvider implements IXmlStateSystemContainer, Serializable {
 
+    /**
+     *
+     */
+    private static final long serialVersionUID = 3913907427295229640L;
     private final IPath fFilePath;
     @NonNull
     private final String fStateId;

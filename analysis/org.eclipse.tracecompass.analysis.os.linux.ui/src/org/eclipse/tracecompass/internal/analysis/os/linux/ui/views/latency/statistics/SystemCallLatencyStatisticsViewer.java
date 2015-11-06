@@ -74,6 +74,9 @@ public class SystemCallLatencyStatisticsViewer extends AbstractSegmentStoreStati
         module.waitForCompletion();
 
         SegmentStoreStatistics entry = module.getTotalStats();
+        if (entry == null) {
+            return null;
+        }
 
         TmfTreeViewerEntry root = new TmfTreeViewerEntry(""); //$NON-NLS-1$
         List<ITmfTreeViewerEntry> entryList = root.getChildren();

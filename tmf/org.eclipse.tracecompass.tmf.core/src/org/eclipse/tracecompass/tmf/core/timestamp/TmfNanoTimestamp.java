@@ -13,10 +13,17 @@
 
 package org.eclipse.tracecompass.tmf.core.timestamp;
 
+import java.io.Serializable;
+
 /**
  * A simplified timestamp where scale is nanoseconds and precision is set to 0.
  */
-public class TmfNanoTimestamp extends TmfTimestamp {
+public class TmfNanoTimestamp extends TmfTimestamp implements Serializable{
+
+    /**
+     *
+     */
+    private static final long serialVersionUID = 182899572861098412L;
 
     // ------------------------------------------------------------------------
     // Constructors

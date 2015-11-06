@@ -62,22 +62,19 @@ public class SegmentMarkerSource implements IMarkerEventSource {
     @Override
     public List<@NonNull String> getMarkerCategories() {
         if (fColorMap.isEmpty()) {
-            ISegmentStore<@NonNull ISegment> results = fModule.getResults();
             Display display = Display.getDefault();
-            if (results != null) {
-                Set<String> keys = Collections.singleton("chain");// results.stream().map(ISegment::getName).collect(Collectors.toSet()); //$NON-NLS-1$
-                for (String key : keys) {
-                    int hashCode = key.hashCode();
-                    int g = hashCode & 255;
-                    hashCode >>= 8;
-                    int r = hashCode & 255;
-                    hashCode >>= 8;
-                    int b = hashCode & 255;
-                    fColorMap.put(key, new Color(display, r, g, b, 128));
-                }
+            Set<String> keys = Collections.singleton("chain");// results.stream().map(ISegment::getName).collect(Collectors.toSet()); //$NON-NLS-1$
+            for (String key : keys) {
+                int hashCode = key.hashCode();
+                int g = hashCode & 255;
+                hashCode >>= 8;
+                int r = hashCode & 255;
+                hashCode >>= 8;
+                int b = hashCode & 255;
+                fColorMap.put(key, new Color(display, r, g, b, 128));
             }
-            fColorMap.put(ODD, new Color(display, 100, 100, 100, 64));
-            fColorMap.put(EVEN, new Color(display, 200, 200, 200, 64));
+            fColorMap.put(ODD, new Color(display, 100, 100, 100, 32));
+            fColorMap.put(EVEN, new Color(display, 200, 200, 200, 32));
         }
         return new ArrayList<>(fColorMap.keySet());
     }
