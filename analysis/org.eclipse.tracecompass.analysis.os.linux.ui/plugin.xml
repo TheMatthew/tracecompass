@@ -103,6 +103,7 @@
             allowMultiple="false"
             category="org.eclipse.linuxtools.lttng2.ui.views.category"
             class="org.eclipse.tracecompass.analysis.os.linux.ui.views.xmlIrqLatency.XMLIrqLatency"
+            icon="icons/eview16/latency.png"
             id="org.eclipse.tracecompass.analysis.os.linux.ui.xmlIrqLatency"
             name="IRQ Latency Analysis"
             restorable="true">
@@ -111,6 +112,7 @@
             allowMultiple="false"
             category="org.eclipse.linuxtools.lttng2.ui.views.category"
             class="org.eclipse.tracecompass.analysis.os.linux.ui.views.xmlIrqAverageLatency.XMLIrqAverageLatency"
+            icon="icons/eview16/statistics_view.gif"
             id="org.eclipse.tracecompass.analysis.os.linux.ui.xmlIrqAverageLatency"
             name="IRQ Latency Statistics"
             restorable="true">
@@ -119,6 +121,7 @@
             allowMultiple="false"
             category="org.eclipse.linuxtools.lttng2.ui.views.category"
             class="org.eclipse.tracecompass.analysis.os.linux.ui.views.irqscatter.IRQLatencyScatterGraphView"
+            icon="icons/eview16/scatter.png"
             id="org.eclipse.tracecompass.analysis.os.linux.ui.irqLatencyScatterChart"
             name="IRQ Latency vs Time"
             restorable="true">
@@ -127,6 +130,7 @@
             allowMultiple="false"
             category="org.eclipse.linuxtools.lttng2.ui.views.category"
             class="org.eclipse.tracecompass.analysis.os.linux.ui.views.xmlIrqLatency.IRQLatencyDensityView"
+            icon="icons/eview16/density.png"
             id="org.eclipse.tracecompass.analysis.os.linux.ui.irqDensityView"
             name="IRQ Density View"
             restorable="true">
