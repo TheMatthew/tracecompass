@@ -211,5 +211,33 @@
                class="org.eclipse.tracecompass.analysis.os.linux.core.latency.EventChainLatencyAnalysis">
          </analysisModuleClass>
       </output>
+      <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.analysis.os.linux.ui.xmlIrqLatency">
+         <analysisModuleClass
+               class="org.eclipse.tracecompass.analysis.os.linux.core.latency.irq.IRQLatencyAnalysis">
+         </analysisModuleClass>
+      </output>
+      <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.analysis.os.linux.ui.xmlIrqAverageLatency">
+         <analysisModuleClass
+               class="org.eclipse.tracecompass.analysis.os.linux.core.latency.irq.IRQLatencyAnalysis">
+         </analysisModuleClass>
+      </output>
+      <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.analysis.os.linux.ui.irqLatencyScatterChart">
+         <analysisModuleClass
+               class="org.eclipse.tracecompass.analysis.os.linux.core.latency.irq.IRQLatencyAnalysis">
+         </analysisModuleClass>
+      </output>
+      <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.analysis.os.linux.ui.irqDensityView">
+         <analysisModuleClass
+               class="org.eclipse.tracecompass.analysis.os.linux.core.latency.irq.IRQLatencyAnalysis">
+         </analysisModuleClass>
+      </output>
    </extension>
 </plugin>
