@@ -38,6 +38,7 @@ public class TmfXmlSyntheticEvent implements ITmfSynEvent, Serializable {
      *
      */
     private static final long serialVersionUID = -7695419603794578244L;
+
     private static final String ROOT_NAME = ":root:"; //$NON-NLS-1$
     private @Nullable ITmfEvent fLastEvent;
     private final TmfXmlEventType fEventType;
