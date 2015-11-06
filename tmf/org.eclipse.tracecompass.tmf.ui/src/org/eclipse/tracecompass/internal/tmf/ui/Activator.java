@@ -27,7 +27,6 @@ import org.eclipse.tracecompass.tmf.core.trace.TmfTraceAdapterManager;
 import org.eclipse.tracecompass.tmf.ui.TmfUiRefreshHandler;
 import org.eclipse.tracecompass.tmf.ui.project.model.TmfExperimentElement;
 import org.eclipse.tracecompass.tmf.ui.project.model.TmfTraceElement;
-import org.eclipse.tracecompass.tmf.ui.trace.LostEventsMarkerEventSourceFactory;
 import org.eclipse.tracecompass.tmf.ui.viewers.events.TmfEventAdapterFactory;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
