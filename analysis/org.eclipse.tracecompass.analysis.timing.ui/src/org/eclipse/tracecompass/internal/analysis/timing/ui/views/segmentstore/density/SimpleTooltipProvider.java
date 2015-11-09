@@ -99,7 +99,7 @@ public class SimpleTooltipProvider extends BaseMouseProvider implements MouseTra
                     long y = Math.round(yAxis.getDataCoordinate(rec.y));
 
                     String toolTipText = MessageFormat.format(Messages.SimpleTooltipProvider_toolTipText, x1, x2, y);
-                    getChart().getPlotArea().setToolTipText(toolTipText);
+                    buffer.append(toolTipText);
                     break;
                 }
             }
