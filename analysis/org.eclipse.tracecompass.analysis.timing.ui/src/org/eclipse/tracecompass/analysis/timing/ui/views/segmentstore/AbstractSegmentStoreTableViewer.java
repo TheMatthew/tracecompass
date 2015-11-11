@@ -13,6 +13,15 @@
 
 package org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -26,7 +35,9 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.AbstractSegmentStoreAnalysisModule;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.IAnalysisProgressListener;
@@ -81,8 +92,8 @@ public abstract class AbstractSegmentStoreTableViewer extends TmfSimpleTableView
     }
 
     /**
-     * Listener to update the model with the segment store analysis results
-     * once the analysis is fully completed
+     * Listener to update the model with the segment store analysis results once
+     * the analysis is fully completed
      */
     private final class AnalysisProgressListener implements IAnalysisProgressListener {
         @Override
@@ -192,7 +203,7 @@ public abstract class AbstractSegmentStoreTableViewer extends TmfSimpleTableView
                             return NonNullUtils.nullToEmptyString(aspect.resolve(input));
                         }
                     },
-                    aspect.getComparator());
+                            aspect.getComparator());
                 }
             }
             fColumnsCreated = true;
@@ -261,6 +272,7 @@ public abstract class AbstractSegmentStoreTableViewer extends TmfSimpleTableView
 
     /**
      * Returns the segment store analysis module
+     *
      * @param trace
      *            The trace to consider
      * @return the segment store analysis module
@@ -284,9 +296,11 @@ public abstract class AbstractSegmentStoreTableViewer extends TmfSimpleTableView
                     broadcast(new TmfSelectionRangeUpdatedSignal(AbstractSegmentStoreTableViewer.this, new TmfNanoTimestamp(segment.getEnd())));
                 }
             };
+            IAction export = new ExportToExcel();
 
             manager.add(gotoStartTime);
             manager.add(gotoEndTime);
+            manager.add(export);
         }
     }
 
@@ -356,6 +370,68 @@ public abstract class AbstractSegmentStoreTableViewer extends TmfSimpleTableView
             if ((analysis != null)) {
                 analysis.removeListener(fListener);
             }
+        }
+    }
+
+    // These filter names are displayed to the user in the file dialog. Note
+    // that
+    // the inclusion of the actual extension in parentheses is optional, and
+    // doesn't have any effect on which files are displayed.
+    private static final String[] FILTER_NAMES = {
+            "Microsoft Excel Spreadsheet Files (*.xlsx)",
+            "Comma Separated Values Files (*.csv)", "All Files (*.*)" };
+
+    // These filter extensions are used to filter which files are displayed.
+    private static final String[] FILTER_EXTS = { "*.xls", "*.csv", "*.*" };
+
+    private class ExportToExcel extends Action {
+        @Override
+        public String getText() {
+            return "Export to excel";
+        }
+
+        @Override
+        public void run() {
+            final @Nullable AbstractSegmentStoreAnalysisModule analysisModule = getAnalysisModule();
+            if (analysisModule == null) {
+                return;
+            }
+            final @Nullable ISegmentStore<@NonNull ISegment> results = analysisModule.getResults();
+            if (results == null) {
+                return;
+            }
+            FileDialog dlg = new FileDialog(new Shell(Display.getDefault()), SWT.SAVE);
+            dlg.setFilterNames(FILTER_NAMES);
+            dlg.setFilterExtensions(FILTER_EXTS);
+            String fileName = dlg.open();
+            if (fileName == null) {
+                return;
+            }
+            Workbook wb = new XSSFWorkbook();
+            Sheet sheet = wb.createSheet();
+            int i = 0;
+            for (ISegment seg : results) {
+                Row r = sheet.createRow(i);
+                i++;
+                Cell cell = r.createCell(0);
+                cell.setCellValue((seg.getStart() >> 32) & 0x000000ffffffffl);
+                cell = r.createCell(1);
+                cell.setCellValue((seg.getStart()) & 0x000000ffffffffl);
+                cell = r.createCell(2);
+                cell.setCellValue((seg.getEnd() >> 32) & 0x000000ffffffffl);
+                cell = r.createCell(3);
+                cell.setCellValue((seg.getEnd()) & 0x000000ffffffffl);
+                cell = r.createCell(4);
+                cell.setCellValue((int) seg.getLength());
+                cell = r.createCell(5);
+                cell.setCellValue(seg.getName());
+            }
+            try (FileOutputStream out = new FileOutputStream(fileName);) {
+                wb.write(out);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
         }
     }
 
